@@ -1,0 +1,6 @@
+@PTEducation.API_HostAddress = http://localhost:5083
+
+GET {{PTEducation.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

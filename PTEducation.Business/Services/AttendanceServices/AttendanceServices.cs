@@ -1,0 +1,215 @@
+﻿using AutoMapper;
+using PTEducation.Business.ApplicationMiddleware;
+using PTEducation.Data.DTO.Custom;
+using PTEducation.Data.DTO.RequestModel;
+using PTEducation.Data.DTO.ResponseModel;
+using PTEducation.Data.Enums;
+using PTEducation.Data.Repositories.AttendanceRepositories;
+using PTEducation.Data.Repositories.ClassRepositories;
+using PTEducation.Data.Entities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using PTEducation.Data.Repositories.StudentClassRepositories;
+using PTEducation.Data.Repositories.AttendanceDetailRepositories;
+using PTEducation.Business.Ultilities.FilterCombine;
+using System.Linq.Expressions;
+using System.Net.WebSockets;
+
+namespace PTEducation.Business.Services.AttendanceServices
+{
+    public class AttendanceServices : IAttendanceServices
+    {
+        private readonly IAttendanceRepositories _attendanceRepositories;
+        private readonly IAttendanceDetailRepositories _attendanceDetailRepositories;
+        private readonly IClassRepositories _classRepositories;
+        private readonly IStudentClassRepositories _studentClassRepositories;
+        private readonly IMapper _mapper;
+        public AttendanceServices(IAttendanceRepositories attendanceRepositories, IStudentClassRepositories studentClassRepositories, IClassRepositories classRepositories, IMapper mapper, IAttendanceDetailRepositories attendanceDetailRepositories)
+        {
+            _attendanceDetailRepositories = attendanceDetailRepositories;
+            _classRepositories = classRepositories;
+            _attendanceRepositories = attendanceRepositories;
+            _studentClassRepositories = studentClassRepositories;
+            _mapper = mapper;
+        }
+
+        public async Task<MessageResultModel> CreateAttendance(AttendanceCreateReqModel attendanceReq, string token)
+        {
+            var UserId = Authentication.DecodeToken(token, "userid");
+            var CheckExistAttendance = await _attendanceRepositories.GetSingle(x => x.StartDate.Equals(attendanceReq.StartDate) && x.EndDate.Equals(attendanceReq.EndDate) && x.ClassId.Equals(attendanceReq.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            if (CheckExistAttendance != null)
+            {
+                throw new CustomException("Attendance already exists");
+            }
+            var CheckExistClass = await _classRepositories.GetSingle(x => x.Id.Equals(attendanceReq.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            if (CheckExistClass == null)
+            {
+                throw new CustomException("Class not found or not active");
+            }
+            var NewAttendanceId = Guid.NewGuid();
+            var NewAttendance = _mapper.Map<Attendance>(attendanceReq);
+            NewAttendance.Id = NewAttendanceId;
+            NewAttendance.CreatedBy = UserId;
+            var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(attendanceReq.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            List<AttendanceDetail> ListAttendanceDetail = new();
+            foreach (var student in attendanceReq.ListIdStudent)
+            {
+                if (!StudentInClass.Any(x => x.StudentId.Equals(student)))
+                {
+                    throw new CustomException($"Student {student} not found in this class");
+                }
+                var StudentClassId = StudentInClass.FirstOrDefault(x => x.StudentId.Equals(student));
+                AttendanceDetail NewAttendanceDetail = new()
+                {
+                    Id = Guid.NewGuid(),
+                    AttendanceId = NewAttendanceId,
+                    StudentClassId = StudentClassId.Id,
+                    Status = GeneralStatusEnums.Active.ToString()
+                };
+                ListAttendanceDetail.Add(NewAttendanceDetail);
+            }
+            await _attendanceRepositories.Insert(NewAttendance);
+            await _attendanceDetailRepositories.InsertRange(ListAttendanceDetail);
+            return new MessageResultModel()
+            {
+                Message = "Ok"
+            };
+        }
+
+        public async Task<MessageResultModel> SoftDeleteAttendance(Guid Id)
+        {
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails");
+            if (CheckExist == null)
+            {
+                throw new CustomException("Attendance not found");
+            }
+            if (CheckExist.Status.Equals(GeneralStatusEnums.Inactive.ToString()))
+            {
+                throw new CustomException("Attendance is inactive!");
+            }
+            CheckExist.Status = GeneralStatusEnums.Inactive.ToString();
+            foreach (var item in CheckExist.AttendanceDetails)
+            {
+                item.Status = GeneralStatusEnums.Inactive.ToString();
+            }
+            await _attendanceRepositories.Update(CheckExist);
+            return new MessageResultModel()
+            {
+                Message = "Ok"
+            };
+        }
+
+        public async Task<DataResultModel<AttendanceDetailResModel>> GetAttendanceDetail(Guid Id)
+        {
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails.StudentClass.Student,Class,CreatedByNavigation");
+            if (CheckExist == null)
+            {
+                throw new CustomException("Attendance not found");
+            }
+            var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(CheckExist.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "Student");
+            var ListStudentInClassId = StudentInClass.Select(x => x.Id).ToList();
+            var ListStudentNotHaveAttend = ListStudentInClassId.Except(CheckExist.AttendanceDetails.Select(x => x.StudentClassId)).ToList();
+            var Result = _mapper.Map<AttendanceDetailResModel>(CheckExist);
+            foreach (var item in ListStudentNotHaveAttend)
+            {
+                var Student = StudentInClass.FirstOrDefault(x => x.Id.Equals(item));
+                AttendanceDetailStudentResModel attendanceDetailStudent = new()
+                {
+                    StudentClassId = item,
+                    Id = Student.StudentId,
+                    Name = TextConvert.ConvertFromUnicodeEscape(Student.Student.Name),
+                    AttendanceStatus = AttendanceEnums.Vắng_mặt.ToString()
+                };
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+                Result.AttendanceDetails.Add(attendanceDetailStudent);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            }
+            return new DataResultModel<AttendanceDetailResModel>()
+            {
+                Data = Result
+            };
+        }
+
+        public async Task<ListDataResultModel<AttendanceListResModel>> GetListAttendance(int? pageIndex, AttendanceFilter filter)
+        {
+            var allAttendance = await ViewAllAttendance(pageIndex, filter);
+            var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(filter.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var ListStudentInClassId = StudentInClass.Select(x => x.Id).ToList();
+            var Result = _mapper.Map<List<AttendanceListResModel>>(allAttendance);
+            foreach (var Attendance in Result)
+            {
+                var AttendanceRaw = allAttendance.FirstOrDefault(x => x.Id.Equals(Attendance.Id));
+                var ListStudentNotHaveAttend = ListStudentInClassId.Except(AttendanceRaw.AttendanceDetails.Select(x => x.StudentClassId)).ToList();
+                Attendance.TotalPresent = AttendanceRaw.AttendanceDetails.Count();
+                Attendance.TotalAbsent = ListStudentNotHaveAttend.Count;
+            }
+            return new ListDataResultModel<AttendanceListResModel>()
+            {
+                Data = Result
+            };
+        }
+
+        public async Task<MessageResultModel> UpdateAttendance(AttendanceUpdateReqModel attendanceReq)
+        {
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(attendanceReq.Id));
+            if(CheckExist == null)
+            {
+                throw new CustomException("Attendance not found");
+            }
+            CheckExist.StartDate = attendanceReq.StartDate;
+            CheckExist.EndDate = attendanceReq.EndDate;
+            await _attendanceRepositories.Update(CheckExist);
+            return new MessageResultModel()
+            {
+                Message = "Ok"
+            };
+        }
+
+        private async Task<List<Attendance>> ViewAllAttendance(int? pageIndex, AttendanceFilter searchModel)
+        {
+            Func<IQueryable<Attendance>, IOrderedQueryable<Attendance>> orderBy = o => o.OrderBy(p => p);
+            Expression<Func<Attendance, bool>> filter = p => p.ClassId.Equals(searchModel.ClassId);
+
+            if (searchModel != null)
+            {
+                if (searchModel.FromDate.HasValue)
+                {
+                    filter = filter.And(t => t.StartDate.Equals(searchModel.FromDate));
+                }
+                if (searchModel.ToDate.HasValue)
+                {
+                    filter = filter.And(t => t.EndDate.Equals(searchModel.ToDate));
+                }
+            }
+
+            var allAttendance = await _attendanceRepositories.GetList(filter, orderBy, includeProperties: "CreatedByNavigation,AttendanceDetails", pageIndex ?? 1);
+
+            return allAttendance.ToList();
+        }
+
+        public async Task<MessageResultModel> RestoreAttendance(Guid Id)
+        {
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails");
+            if (CheckExist == null)
+            {
+                throw new CustomException("Attendance not found");
+            }
+            if (CheckExist.Status.Equals(GeneralStatusEnums.Active.ToString()))
+            {
+                throw new CustomException("Attendance is active!");
+            }
+            CheckExist.Status = GeneralStatusEnums.Active.ToString();
+            foreach (var item in CheckExist.AttendanceDetails)
+            {
+                item.Status = GeneralStatusEnums.Active.ToString();
+            }
+            await _attendanceRepositories.Update(CheckExist);
+            return new MessageResultModel {
+                Message = "Ok",
+            };
+        }
+    }
+}
