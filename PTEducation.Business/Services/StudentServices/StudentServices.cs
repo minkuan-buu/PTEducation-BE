@@ -33,7 +33,7 @@ namespace PTEducation.Business.Services.StudentServices
         {
             var userId = Authentication.DecodeToken(Token, "userid");
             var User = await _userRepositories.GetSingle(x => x.Id.Equals(userId));
-            var Score = await _scoreRepositories.GetList(x => x.TestDateAt.Month == Month && x.TestDateAt.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "ScoreDetails.StudentClass");
+            var Score = await _scoreRepositories.GetList(x => x.TestDateAt.Month == Month && x.TestDateAt.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), orderBy: x => x.OrderBy(x => x.TestDateAt), includeProperties: "ScoreDetails.StudentClass");
             var ListScore = Score.ToList();
             var ScoreDetails = ListScore
                 .Where(x => x.ScoreDetails.Any(sd => sd.StudentClass.StudentId.Equals(userId)))
@@ -64,19 +64,19 @@ namespace PTEducation.Business.Services.StudentServices
         {
             var userId = Authentication.DecodeToken(Token, "userid");
             var User = await _userRepositories.GetSingle(x => x.Id.Equals(userId));
-            var Attandance = await _attendanceRepositories.GetList(x => x.EndDate.Month == Month && x.EndDate.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "AttendanceDetails.StudentClass");
-            var ListAttandance = Attandance.ToList();
-            var AttandanceDetails = ListAttandance
-                .Where(x => x.AttendanceDetails.Any(sd => sd.StudentClass.StudentId.Equals(userId)))
-                .ToList();
+            var Attandances = await _attendanceRepositories.GetList(x => x.EndDate.Month == Month && x.EndDate.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), orderBy: x => x.OrderBy(x => x.StartDate), includeProperties: "AttendanceDetails.StudentClass");
+            var ListAttandances = Attandances.ToList();
+            // var AttandanceDetails = ListAttandance
+            //     .Where(x => x.AttendanceDetails.Any(sd => sd.StudentClass.StudentId.Equals(userId)))
+            //     .ToList();
             List<AttendanceStudentDetailResModel> ListAttendanceDetails = new();
-            foreach (var attendance in AttandanceDetails)
+            foreach (var attendance in ListAttandances)
             {
                 AttendanceStudentDetailResModel AttendanceDetail = new()
                 {
                     StartDate = attendance.StartDate,
                     EndDate = attendance.EndDate,
-                    isPresent = attendance.AttendanceDetails.FirstOrDefault().Status.Equals(GeneralStatusEnums.Active.ToString())
+                    isPresent = attendance.AttendanceDetails.FirstOrDefault(x => x.StudentClass.StudentId.Equals(userId)) != null ? true : false,
                 };
                 ListAttendanceDetails.Add(AttendanceDetail);
             }

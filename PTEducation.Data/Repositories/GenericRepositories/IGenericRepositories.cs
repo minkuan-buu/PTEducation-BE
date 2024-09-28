@@ -26,5 +26,7 @@ namespace PTEducation.Data.Repositories.GenericRepositories
         Task InsertRange(List<T> entity);
 
         Task Update(T entity);
+
+        Task DeleteRange(List<T> entities);
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PTEducation.API.Middleware;
@@ -72,7 +73,11 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 builder.Services.AddDbContext<PteducationContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.EnableSensitiveDataLogging();
+}
+);
 //========================================== MAPPER ===============================================
 
 builder.Services.AddAutoMapper(typeof(MapperProfileConfiguration).Assembly);
