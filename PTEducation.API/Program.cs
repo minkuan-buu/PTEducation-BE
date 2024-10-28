@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -8,6 +9,7 @@ using PTEducation.Business.Services.AttendanceDetailServices;
 using PTEducation.Business.Services.AttendanceServices;
 using PTEducation.Business.Services.AuthServices;
 using PTEducation.Business.Services.ClassServices;
+using PTEducation.Business.Services.OTPServices;
 using PTEducation.Business.Services.ScoreDetailServices;
 using PTEducation.Business.Services.ScoreServices;
 using PTEducation.Business.Services.StudentClassServices;
@@ -19,6 +21,7 @@ using PTEducation.Data.Repositories.AttendanceDetailRepositories;
 using PTEducation.Data.Repositories.AttendanceRepositories;
 using PTEducation.Data.Repositories.ClassRepositories;
 using PTEducation.Data.Repositories.GenericRepositories;
+using PTEducation.Data.Repositories.OTPRepositories;
 using PTEducation.Data.Repositories.ScoreDetailRepositories;
 using PTEducation.Data.Repositories.ScoreRepositories;
 using PTEducation.Data.Repositories.StudentClassRepositories;
@@ -94,6 +97,7 @@ builder.Services.AddTransient<IScoreRepositories, ScoreRepositories>();
 builder.Services.AddTransient<IScoreDetailRepositories, ScoreDetailRepositories>();
 builder.Services.AddTransient<IAttendanceRepositories, AttendanceRepositories>();
 builder.Services.AddTransient<IAttendanceDetailRepositories, AttendanceDetailRepositories>();
+builder.Services.AddTransient<IOTPRepositories, OTPRepositories>();
 builder.Services.AddScoped(typeof(IGenericRepositories<>), typeof(GenericRepositories<>));
 
 //=========================================== SERVICE =============================================
@@ -108,6 +112,7 @@ builder.Services.AddScoped<IStudentServices, StudentServices>();
 builder.Services.AddScoped<IEmail, Email>();
 builder.Services.AddScoped<IAttendanceServices, AttendanceServices>();
 builder.Services.AddScoped<IAttendanceDetailServices, AttendanceDetailServices>();
+builder.Services.AddScoped<IOTPServices, OTPServices>();
 
 //=========================================== CORS ================================================
 
@@ -126,20 +131,23 @@ builder.Services.AddCors(options =>
 
 //========================================== AUTHENTICATION =======================================
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer("Bearer", options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidIssuer = "IssuerFromServerhttp://api.pteducation.edu.vn",
-            ValidAudience = "AudienceForhttp://tradiem.pteducation.edu.vn",
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("TestingIssuerSigningKeyPTEducationMS@123")),
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateIssuerSigningKey = true,
-            ValidateLifetime = true,
-        };
-    });
+//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//    .AddJwtBearer("Bearer", options =>
+//    {
+//        options.TokenValidationParameters = new TokenValidationParameters
+//        {
+//            ValidIssuer = "IssuerFromServerhttp://api.pteducation.edu.vn",
+//            ValidAudience = "AudienceForhttp://tradiem.pteducation.edu.vn",
+//            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("TestingIssuerSigningKeyPTEducationMS@123")),
+//            ValidateIssuer = true,
+//            ValidateAudience = true,
+//            ValidateIssuerSigningKey = true,
+//            ValidateLifetime = true,
+//        };
+//    });
+
+builder.Services.AddAuthentication("PTEducationAuthentication")
+    .AddScheme<AuthenticationSchemeOptions, AuthorizeMiddleware>("PTEducationAuthentication", null);
 
 //===================================================================================================
 
@@ -157,6 +165,8 @@ app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 
 app.UseAuthentication(); // Thêm middleware Authentication
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseAuthorization();
 

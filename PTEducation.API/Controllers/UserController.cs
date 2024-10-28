@@ -18,7 +18,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("me")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
         public async Task<IActionResult> GetMyProfile()
         {
             try

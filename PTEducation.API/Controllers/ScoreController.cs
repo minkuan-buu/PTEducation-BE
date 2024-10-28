@@ -21,7 +21,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("get")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetScoreDetail(Guid Id)
         {
             try
@@ -36,7 +36,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("all")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetList(int? pageIndex, [FromQuery] ScoreFilter searchModel)
         {
             try
@@ -51,7 +51,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPost("create")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> CreateScore([FromBody] ScoreCreateReqModel ScoreReq)
         {
             try
@@ -67,7 +67,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPut("update")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateScore([FromBody] ScoreUpdateReqModel ScoreReq)
         {
             try
@@ -82,7 +82,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPut("delete")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> SoftDeleteClass([FromBody] Guid Id)
         {
             try
@@ -97,7 +97,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPut("restore")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> RestoreScore([FromBody] Guid Id)
         {
             try

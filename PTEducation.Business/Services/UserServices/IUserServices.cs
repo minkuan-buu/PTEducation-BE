@@ -14,6 +14,7 @@ namespace PTEducation.Business.Services.UserServices
         Task<MessageResultModel> Register(UserRegisterReqModel ReqModel);
         Task<MessageResultModel> ChangePassword(UserChangePasswordReqModel ReqModel, string token);
         Task<DataResultModel<UserProfileResModel>> GetMyProfile(string token);
+        Task<MessageResultModel> ResetPassword(UserResetPasswordReqModel ReqModel, string token);
         //Task<bool> SendMail();
     }
 }

@@ -22,7 +22,7 @@ namespace PTEducation.API.Controllers
 
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetClassDetail(Guid id)
         {
             try
@@ -37,7 +37,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("all")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetList(int? pageIndex, [FromQuery] ClassFilter searchModel)
         {
             try
@@ -52,7 +52,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("select/all")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetListSelect()
         {
             try
@@ -67,7 +67,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPost("create")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> CreateClass([FromBody] ClassCreateReqModel ClassReq)
         {
             try
@@ -83,7 +83,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPut("update")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateClass([FromBody] ClassUpdateReqModel ClassReq)
         {
             try
@@ -98,7 +98,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPut("delete")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> SoftDeleteClass([FromBody] Guid Id)
         {
             try
@@ -113,7 +113,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPut("restore")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> RestoreClass([FromBody] Guid Id)
         {
             try
@@ -128,7 +128,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPost("add-student")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> ManualAddStudentClass([FromBody] ManualAddStudentClassModel AddStudentsReq)
         {
             try

@@ -136,6 +136,40 @@ namespace PTEducation.Business.Services.UserServices
                 Data = Result
             };
         }
+
+        public async Task<MessageResultModel> ResetPassword(UserResetPasswordReqModel ReqModel, string token)
+        {
+            try
+            {
+                var email = Authentication.DecodeToken(token, "email");
+                var user = await _userRepositories.GetSingle(x => x.Email.Equals(email));
+                if (user == null)
+                {
+                    throw new CustomException("User not found!");
+                }
+                if (ReqModel.NewPassword != ReqModel.ConfirmPassword)
+                {
+                    throw new CustomException("New password and confirm password is not match!");
+                }
+                if (ReqModel.NewPassword.Length < 6)
+                {
+                    throw new CustomException("Password must be at least 6 characters!");
+                }
+                var Auth = Authentication.CreateHashPassword(ReqModel.NewPassword);
+                user.Password = Auth.HashedPassword;
+                user.Salt = Auth.Salt;
+                user.Status = GeneralStatusEnums.Active.ToString();
+                await _userRepositories.Update(user);
+                return new MessageResultModel
+                {
+                    Message = "Ok"
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new CustomException("Error: " + ex.Message);
+            }
+        }
         //public async Task<bool> SendMail()
         //{
         //    var check = await _email.SendEmail();

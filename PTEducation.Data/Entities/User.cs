@@ -25,6 +25,8 @@ public partial class User
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
 
+    public virtual ICollection<Otp> Otps { get; set; } = new List<Otp>();
+
     public virtual ICollection<Score> Scores { get; set; } = new List<Score>();
 
     public virtual ICollection<StudentClass> StudentClasses { get; set; } = new List<StudentClass>();

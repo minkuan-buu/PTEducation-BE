@@ -2,6 +2,7 @@
 using PTEducation.Business.ApplicationMiddleware;
 using PTEducation.Business.Services.AttendanceServices;
 using PTEducation.Data.DTO.ResponseModel;
+using PTEducation.Data.Entities;
 using PTEducation.Data.Enums;
 using PTEducation.Data.Repositories.AttendanceRepositories;
 using PTEducation.Data.Repositories.ScoreRepositories;
@@ -32,19 +33,21 @@ namespace PTEducation.Business.Services.StudentServices
         public async Task<DataResultModel<ScoreStudentResModel>> GetScoreByMonth(int Month, int Year, string Token)
         {
             var userId = Authentication.DecodeToken(Token, "userid");
-            var User = await _userRepositories.GetSingle(x => x.Id.Equals(userId));
+            var User = await _userRepositories.GetSingle(x => x.Id.Equals(userId), includeProperties: "StudentClasses");
             var Score = await _scoreRepositories.GetList(x => x.TestDateAt.Month == Month && x.TestDateAt.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "ScoreDetails.StudentClass");
+            var UserClass = User.StudentClasses.FirstOrDefault();
             var ListScore = Score.ToList();
             var ScoreDetails = ListScore
-                .Where(x => x.ScoreDetails.Any(sd => sd.StudentClass.StudentId.Equals(userId)))
+                .Where(x => x.ScoreDetails.Any(sd => sd.StudentClass.ClassId.Equals(UserClass.ClassId)))
                 .ToList();
             List<ScoreStudentDetailResModel> ListScoreDetails = new();
             foreach (var score in ScoreDetails)
             {
+                var getStudentScore = score.ScoreDetails.FirstOrDefault(x => x.StudentClass.StudentId.Equals(userId));
                 ScoreStudentDetailResModel ScoreDetail = new()
                 {
                     TestDateAt = score.TestDateAt,
-                    Score = score.ScoreDetails.FirstOrDefault().Score
+                    Score = getStudentScore != null ? getStudentScore.Score : 0,
                 };
                 ListScoreDetails.Add(ScoreDetail);
             }
@@ -63,20 +66,22 @@ namespace PTEducation.Business.Services.StudentServices
         public async Task<DataResultModel<AttendanceStudentResModel>> GetAttendanceByMonth(int Month, int Year, string Token)
         {
             var userId = Authentication.DecodeToken(Token, "userid");
-            var User = await _userRepositories.GetSingle(x => x.Id.Equals(userId));
+            var User = await _userRepositories.GetSingle(x => x.Id.Equals(userId), includeProperties: "StudentClasses");
             var Attandance = await _attendanceRepositories.GetList(x => x.EndDate.Month == Month && x.EndDate.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "AttendanceDetails.StudentClass");
+            var UserClass = User.StudentClasses.FirstOrDefault();
             var ListAttandance = Attandance.ToList();
             var AttandanceDetails = ListAttandance
-                .Where(x => x.AttendanceDetails.Any(sd => sd.StudentClass.StudentId.Equals(userId)))
+                .Where(x => x.AttendanceDetails.Any(sd => sd.StudentClass.ClassId.Equals(UserClass.ClassId)))
                 .ToList();
             List<AttendanceStudentDetailResModel> ListAttendanceDetails = new();
             foreach (var attendance in AttandanceDetails)
             {
+                var getStudentAttandance = attendance.AttendanceDetails.FirstOrDefault(x => x.StudentClass.StudentId.Equals(userId));
                 AttendanceStudentDetailResModel AttendanceDetail = new()
                 {
                     StartDate = attendance.StartDate,
                     EndDate = attendance.EndDate,
-                    isPresent = attendance.AttendanceDetails.FirstOrDefault().Status.Equals(GeneralStatusEnums.Active.ToString())
+                    isPresent = getStudentAttandance != null,
                 };
                 ListAttendanceDetails.Add(AttendanceDetail);
             }

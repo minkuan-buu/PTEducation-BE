@@ -49,7 +49,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPost("change-password")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
         public async Task<IActionResult> ChangePassword([FromBody] UserChangePasswordReqModel User)
         {
             try
@@ -65,12 +65,28 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("check-server")]
-        [Authorize]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
         public IActionResult CheckServer()
         {
             try
             {
                 var Result = _authServices.CheckServer();
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("reset-password")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
+        public async Task<IActionResult> ResetPassword([FromBody] UserResetPasswordReqModel User)
+        {
+            try
+            {
+                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
+                var Result = await _userServices.ResetPassword(User, token);
                 return Ok(Result);
             }
             catch (CustomException ex)

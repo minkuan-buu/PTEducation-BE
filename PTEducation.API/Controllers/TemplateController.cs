@@ -21,7 +21,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("import-student")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public IActionResult GetImportStudentTemplate()
         {
             using (var workbook = new XLWorkbook())
@@ -44,7 +44,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("import-score")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetImportScoreTemplate(Guid ClassId)
         {
             using (var workbook = new XLWorkbook())
@@ -75,7 +75,7 @@ namespace PTEducation.API.Controllers
             }
         }
         [HttpGet("import-attendance")]
-        [Authorize(Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public IActionResult GetImportAttendanceTemplate()
         {
             using (var workbook = new XLWorkbook())
