@@ -74,7 +74,7 @@ namespace PTEducation.Business.Services.StudentServices
                 .Where(x => x.AttendanceDetails.Any(sd => sd.StudentClass.ClassId.Equals(UserClass.ClassId)))
                 .ToList();
             List<AttendanceStudentDetailResModel> ListAttendanceDetails = new();
-            foreach (var attendance in AttandanceDetails)
+            foreach (var attendance in ListAttandances)
             {
                 var getStudentAttandance = attendance.AttendanceDetails.FirstOrDefault(x => x.StudentClass.StudentId.Equals(userId));
                 AttendanceStudentDetailResModel AttendanceDetail = new()

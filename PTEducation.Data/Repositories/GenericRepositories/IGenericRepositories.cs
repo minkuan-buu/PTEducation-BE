@@ -28,5 +28,6 @@ namespace PTEducation.Data.Repositories.GenericRepositories
         Task Update(T entity);
 
         Task UpdateRange(List<T> entities);
+        Task DeleteRange(List<T> entities);
     }
 }

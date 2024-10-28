@@ -33,6 +33,8 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
                 };
             }
             var AttendanceDetail = CheckExist.AttendanceDetails.ToList();
+            List<AttendanceDetail> ListRemoveDetail = new();
+            List<AttendanceDetail> ListAddDetail = new();
             foreach (var attendance in AttendanceReq.AttendanceReqList)
             {
                 if (attendance.AttendanceStatus.Equals(AttendanceEnums.Vắng_mặt.ToString()))
@@ -40,7 +42,7 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
                     var AttendanceUpdate = AttendanceDetail.FirstOrDefault(x => x.StudentClassId.Equals(attendance.StudentClassId));
                     if (AttendanceUpdate != null)
                     {
-                        AttendanceDetail.Remove(AttendanceUpdate);
+                        ListRemoveDetail.Add(AttendanceUpdate);
                     }
                 }
                 else
@@ -56,12 +58,12 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
                             StudentClassId = attendance.StudentClassId,
                             Status = GeneralStatusEnums.Active.ToString()
                         };
-                        AttendanceDetail.Add(NewAttendance);
+                        ListAddDetail.Add(NewAttendance);
                     }
                 }
             }
-            CheckExist.AttendanceDetails = AttendanceDetail;
-            await _attendanceRepositories.Update(CheckExist);
+            await _attendanceDetailRepositories.InsertRange(ListAddDetail);
+            await _attendanceDetailRepositories.DeleteRange(ListRemoveDetail);
             return new MessageResultModel()
             {
                 Message = "Ok"

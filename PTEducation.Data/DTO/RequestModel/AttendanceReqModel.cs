@@ -43,4 +43,10 @@ namespace PTEducation.Data.DTO.RequestModel
         public Guid StudentClassId { get; set; }
         public string AttendanceStatus { get; set; } = null!;
     }
+
+    public class AttendanceStudentReqModel
+    {
+        public int Month { get; set; }
+        public int Year { get; set; }
+    }
 }

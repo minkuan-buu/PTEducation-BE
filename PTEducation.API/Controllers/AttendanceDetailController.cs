@@ -26,12 +26,12 @@ namespace PTEducation.API.Controllers
 
         [HttpGet]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student")]
-        public async Task<IActionResult> GetAttendanceStudentByMonth([FromQuery] ScoreStudentReqModel ScoreReq)
+        public async Task<IActionResult> GetAttendanceStudentByMonth([FromQuery] AttendanceStudentReqModel AttendanceReq)
         {
             try
             {
                 string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _studentServices.GetAttendanceByMonth(ScoreReq.Month, ScoreReq.Year, token);
+                var Result = await _studentServices.GetAttendanceByMonth(AttendanceReq.Month, AttendanceReq.Year, token);
                 return Ok(Result);
             }
             catch (CustomException ex)

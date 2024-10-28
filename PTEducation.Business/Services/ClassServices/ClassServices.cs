@@ -151,12 +151,12 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<MessageResultModel> SoftDeleteClass(Guid Id)
         {
-            var CheckExist = await _classRepositories.GetSingle(x => x.Id == Id, includeProperties: "StudentClasses.ScoreDetails,StudentClasses.AttendanceDetails");
-            if(CheckExist == null)
+            var CheckExist = await _classRepositories.GetSingle(x => x.Id == Id, includeProperties: "StudentClasses,Scores.ScoreDetails,Attendances.AttendanceDetails");
+            if (CheckExist == null)
             {
                 throw new CustomException("Class not found!");
             }
-            if(CheckExist.Status.Equals(GeneralStatusEnums.Inactive.ToString()))
+            if (CheckExist.Status.Equals(GeneralStatusEnums.Inactive.ToString()))
             {
                 throw new CustomException("Class is deleted!");
             }
@@ -164,13 +164,21 @@ namespace PTEducation.Business.Services.ClassServices
             foreach (var item in CheckExist.StudentClasses)
             {
                 item.Status = GeneralStatusEnums.Inactive.ToString();
-                foreach (var score in item.ScoreDetails)
+                foreach (var score in CheckExist.Scores)
                 {
                     score.Status = GeneralStatusEnums.Inactive.ToString();
+                    foreach(var scoreDetail in score.ScoreDetails)
+                    {
+                        scoreDetail.Status = GeneralStatusEnums.Inactive.ToString();
+                    }
                 }
-                foreach (var attendance in item.AttendanceDetails)
+                foreach (var attendance in CheckExist.Attendances)
                 {
                     attendance.Status = GeneralStatusEnums.Inactive.ToString();
+                    foreach (var attendanceDetail in attendance.AttendanceDetails)
+                    {
+                        attendanceDetail.Status = GeneralStatusEnums.Inactive.ToString();
+                    }
                 }
             }
             await _classRepositories.Update(CheckExist);
@@ -182,26 +190,34 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<MessageResultModel> RestoreClass(Guid Id)
         {
-            var CheckExist = await _classRepositories.GetSingle(x => x.Id == Id, includeProperties: "StudentClasses.ScoreDetails,StudentClasses.AttendanceDetails");
+            var CheckExist = await _classRepositories.GetSingle(x => x.Id == Id, includeProperties: "StudentClasses,Scores.ScoreDetails,Attendances.AttendanceDetails");
             if (CheckExist == null)
             {
                 throw new CustomException("Class not found!");
             }
             if (CheckExist.Status.Equals(GeneralStatusEnums.Active.ToString()))
             {
-                throw new CustomException("Class is deleted!");
+                throw new CustomException("Class is active!");
             }
             CheckExist.Status = GeneralStatusEnums.Active.ToString();
             foreach (var item in CheckExist.StudentClasses)
             {
                 item.Status = GeneralStatusEnums.Active.ToString();
-                foreach (var score in item.ScoreDetails)
+                foreach (var score in CheckExist.Scores)
                 {
                     score.Status = GeneralStatusEnums.Active.ToString();
+                    foreach (var scoreDetail in score.ScoreDetails)
+                    {
+                        scoreDetail.Status = GeneralStatusEnums.Active.ToString();
+                    }
                 }
-                foreach (var attendance in item.AttendanceDetails)
+                foreach (var attendance in CheckExist.Attendances)
                 {
                     attendance.Status = GeneralStatusEnums.Active.ToString();
+                    foreach (var attendanceDetail in attendance.AttendanceDetails)
+                    {
+                        attendanceDetail.Status = GeneralStatusEnums.Active.ToString();
+                    }
                 }
             }
             await _classRepositories.Update(CheckExist);
