@@ -96,6 +96,16 @@ namespace PTEducation.Data.Repositories.GenericRepositories
             context.Entry(entity).State = EntityState.Modified;
             await context.SaveChangesAsync();
         }
+        public async Task UpdateRange(List<T> entities)
+        {
+            foreach (var entity in entities)
+            {
+                dbSet.Attach(entity);
+                context.Entry(entity).State = EntityState.Modified;
+            }
+            await context.SaveChangesAsync();
+        }
+
 
         public async Task DeleteRange(List<T> entities)
         {

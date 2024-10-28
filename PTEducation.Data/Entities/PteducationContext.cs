@@ -17,6 +17,8 @@ public partial class PteducationContext : DbContext
 
     public virtual DbSet<Class> Classes { get; set; }
 
+    public virtual DbSet<Otp> Otps { get; set; }
+
     public virtual DbSet<Score> Scores { get; set; }
 
     public virtual DbSet<ScoreDetail> ScoreDetails { get; set; }
@@ -100,6 +102,31 @@ public partial class PteducationContext : DbContext
                 .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Class__CreatedBy__46E78A0C");
+        });
+
+        modelBuilder.Entity<Otp>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("OTP_pk");
+
+            entity.ToTable("OTP");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Code)
+                .HasMaxLength(6)
+                .IsUnicode(false);
+            entity.Property(e => e.ExpiredDate).HasColumnType("datetime");
+            entity.Property(e => e.IsUsed).HasColumnName("isUsed");
+            entity.Property(e => e.Status)
+                .HasMaxLength(30)
+                .IsUnicode(false);
+            entity.Property(e => e.UserId)
+                .HasMaxLength(30)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.User).WithMany(p => p.Otps)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("OTP_User_Id_fk");
         });
 
         modelBuilder.Entity<Score>(entity =>
@@ -194,7 +221,7 @@ public partial class PteducationContext : DbContext
                 .HasMaxLength(300)
                 .IsUnicode(false);
             entity.Property(e => e.Phone)
-                .HasMaxLength(12)
+                .HasMaxLength(20)
                 .IsUnicode(false);
             entity.Property(e => e.Role)
                 .HasMaxLength(20)

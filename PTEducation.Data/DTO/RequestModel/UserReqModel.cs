@@ -31,4 +31,10 @@ namespace PTEducation.Data.DTO.RequestModel
         public string NewPassword { get; set; } = null!;
         public string ConfirmPassword { get; set; } = null!;
     }
+
+    public class UserResetPasswordReqModel
+    {
+        public string NewPassword { get; set; } = null!;
+        public string ConfirmPassword { get; set; } = null!;
+    }
 }

@@ -9,6 +9,7 @@ namespace PTEducation.Data.Enums
     public enum AccountStatusEnums
     {
         Active,
-        Inactive
+        Inactive,
+        ResetPassword,
     }
 }
