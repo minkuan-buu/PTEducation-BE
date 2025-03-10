@@ -123,16 +123,16 @@ builder.Services.AddScoped<IOTPServices, OTPServices>();
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: "AllowAll", policy =>
+    options.AddPolicy(name: "AllowSpecificOrigin", policy =>
     {
         policy
-        //.WithOrigins("http://tradiem.pteducation.edu.vn")
-        .AllowAnyOrigin()
-        .AllowAnyHeader()
-        .AllowAnyMethod();
-        //.AllowCredentials();
+            .WithOrigins("https://tradiem.pteducation.edu.vn") // Đảm bảo chỉ định đúng URL
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // Hỗ trợ cookie và token
     });
 });
+
 
 //========================================== AUTHENTICATION =======================================
 
@@ -165,11 +165,25 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowAll");
+app.UseCors("AllowSpecificOrigin");
+
+app.Use(async (context, next) =>
+{
+    if (context.Request.Method == "OPTIONS")
+    {
+        context.Response.Headers.Add("Access-Control-Allow-Origin", "https://tradiem.pteducation.edu.vn");
+        context.Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE");
+        context.Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, Authorization");
+        context.Response.Headers.Add("Access-Control-Allow-Credentials", "true");
+        context.Response.StatusCode = 204; // No Content
+        return;
+    }
+    await next();
+});
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication(); // Th�m middleware Authentication
+app.UseAuthentication(); // Th�m middleware Authentication
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 

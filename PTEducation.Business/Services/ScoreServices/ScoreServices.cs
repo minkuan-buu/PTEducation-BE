@@ -47,7 +47,8 @@ namespace PTEducation.Business.Services.ScoreServices
             var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(CheckExist.ClassId));
             var ListStudentInClass = StudentInClass.Select(x => x.Id).ToList();
             var ListStudentNotHaveScore = ListStudentInClass.Except(CheckExist.ScoreDetails.Select(x => x.StudentClassId)).ToList();
-            foreach (var student in ListStudentNotHaveScore) {
+            foreach (var student in ListStudentNotHaveScore)
+            {
                 var Student = await _studentClassRepositories.GetSingle(x => x.Id.Equals(student), includeProperties: "Student");
 #pragma warning disable CS8602 // Dereference of a possibly null reference.
                 Result.ScoreDetails.Add(new ScoreDetailStudentResModel()
@@ -78,7 +79,7 @@ namespace PTEducation.Business.Services.ScoreServices
         public async Task<MessageResultModel> CreateScore(ScoreCreateReqModel ScoreReq, string token)
         {
             var userId = Authentication.DecodeToken(token, "userid");
-            var CheckExist = await _scoreRepositories.GetSingle(x => x.TestDateAt.Equals(ScoreReq.TestDateAt));
+            var CheckExist = await _scoreRepositories.GetSingle(x => x.TestDateAt.Equals(ScoreReq.TestDateAt) && x.ClassId.Equals(ScoreReq.ClassId));
             if (CheckExist != null)
             {
                 throw new CustomException("Score already exists");
@@ -95,7 +96,7 @@ namespace PTEducation.Business.Services.ScoreServices
                 {
                     throw new CustomException("An error has excuted! Please download template and try again");
                 }
-                if(CheckStudentClass.Class.Id != ScoreReq.ClassId)
+                if (CheckStudentClass.Class.Id != ScoreReq.ClassId)
                 {
                     throw new CustomException($"Student {CheckStudentClass.Student.Id} has not attended {CheckStudentClass.Class.Name}");
                 }
@@ -197,7 +198,7 @@ namespace PTEducation.Business.Services.ScoreServices
                 }
             }
 
-             var allScore = await _scoreRepositories.GetList(filter, orderBy, includeProperties: "CreateByNavigation,ScoreDetails", pageIndex ?? 1);
+            var allScore = await _scoreRepositories.GetList(filter, orderBy, includeProperties: "CreateByNavigation,ScoreDetails", pageIndex ?? 1);
 
             return allScore.ToList();
         }
