@@ -19,7 +19,7 @@ namespace PTEducation.Business.Ultilities.Email
             try
             {
                 string from = "minhquandoanngoc@gmail.com";
-                string pass = "vfyy deqv xiaj mils"; 
+                string pass = "amua xwrw epnv imuj";
                 using MailKit.Net.Smtp.SmtpClient smtp = new();
                 await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
                 await smtp.AuthenticateAsync(from, pass);

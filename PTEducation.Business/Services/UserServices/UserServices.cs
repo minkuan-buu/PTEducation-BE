@@ -33,17 +33,18 @@ namespace PTEducation.Business.Services.UserServices
         public async Task<DataResultModel<UserLoginResModel>> Login(string Username, string Password)
         {
             var CheckExist = await _userRepositories.GetSingle(x => x.Email.Equals(Username) || x.Id.Equals(Username));
-            if(CheckExist == null)
+            if (CheckExist == null)
             {
                 throw new CustomException("Account not found!");
             }
             var Auth = Authentication.VerifyPasswordHashed(Password, CheckExist.Salt, CheckExist.Password);
-            if(!Auth)
+            if (!Auth)
             {
                 throw new CustomException("Password is incorrect!");
             }
             var User = _mapper.Map<UserLoginResModel>(CheckExist);
             User.Token = Authentication.GenerateJWT(CheckExist);
+            User.IsNeedChangePassword = CheckExist.IsNeedResetPassoword;
             return new DataResultModel<UserLoginResModel>()
             {
                 Data = User
@@ -58,7 +59,8 @@ namespace PTEducation.Business.Services.UserServices
                 throw new CustomException("Account with this Email or Id is existed!");
             }
             var NewUser = _mapper.Map<User>(ReqModel);
-            if (ReqModel.Id == null) {
+            if (ReqModel.Id == null)
+            {
                 Random rnd = new Random();
                 NewUser.Id = $"{ReqModel.Role}-{rnd.Next(100000, 999999)}";
             }
@@ -95,15 +97,15 @@ namespace PTEducation.Business.Services.UserServices
             {
                 throw new CustomException("User not found!");
             }
-            if(ReqModel.NewPassword != ReqModel.ConfirmPassword)
+            if (ReqModel.NewPassword != ReqModel.ConfirmPassword)
             {
                 throw new CustomException("New password and confirm password is not match!");
             }
-            if(ReqModel.OldPassword == ReqModel.NewPassword)
+            if (ReqModel.OldPassword == ReqModel.NewPassword)
             {
                 throw new CustomException("New password is the same as old password!");
             }
-            if(ReqModel.NewPassword.Length < 6)
+            if (ReqModel.NewPassword.Length < 6)
             {
                 throw new CustomException("Password must be at least 6 characters!");
             }
@@ -115,6 +117,7 @@ namespace PTEducation.Business.Services.UserServices
             CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(ReqModel.NewPassword);
             user.Password = HashedPassword.HashedPassword;
             user.Salt = HashedPassword.Salt;
+            user.IsNeedResetPassoword = false;
             await _userRepositories.Update(user);
             return new MessageResultModel
             {
@@ -158,6 +161,7 @@ namespace PTEducation.Business.Services.UserServices
                 var Auth = Authentication.CreateHashPassword(ReqModel.NewPassword);
                 user.Password = Auth.HashedPassword;
                 user.Salt = Auth.Salt;
+                user.IsNeedResetPassoword = false;
                 user.Status = GeneralStatusEnums.Active.ToString();
                 await _userRepositories.Update(user);
                 return new MessageResultModel

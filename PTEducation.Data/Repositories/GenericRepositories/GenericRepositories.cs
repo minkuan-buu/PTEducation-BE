@@ -9,10 +9,11 @@ using System.Threading.Tasks;
 
 namespace PTEducation.Data.Repositories.GenericRepositories
 {
-    public class GenericRepositories<T> : IGenericRepositories<T> where T : class
+    public class GenericRepositories<T> : IGenericRepositories<T>, IDisposable where T : class
     {
         private readonly PteducationContext context;
         private readonly DbSet<T> dbSet;
+        private bool disposed = false; // Biến để theo dõi trạng thái giải phóng
 
         public GenericRepositories(PteducationContext context)
         {
@@ -111,6 +112,30 @@ namespace PTEducation.Data.Repositories.GenericRepositories
         {
             dbSet.RemoveRange(entities);
             await context.SaveChangesAsync();
+        }
+
+        // Implement phương thức Dispose để giải phóng context
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposed)
+            {
+                if (disposing)
+                {
+                    context.Dispose();
+                }
+                disposed = true;
+            }
+        }
+
+        ~GenericRepositories()
+        {
+            Dispose(false);
         }
     }
 }

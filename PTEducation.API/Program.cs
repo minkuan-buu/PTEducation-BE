@@ -89,7 +89,8 @@ builder.Services.AddAutoMapper(typeof(MapperProfileConfiguration).Assembly);
 
 builder.Services.AddSingleton<GlobalExceptionMiddleware>();
 builder.Services.AddControllers()
-        .AddJsonOptions(options => {
+        .AddJsonOptions(options =>
+        {
             options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         });
 
@@ -121,16 +122,16 @@ builder.Services.AddScoped<IOTPServices, OTPServices>();
 
 //=========================================== CORS ================================================
 
+var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>();
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy(name: "AllowAll", policy =>
+    options.AddPolicy(name: "AllowAllOrigin", policy =>
     {
         policy
-        //.WithOrigins("http://tradiem.pteducation.edu.vn")
-        .AllowAnyOrigin()
-        .AllowAnyHeader()
-        .AllowAnyMethod();
-        //.AllowCredentials();
+            .WithOrigins(allowedOrigins!)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
     });
 });
 
@@ -165,11 +166,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseCors("AllowAll");
+app.UseCors("AllowAllOrigin");
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication(); // Thêm middleware Authentication
+app.UseAuthentication(); // Thï¿½m middleware Authentication
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 

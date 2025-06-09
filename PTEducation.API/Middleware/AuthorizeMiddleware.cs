@@ -71,7 +71,6 @@ namespace PTEducation.API.Middleware
                     return AuthenticateResult.Fail("Unauthorized");
                 }
 
-                // Kiểm tra yêu cầu đặt lại mật khẩu
                 if (requestPath.StartsWithSegments("/api/authentication/reset-password"))
                 {
                     var typeClaim = identity.FindFirst("type")?.Value;
@@ -81,7 +80,6 @@ namespace PTEducation.API.Middleware
                     }
                 }
 
-                // Xác thực người dùng có hợp lệ không
                 var userIdClaim = identity.FindFirst("userid")?.Value;
                 if (userIdClaim != null)
                 {

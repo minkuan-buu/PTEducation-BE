@@ -11,6 +11,10 @@ public partial class PteducationContext : DbContext
     {
     }
 
+    public PteducationContext()
+    {
+    }
+
     public virtual DbSet<Attendance> Attendances { get; set; }
 
     public virtual DbSet<AttendanceDetail> AttendanceDetails { get; set; }
@@ -34,6 +38,10 @@ public partial class PteducationContext : DbContext
             entity.HasKey(e => e.Id).HasName("Attendance_pk");
 
             entity.ToTable("Attendance");
+
+            entity.HasIndex(e => e.ClassId, "IX_Attendance_ClassId");
+
+            entity.HasIndex(e => e.CreatedBy, "IX_Attendance_CreatedBy");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.CreatedBy)
@@ -62,6 +70,10 @@ public partial class PteducationContext : DbContext
 
             entity.ToTable("AttendanceDetail");
 
+            entity.HasIndex(e => e.AttendanceId, "IX_AttendanceDetail_AttendanceId");
+
+            entity.HasIndex(e => e.StudentClassId, "IX_AttendanceDetail_StudentClassId");
+
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
@@ -83,6 +95,8 @@ public partial class PteducationContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK__Class__3214EC075D19815A");
 
             entity.ToTable("Class");
+
+            entity.HasIndex(e => e.CreatedBy, "IX_Class_CreatedBy");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
@@ -110,6 +124,8 @@ public partial class PteducationContext : DbContext
 
             entity.ToTable("OTP");
 
+            entity.HasIndex(e => e.UserId, "IX_OTP_UserId");
+
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Code)
                 .HasMaxLength(6)
@@ -134,6 +150,10 @@ public partial class PteducationContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK__Score__3214EC07064E064E");
 
             entity.ToTable("Score");
+
+            entity.HasIndex(e => e.ClassId, "IX_Score_ClassId");
+
+            entity.HasIndex(e => e.CreateBy, "IX_Score_CreateBy");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.CreateBy)
@@ -163,6 +183,10 @@ public partial class PteducationContext : DbContext
 
             entity.ToTable("ScoreDetail");
 
+            entity.HasIndex(e => e.ScoreId, "IX_ScoreDetail_ScoreId");
+
+            entity.HasIndex(e => e.StudentClassId, "IX_ScoreDetail_StudentClassId");
+
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Score).HasColumnType("decimal(4, 2)");
             entity.Property(e => e.Status)
@@ -185,6 +209,10 @@ public partial class PteducationContext : DbContext
             entity.HasKey(e => e.Id).HasName("PK__StudentC__3214EC076DB43B81");
 
             entity.ToTable("StudentClass");
+
+            entity.HasIndex(e => e.ClassId, "IX_StudentClass_ClassId");
+
+            entity.HasIndex(e => e.StudentId, "IX_StudentClass_StudentId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Status)

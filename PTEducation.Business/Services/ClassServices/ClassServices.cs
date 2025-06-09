@@ -71,7 +71,7 @@ namespace PTEducation.Business.Services.ClassServices
         {
             var userId = Authentication.DecodeToken(token, "userid");
             var CheckExist = await _classRepositories.GetSingle(x => x.Name.Equals(TextConvert.ConvertToUnicodeEscape(ClassReq.Name)) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
-            if(CheckExist != null)
+            if (CheckExist != null)
             {
                 throw new CustomException("Class name is existed!");
             }
@@ -80,7 +80,7 @@ namespace PTEducation.Business.Services.ClassServices
             NewClass.Id = ClassId;
             NewClass.CreatedBy = userId;
             await _classRepositories.Insert(NewClass);
-            if(ClassReq.Students == null)
+            if (ClassReq.Students == null)
             {
                 return new MessageResultModel()
                 {
@@ -95,11 +95,12 @@ namespace PTEducation.Business.Services.ClassServices
                 string FilePath = "../PTEducation.Business/TemplateEmail/FirstInformation.html";
                 string Html = File.ReadAllText(FilePath);
                 var NewUser = _mapper.Map<User>(item);
-                var GeneratePassword = Authentication.GenerateRandomPassword();
+                var GeneratePassword = "Sinhhocvui@123";
                 CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
                 NewUser.Password = HashedPassword.HashedPassword;
                 NewUser.Salt = HashedPassword.Salt;
                 NewUser.Role = RoleEnums.Student.ToString();
+                NewUser.IsNeedResetPassoword = true;
                 ListNewUser.Add(NewUser);
                 StudentClass NewStudentClass = new()
                 {
@@ -130,12 +131,12 @@ namespace PTEducation.Business.Services.ClassServices
         public async Task<MessageResultModel> UpdateClass(ClassUpdateReqModel ClassReq)
         {
             var CheckExist = await _classRepositories.GetSingle(x => x.Id == ClassReq.Id);
-            if(CheckExist == null)
+            if (CheckExist == null)
             {
                 throw new CustomException("Class not found!");
             }
             var CheckExistName = await _classRepositories.GetSingle(x => x.Name.Equals(TextConvert.ConvertToUnicodeEscape(ClassReq.Name)) && x.Status.Equals(GeneralStatusEnums.Active.ToString()) && x.Id != ClassReq.Id);
-            if(CheckExistName != null)
+            if (CheckExistName != null)
             {
                 throw new CustomException("Class name is existed!");
             }
@@ -167,7 +168,7 @@ namespace PTEducation.Business.Services.ClassServices
                 foreach (var score in CheckExist.Scores)
                 {
                     score.Status = GeneralStatusEnums.Inactive.ToString();
-                    foreach(var scoreDetail in score.ScoreDetails)
+                    foreach (var scoreDetail in score.ScoreDetails)
                     {
                         scoreDetail.Status = GeneralStatusEnums.Inactive.ToString();
                     }
@@ -242,7 +243,7 @@ namespace PTEducation.Business.Services.ClassServices
             foreach (var item in AddStudentsReq.Students)
             {
                 var CheckExistStudent = await _userRepositories.GetSingle(x => x.Id.Equals(item.Id));
-                if(CheckExistStudent == null)
+                if (CheckExistStudent == null)
                 {
                     var NewUser = _mapper.Map<User>(item);
                     var GeneratePassword = Authentication.GenerateRandomPassword();
@@ -261,7 +262,7 @@ namespace PTEducation.Business.Services.ClassServices
                     ListSendEmail.Add(EmailReq);
                 }
                 var CheckExistStudentClass = await _studentClassRepositories.GetSingle(x => x.ClassId.Equals(AddStudentsReq.Id) && x.StudentId.Equals(item.Id) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
-                if(CheckExistStudentClass == null)
+                if (CheckExistStudentClass == null)
                 {
                     StudentClass NewStudentClass = new()
                     {
@@ -272,7 +273,7 @@ namespace PTEducation.Business.Services.ClassServices
                     };
                     ListNewStudentClass.Add(NewStudentClass);
                 }
-                
+
             }
             await _userRepositories.InsertRange(ListNewUser);
             await _studentClassRepositories.InsertRange(ListNewStudentClass);
