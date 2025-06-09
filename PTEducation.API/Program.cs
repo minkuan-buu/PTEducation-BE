@@ -135,6 +135,7 @@ builder.Services.AddCors(options =>
     });
 });
 
+
 //========================================== AUTHENTICATION =======================================
 
 //builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
