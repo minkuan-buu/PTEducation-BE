@@ -30,6 +30,8 @@ using PTEducation.Data.Repositories.UserRepositories;
 using System.Text;
 using System.Text.Json.Serialization;
 
+DotNetEnv.Env.Load();
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -75,9 +77,22 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+var rawConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(rawConnectionString))
+{
+    throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+}
+
+var connectionString = rawConnectionString
+    .Replace("${DB_HOST}", Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost")
+    .Replace("${DB_PORT}", Environment.GetEnvironmentVariable("DB_PORT") ?? "1433")
+    .Replace("${DB_USER}", Environment.GetEnvironmentVariable("DB_USER") ?? "sa")
+    .Replace("${DB_PASSWORD}", Environment.GetEnvironmentVariable("DB_PASSWORD") ?? "your_password")
+    .Replace("${DB_NAME}", Environment.GetEnvironmentVariable("DB_NAME") ?? "PTEducation");
+
 builder.Services.AddDbContext<PteducationContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseSqlServer(connectionString);
     options.EnableSensitiveDataLogging();
 }
 );

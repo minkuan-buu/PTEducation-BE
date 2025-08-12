@@ -15,6 +15,7 @@ namespace PTEducation.Data.DTO.RequestModel
         public string Name { get; set; } = null!;
         public DateTime StartAt { get; set; }
         public DateTime EndAt { get; set; }
+        public string? DefaultPassword { get; set; }
         public List<StudentsImportWithClass>? Students { get; set; } = new();
     }
 

@@ -1,10 +1,10 @@
 ﻿using PTEducation.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PTEducation.Data.Repositories.GenericRepositories
@@ -13,7 +13,7 @@ namespace PTEducation.Data.Repositories.GenericRepositories
     {
         private readonly PteducationContext context;
         private readonly DbSet<T> dbSet;
-        private bool disposed = false; // Biến để theo dõi trạng thái giải phóng
+        private bool disposed = false;
 
         public GenericRepositories(PteducationContext context)
         {
@@ -35,8 +35,8 @@ namespace PTEducation.Data.Repositories.GenericRepositories
                 query = query.Where(filter);
             }
 
-            foreach (var includeProperty in includeProperties.Split
-                (new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+            foreach (var includeProperty in includeProperties.Split(
+                new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
             {
                 query = query.Include(includeProperty);
             }
@@ -79,42 +79,67 @@ namespace PTEducation.Data.Repositories.GenericRepositories
             return await query.FirstOrDefaultAsync();
         }
 
-        public async Task Insert(T entity)
+        public async Task Insert(T entity, bool saveChanges = true)
         {
             await dbSet.AddAsync(entity);
-            await context.SaveChangesAsync();
+            if (saveChanges)
+                await context.SaveChangesAsync();
         }
 
-        public async Task InsertRange(List<T> entity)
+        public async Task InsertRange(List<T> entity, bool saveChanges = true)
         {
             await dbSet.AddRangeAsync(entity);
-            await context.SaveChangesAsync();
+            if (saveChanges)
+                await context.SaveChangesAsync();
         }
 
-        public async Task Update(T entity)
+        public async Task Update(T entity, bool saveChanges = true)
         {
             dbSet.Attach(entity);
             context.Entry(entity).State = EntityState.Modified;
-            await context.SaveChangesAsync();
+            if (saveChanges)
+                await context.SaveChangesAsync();
         }
-        public async Task UpdateRange(List<T> entities)
+
+        public async Task UpdateRange(List<T> entities, bool saveChanges = true)
         {
             foreach (var entity in entities)
             {
                 dbSet.Attach(entity);
                 context.Entry(entity).State = EntityState.Modified;
             }
-            await context.SaveChangesAsync();
+            if (saveChanges)
+                await context.SaveChangesAsync();
         }
 
-
-        public async Task DeleteRange(List<T> entities)
+        public async Task DeleteRange(List<T> entities, bool saveChanges = true)
         {
             dbSet.RemoveRange(entities);
+            if (saveChanges)
+                await context.SaveChangesAsync();
+        }
+
+        public async Task SaveChangesAsync()
+        {
             await context.SaveChangesAsync();
         }
 
-        // Implement phương thức Dispose để giải phóng context
+        // Transaction helpers
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await context.Database.BeginTransactionAsync();
+        }
+
+        public async Task CommitTransactionAsync()
+        {
+            await context.Database.CommitTransactionAsync();
+        }
+
+        public async Task RollbackTransactionAsync()
+        {
+            await context.Database.RollbackTransactionAsync();
+        }
+
         public void Dispose()
         {
             Dispose(true);

@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Microsoft.EntityFrameworkCore.Storage;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PTEducation.Data.Repositories.GenericRepositories
@@ -21,13 +21,23 @@ namespace PTEducation.Data.Repositories.GenericRepositories
             Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
             string includeProperties = "");
 
-        Task Insert(T entity);
+        Task Insert(T entity, bool saveChanges = true);
 
-        Task InsertRange(List<T> entity);
+        Task InsertRange(List<T> entity, bool saveChanges = true);
 
-        Task Update(T entity);
+        Task Update(T entity, bool saveChanges = true);
 
-        Task UpdateRange(List<T> entities);
-        Task DeleteRange(List<T> entities);
+        Task UpdateRange(List<T> entities, bool saveChanges = true);
+
+        Task DeleteRange(List<T> entities, bool saveChanges = true);
+
+        Task SaveChangesAsync();
+
+        // Transaction helpers
+        Task<IDbContextTransaction> BeginTransactionAsync();
+
+        Task CommitTransactionAsync();
+
+        Task RollbackTransactionAsync();
     }
 }

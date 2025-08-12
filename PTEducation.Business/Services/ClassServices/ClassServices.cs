@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Microsoft.Extensions.Logging;
 using PTEducation.Business.ApplicationMiddleware;
 using PTEducation.Business.Ultilities.Email;
 using PTEducation.Business.Ultilities.FilterCombine;
@@ -79,7 +80,6 @@ namespace PTEducation.Business.Services.ClassServices
             var NewClass = _mapper.Map<Class>(ClassReq);
             NewClass.Id = ClassId;
             NewClass.CreatedBy = userId;
-            await _classRepositories.Insert(NewClass);
             if (ClassReq.Students == null)
             {
                 return new MessageResultModel()
@@ -95,7 +95,7 @@ namespace PTEducation.Business.Services.ClassServices
                 string FilePath = "../PTEducation.Business/TemplateEmail/FirstInformation.html";
                 string Html = File.ReadAllText(FilePath);
                 var NewUser = _mapper.Map<User>(item);
-                var GeneratePassword = "Sinhhocvui@123";
+                var GeneratePassword = ClassReq.DefaultPassword ?? "Sinhhocvui@123";
                 CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
                 NewUser.Password = HashedPassword.HashedPassword;
                 NewUser.Salt = HashedPassword.Salt;
@@ -109,6 +109,7 @@ namespace PTEducation.Business.Services.ClassServices
                     StudentId = item.Id,
                     Status = GeneralStatusEnums.Active.ToString(),
                 };
+                Html = Html.Replace("{{ID}}", item.Id);
                 Html = Html.Replace("{{Password}}", GeneratePassword);
                 Html = Html.Replace("{{Email}}", item.Email);
                 var EmailReq = new EmailReqModel
@@ -119,13 +120,41 @@ namespace PTEducation.Business.Services.ClassServices
                 ListSendEmail.Add(EmailReq);
                 ListNewStudentClass.Add(NewStudentClass);
             }
-            await _userRepositories.InsertRange(ListNewUser);
-            await _studentClassRepositories.InsertRange(ListNewStudentClass);
-            await _email.SendEmail("[Thông tin đăng nhập]", ListSendEmail);
-            return new MessageResultModel()
+
+            // await _userRepositories.InsertRange(ListNewUser);
+            // await _classRepositories.Insert(NewClass);
+            // await _studentClassRepositories.InsertRange(ListNewStudentClass);
+            // await _email.SendEmail("[Thông tin đăng nhập]", ListSendEmail);
+            var transaction = await _classRepositories.BeginTransactionAsync();
+            try
             {
-                Message = "Ok"
-            };
+                await _classRepositories.Insert(NewClass, false);
+                await _userRepositories.InsertRange(ListNewUser, false);
+                await _studentClassRepositories.InsertRange(ListNewStudentClass, false);
+
+                await _classRepositories.SaveChangesAsync(); // commit dữ liệu vào DB
+                await _classRepositories.CommitTransactionAsync();
+
+                await _email.SendEmail("[Thông tin đăng nhập]", ListSendEmail);
+
+                return new MessageResultModel()
+                {
+                    Message = "Ok"
+                };
+            }
+            catch (Exception ex)
+            {
+                await _classRepositories.RollbackTransactionAsync();
+                if (ex.InnerException.Message.Contains("duplicate key") && ex.InnerException.Message.Contains("dbo.User"))
+                {
+                    throw new CustomException("Phát hiện trùng lặp ID sinh viên. Vui lòng kiểm tra lại danh sách sinh viên.");
+                }
+                else
+                {
+                    throw new CustomException("Đã xảy ra lỗi trong quá trình tạo lớp học. Vui lòng thử lại sau.");
+                }
+                throw;
+            }
         }
 
         public async Task<MessageResultModel> UpdateClass(ClassUpdateReqModel ClassReq)
