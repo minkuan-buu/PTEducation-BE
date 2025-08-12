@@ -76,7 +76,7 @@ namespace PTEducation.API.Controllers
         }
         [HttpGet("import-attendance")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public IActionResult GetImportAttendanceTemplate()
+        public async Task<IActionResult> GetImportAttendanceTemplate(Guid ClassId)
         {
             using (var workbook = new XLWorkbook())
             {
@@ -85,6 +85,23 @@ namespace PTEducation.API.Controllers
                 worksheet.Cell(currentRow, 1).Value = "ID";
                 worksheet.Range(currentRow, 1, currentRow, 1).Style.Font.Bold = true;
                 worksheet.Range(currentRow, 1, currentRow, 1).Style.Fill.BackgroundColor = XLColor.Yellow;
+                var mappingsheet = workbook.Worksheets.Add("MappingStudents");
+                var ListStudents = await _studentClassServices.GetStudentInClass(ClassId);
+                mappingsheet.Cell(1, 1).Value = "ID";
+                mappingsheet.Cell(1, 2).Value = "Name";
+                mappingsheet.Cell(1, 3).Value = "Email";
+                mappingsheet.Cell(1, 4).Value = "Phone";
+                mappingsheet.Range(1, 1, 1, 4).Style.Font.Bold = true;
+                mappingsheet.Range(1, 1, 1, 4).Style.Fill.BackgroundColor = XLColor.Yellow;
+                var mappingRow = 1;
+                foreach (var student in ListStudents)
+                {
+                    mappingRow++;
+                    mappingsheet.Cell(mappingRow, 1).Value = student.StudentId;
+                    mappingsheet.Cell(mappingRow, 2).Value = student.Student.Name;
+                    mappingsheet.Cell(mappingRow, 3).Value = student.Student.Email;
+                    mappingsheet.Cell(mappingRow, 4).Value = student.Student.Phone;
+                }
                 using (var stream = new MemoryStream())
                 {
                     workbook.SaveAs(stream);
