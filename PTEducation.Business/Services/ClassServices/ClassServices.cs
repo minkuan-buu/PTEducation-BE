@@ -275,12 +275,13 @@ namespace PTEducation.Business.Services.ClassServices
                 if (CheckExistStudent == null)
                 {
                     var NewUser = _mapper.Map<User>(item);
-                    var GeneratePassword = Authentication.GenerateRandomPassword();
+                    var GeneratePassword = AddStudentsReq.DefaultPassword ?? "Sinhhocvui@123";
                     CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
                     NewUser.Password = HashedPassword.HashedPassword;
                     NewUser.Salt = HashedPassword.Salt;
                     NewUser.Role = RoleEnums.Student.ToString();
                     ListNewUser.Add(NewUser);
+                    Html = Html.Replace("{{ID}}", item.Id);
                     Html = Html.Replace("{{Password}}", GeneratePassword);
                     Html = Html.Replace("{{Email}}", item.Email);
                     var EmailReq = new EmailReqModel
@@ -304,13 +305,33 @@ namespace PTEducation.Business.Services.ClassServices
                 }
 
             }
-            await _userRepositories.InsertRange(ListNewUser);
-            await _studentClassRepositories.InsertRange(ListNewStudentClass);
-            await _email.SendEmail("[Thông tin đăng nhập]", ListSendEmail);
-            return new MessageResultModel()
+            var transaction = await _classRepositories.BeginTransactionAsync();
+            try
             {
-                Message = "Ok"
-            };
+                await _userRepositories.InsertRange(ListNewUser, false);
+                await _studentClassRepositories.InsertRange(ListNewStudentClass, false);
+
+                await _classRepositories.SaveChangesAsync(); // commit dữ liệu vào DB
+                await _classRepositories.CommitTransactionAsync();
+                await _email.SendEmail("[Thông tin đăng nhập]", ListSendEmail);
+                return new MessageResultModel()
+                {
+                    Message = "Ok"
+                };
+            }
+            catch (Exception ex)
+            {
+                await _classRepositories.RollbackTransactionAsync();
+                if (ex.InnerException.Message.Contains("duplicate key") && ex.InnerException.Message.Contains("dbo.User"))
+                {
+                    throw new CustomException("Phát hiện trùng lặp ID sinh viên. Vui lòng kiểm tra lại danh sách sinh viên.");
+                }
+                else
+                {
+                    throw new CustomException("Đã xảy ra lỗi trong quá trình tạo lớp học. Vui lòng thử lại sau.");
+                }
+                throw;
+            }
         }
 
         private async Task<List<Class>> ViewAllClasses(int? pageIndex, ClassFilter searchModel)

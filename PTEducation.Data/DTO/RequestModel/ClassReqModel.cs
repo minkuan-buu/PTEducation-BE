@@ -38,6 +38,7 @@ namespace PTEducation.Data.DTO.RequestModel
     public class ManualAddStudentClassModel
     {
         public Guid Id { get; set; }
+        public string? DefaultPassword { get; set; }
         public List<StudentsImportWithClass> Students { get; set; } = new();
     }
 }
