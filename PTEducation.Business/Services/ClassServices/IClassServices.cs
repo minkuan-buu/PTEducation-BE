@@ -16,6 +16,7 @@ namespace PTEducation.Business.Services.ClassServices
         Task<MessageResultModel> CreateClass(ClassCreateReqModel ClassReq, string token);
         Task<MessageResultModel> UpdateClass(ClassUpdateReqModel ClassReq);
         Task<MessageResultModel> SoftDeleteClass(Guid Id);
+        Task<MessageResultModel> HardDeleteClass(Guid Id);
         Task<MessageResultModel> RestoreClass(Guid Id);
         Task<MessageResultModel> ManualAddStudent(ManualAddStudentClassModel AddStudentsReq);
         Task<ListDataResultModel<ClassListSelectResModel>> GetClassSelectList();

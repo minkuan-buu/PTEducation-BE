@@ -8,7 +8,11 @@ using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Data.DTO.ResponseModel;
 using PTEducation.Data.Entities;
 using PTEducation.Data.Enums;
+using PTEducation.Data.Repositories.AttendanceDetailRepositories;
+using PTEducation.Data.Repositories.AttendanceRepositories;
 using PTEducation.Data.Repositories.ClassRepositories;
+using PTEducation.Data.Repositories.ScoreDetailRepositories;
+using PTEducation.Data.Repositories.ScoreRepositories;
 using PTEducation.Data.Repositories.StudentClassRepositories;
 using PTEducation.Data.Repositories.UserRepositories;
 using System;
@@ -23,17 +27,25 @@ namespace PTEducation.Business.Services.ClassServices
     public class ClassServices : IClassServices
     {
         private readonly IClassRepositories _classRepositories;
+        private readonly IAttendanceDetailRepositories _attendanceDetailRepositories;
+        private readonly IAttendanceRepositories _attendanceRepositories;
+        private readonly IScoreDetailRepositories _scoreDetailRepositories;
+        private readonly IScoreRepositories _scoreRepositories;
         private readonly IUserRepositories _userRepositories;
         private readonly IStudentClassRepositories _studentClassRepositories;
         private readonly IEmail _email;
         private readonly IMapper _mapper;
-        public ClassServices(IClassRepositories classRepositories, IMapper mapper, IUserRepositories userRepositories, IStudentClassRepositories studentClassRepositories, IEmail email)
+        public ClassServices(IClassRepositories classRepositories, IMapper mapper, IUserRepositories userRepositories, IStudentClassRepositories studentClassRepositories, IEmail email, IAttendanceDetailRepositories attendanceDetailRepositories, IAttendanceRepositories attendanceRepositories, IScoreDetailRepositories scoreDetailRepositories, IScoreRepositories scoreRepositories)
         {
             _classRepositories = classRepositories;
             _userRepositories = userRepositories;
             _studentClassRepositories = studentClassRepositories;
             _email = email;
             _mapper = mapper;
+            _attendanceDetailRepositories = attendanceDetailRepositories;
+            _attendanceRepositories = attendanceRepositories;
+            _scoreDetailRepositories = scoreDetailRepositories;
+            _scoreRepositories = scoreRepositories;
         }
 
         public async Task<DataResultModel<ClassDetailResModel>> GetClassDetail(Guid Id)
@@ -257,8 +269,74 @@ namespace PTEducation.Business.Services.ClassServices
             };
         }
 
+        public async Task<MessageResultModel> HardDeleteClass(Guid Id)
+        {
+            var CheckExist = await _classRepositories.GetSingle(
+                x => x.Id == Id,
+                includeProperties: "StudentClasses.Student,Scores.ScoreDetails,Attendances.AttendanceDetails"
+            );
+
+            if (CheckExist == null)
+            {
+                throw new CustomException("Class not found!");
+            }
+
+            var transaction = await _classRepositories.BeginTransactionAsync();
+            try
+            {
+                // 1. Lấy danh sách user từ StudentClasses
+                var usersToDelete = CheckExist.StudentClasses
+                    .Select(sc => sc.Student)
+                    .Where(u => u != null)
+                    .Distinct()
+                    .ToList();
+
+                // 2. Xóa AttendanceDetails
+                var attendanceDetails = CheckExist.Attendances
+                    .SelectMany(a => a.AttendanceDetails)
+                    .ToList();
+                _attendanceDetailRepositories.DeleteRange(attendanceDetails);
+
+                // 3. Xóa Attendance
+                _attendanceRepositories.DeleteRange(CheckExist.Attendances.ToList());
+
+                // 4. Xóa ScoreDetails
+                var scoreDetails = CheckExist.Scores
+                    .SelectMany(s => s.ScoreDetails)
+                    .ToList();
+                _scoreDetailRepositories.DeleteRange(scoreDetails);
+
+                // 5. Xóa Scores
+                _scoreRepositories.DeleteRange(CheckExist.Scores.ToList());
+
+                // 6. Xóa StudentClasses
+                _studentClassRepositories.DeleteRange(CheckExist.StudentClasses.ToList());
+
+                // 7. Xóa Users (Student)
+                _userRepositories.DeleteRange(usersToDelete);
+
+                // 8. Xóa Class
+                await _classRepositories.Delete(CheckExist);
+
+                await _classRepositories.SaveChangesAsync();
+                await _classRepositories.CommitTransactionAsync();
+
+                return new MessageResultModel()
+                {
+                    Message = "Ok"
+                };
+            }
+            catch (Exception ex)
+            {
+                await _classRepositories.RollbackTransactionAsync();
+                throw new CustomException("Error occurred while deleting class!");
+            }
+        }
+
+
         public async Task<MessageResultModel> ManualAddStudent(ManualAddStudentClassModel AddStudentsReq)
         {
+            var WarningMessage = "Cảnh báo: ";
             var CheckExist = await _classRepositories.GetSingle(x => x.Id.Equals(AddStudentsReq.Id) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             if (CheckExist == null)
             {
@@ -291,8 +369,8 @@ namespace PTEducation.Business.Services.ClassServices
                     };
                     ListSendEmail.Add(EmailReq);
                 }
-                var CheckExistStudentClass = await _studentClassRepositories.GetSingle(x => x.ClassId.Equals(AddStudentsReq.Id) && x.StudentId.Equals(item.Id) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
-                if (CheckExistStudentClass == null)
+                var CheckExistStudentClass = await _studentClassRepositories.GetList(x => !x.ClassId.Equals(AddStudentsReq.Id) && x.StudentId.Equals(item.Id) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+                if (CheckExistStudentClass == null || !CheckExistStudentClass.Any())
                 {
                     StudentClass NewStudentClass = new()
                     {
@@ -302,6 +380,10 @@ namespace PTEducation.Business.Services.ClassServices
                         Status = GeneralStatusEnums.Active.ToString(),
                     };
                     ListNewStudentClass.Add(NewStudentClass);
+                }
+                else
+                {
+                    WarningMessage += $"Học viên {item.Name} ({item.Id}) đã có trong lớp khác. Vui lòng kiểm tra lại danh sách sinh viên.\n";
                 }
 
             }
@@ -316,7 +398,7 @@ namespace PTEducation.Business.Services.ClassServices
                 await _email.SendEmail("[Thông tin đăng nhập]", ListSendEmail);
                 return new MessageResultModel()
                 {
-                    Message = "Ok"
+                    Message = "Thêm học viên thành công!" + WarningMessage
                 };
             }
             catch (Exception ex)

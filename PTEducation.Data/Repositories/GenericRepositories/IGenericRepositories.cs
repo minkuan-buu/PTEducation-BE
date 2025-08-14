@@ -29,6 +29,8 @@ namespace PTEducation.Data.Repositories.GenericRepositories
 
         Task UpdateRange(List<T> entities, bool saveChanges = true);
 
+        Task Delete(T entity, bool saveChanges = true);
+
         Task DeleteRange(List<T> entities, bool saveChanges = true);
 
         Task SaveChangesAsync();

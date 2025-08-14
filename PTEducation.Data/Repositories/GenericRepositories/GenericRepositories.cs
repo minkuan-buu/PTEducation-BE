@@ -112,6 +112,13 @@ namespace PTEducation.Data.Repositories.GenericRepositories
                 await context.SaveChangesAsync();
         }
 
+        public async Task Delete(T entity, bool saveChanges = true)
+        {
+            dbSet.Remove(entity);
+            if (saveChanges)
+                await context.SaveChangesAsync();
+        }
+
         public async Task DeleteRange(List<T> entities, bool saveChanges = true)
         {
             dbSet.RemoveRange(entities);

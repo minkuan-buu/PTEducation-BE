@@ -112,6 +112,21 @@ namespace PTEducation.API.Controllers
             }
         }
 
+        [HttpDelete("delete")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> HardDeleteClass([FromBody] Guid Id)
+        {
+            try
+            {
+                var Result = await _classServices.HardDeleteClass(Id);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPut("restore")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> RestoreClass([FromBody] Guid Id)
