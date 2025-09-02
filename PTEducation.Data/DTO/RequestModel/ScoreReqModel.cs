@@ -9,11 +9,12 @@ namespace PTEducation.Data.DTO.RequestModel
     public class ScoreReqModel
     {
     }
-    
+
     public class ScoreCreateReqModel
     {
         public DateTime TestDateAt { get; set; }
         public Guid ClassId { get; set; }
+        public string? Shift { get; set; }
         public List<ScoreDetailReqModel> ScoreReqList { get; set; } = new();
     }
 

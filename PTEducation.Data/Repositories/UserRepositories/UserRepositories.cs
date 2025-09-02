@@ -6,6 +6,7 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 
 namespace PTEducation.Data.Repositories.UserRepositories
 {
@@ -14,6 +15,11 @@ namespace PTEducation.Data.Repositories.UserRepositories
         public UserRepositories(PteducationContext context)
         : base(context)
         {
+        }
+
+        public async Task<User?> GetUserByEmail(string email)
+        {
+            return await context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Email == email);
         }
     }
 }

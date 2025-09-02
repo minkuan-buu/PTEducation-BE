@@ -62,12 +62,15 @@ namespace PTEducation.Business.Services.ClassServices
             };
         }
 
-        public async Task<ListDataResultModel<ListClassResModel>> GetClassList(int? pageIndex, ClassFilter searchModel)
+        public async Task<PagedListDataResultModel<ListClassResModel>> GetClassList(int? pageIndex, ClassFilter searchModel)
         {
-            var ListClass = await ViewAllClasses(pageIndex, searchModel);
-            return new ListDataResultModel<ListClassResModel>()
+            var ListClass = await ViewAllClasses(pageIndex, 10, searchModel);
+            return new PagedListDataResultModel<ListClassResModel>()
             {
-                Data = _mapper.Map<List<ListClassResModel>>(ListClass)
+                Data = _mapper.Map<List<ListClassResModel>>(ListClass.Data),
+                PageNumber = pageIndex ?? 1,
+                PageSize = 10,
+                TotalPages = ListClass.TotalPages
             };
         }
 
@@ -107,7 +110,7 @@ namespace PTEducation.Business.Services.ClassServices
                 string FilePath = "../PTEducation.Business/TemplateEmail/FirstInformation.html";
                 string Html = File.ReadAllText(FilePath);
                 var NewUser = _mapper.Map<User>(item);
-                var GeneratePassword = ClassReq.DefaultPassword ?? "Sinhhocvui@123";
+                var GeneratePassword = ClassReq.DefaultPassword ?? Environment.GetEnvironmentVariable("STUDENT_DEFAULT_PASSWORD") ?? throw new CustomException("Default student password is not configured in the system. Please contact the administrator.");
                 CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
                 NewUser.Password = HashedPassword.HashedPassword;
                 NewUser.Salt = HashedPassword.Salt;
@@ -333,7 +336,6 @@ namespace PTEducation.Business.Services.ClassServices
             }
         }
 
-
         public async Task<MessageResultModel> ManualAddStudent(ManualAddStudentClassModel AddStudentsReq)
         {
             var WarningMessage = "Cảnh báo: ";
@@ -416,7 +418,32 @@ namespace PTEducation.Business.Services.ClassServices
             }
         }
 
-        private async Task<List<Class>> ViewAllClasses(int? pageIndex, ClassFilter searchModel)
+        public async Task<MessageResultModel> MoveOutStudent(MoveOutStudentClassModel MoveOutReq)
+        {
+            var CheckExistStudent = await _userRepositories.GetSingle(x => x.StudentClasses.Any(sc => sc.Id.Equals(MoveOutReq.StudentId)), includeProperties: "StudentClasses");
+            if (CheckExistStudent == null)
+            {
+                throw new CustomException("Học viên không tồn tại!");
+            }
+            var CheckExistClass = await _classRepositories.GetSingle(x => x.Id.Equals(MoveOutReq.TargetClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            if (CheckExistClass == null)
+            {
+                throw new CustomException("Lớp học không tồn tại hoặc đã bị xóa!");
+            }
+            var CheckExistStudentClass = await _studentClassRepositories.GetSingle(x => x.Id.Equals(MoveOutReq.StudentId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            if (CheckExistStudentClass.ClassId == MoveOutReq.TargetClassId)
+            {
+                throw new CustomException("Học viên đã có trong lớp học này!");
+            }
+            CheckExistStudentClass.ClassId = MoveOutReq.TargetClassId;
+            await _studentClassRepositories.Update(CheckExistStudentClass);
+            return new MessageResultModel()
+            {
+                Message = "Ok"
+            };
+        }
+
+        private async Task<PagedListDataResultModel<Class>> ViewAllClasses(int? pageIndex, int? pageSize, ClassFilter searchModel)
         {
             Func<IQueryable<Class>, IOrderedQueryable<Class>> orderBy = o => o.OrderBy(p => p.Name);
             Expression<Func<Class, bool>> filter = p => true;
@@ -456,9 +483,9 @@ namespace PTEducation.Business.Services.ClassServices
                 }
             }
 
-            var allClass = await _classRepositories.GetList(filter, orderBy, includeProperties: "StudentClasses.Student,CreatedByNavigation", pageIndex ?? 1);
+            var allClass = await _classRepositories.GetPagedList(filter, orderBy, includeProperties: "StudentClasses.Student,CreatedByNavigation", pageIndex ?? 1, pageSize ?? 10);
 
-            return allClass.ToList();
+            return allClass;
         }
     }
 }

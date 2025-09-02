@@ -19,6 +19,8 @@ public partial class Score
 
     public string Status { get; set; } = null!;
 
+    public string? Shift { get; set; }
+
     public virtual Class Class { get; set; } = null!;
 
     public virtual User CreateByNavigation { get; set; } = null!;

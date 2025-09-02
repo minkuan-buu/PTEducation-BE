@@ -6,13 +6,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using Azure;
+using PTEducation.Data.DTO.ResponseModel;
 
 namespace PTEducation.Data.Repositories.GenericRepositories
 {
     public class GenericRepositories<T> : IGenericRepositories<T>, IDisposable where T : class
     {
-        private readonly PteducationContext context;
-        private readonly DbSet<T> dbSet;
+        protected readonly PteducationContext context;
+        protected readonly DbSet<T> dbSet;
         private bool disposed = false;
 
         public GenericRepositories(PteducationContext context)
@@ -66,6 +68,29 @@ namespace PTEducation.Data.Repositories.GenericRepositories
         {
             var query = GetQueryable(filter, orderBy, includeProperties, pageIndex, pageSize);
             return await query.ToListAsync();
+        }
+
+        public async Task<PagedListDataResultModel<T>> GetPagedList(
+            Expression<Func<T, bool>> filter = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+            string includeProperties = "",
+            int pageIndex = 1,
+            int pageSize = 10
+        )
+        {
+            var query = GetQueryable(filter, orderBy, includeProperties);
+
+            int totalItems = await query.CountAsync();
+            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
+
+            var data = await query.Skip((pageIndex - 1) * pageSize).Take(pageSize).ToListAsync();
+            return new PagedListDataResultModel<T>
+            {
+                Data = data,
+                TotalPages = totalPages,
+                PageNumber = pageIndex,
+                PageSize = pageSize
+            };
         }
 
         public async Task<T> GetSingle(

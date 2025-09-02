@@ -43,6 +43,28 @@ namespace PTEducation.API.Controllers
             }
         }
 
+        [HttpGet("import-manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public IActionResult GetImportManagerTemplate()
+        {
+            using (var workbook = new XLWorkbook())
+            {
+                var worksheet = workbook.Worksheets.Add("ImportManagers");
+                var currentRow = 1;
+                worksheet.Cell(currentRow, 1).Value = "Name";
+                worksheet.Cell(currentRow, 2).Value = "Email";
+                worksheet.Cell(currentRow, 3).Value = "Phone";
+                worksheet.Range(currentRow, 1, currentRow, 3).Style.Font.Bold = true;
+                worksheet.Range(currentRow, 1, currentRow, 3).Style.Fill.BackgroundColor = XLColor.Yellow;
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    var content = stream.ToArray();
+                    return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Managers.xlsx");
+                }
+            }
+        }
+
         [HttpGet("import-score")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetImportScoreTemplate(Guid ClassId)
@@ -74,6 +96,7 @@ namespace PTEducation.API.Controllers
                 }
             }
         }
+
         [HttpGet("import-attendance")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetImportAttendanceTemplate(Guid ClassId)

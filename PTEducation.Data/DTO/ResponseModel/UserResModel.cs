@@ -41,4 +41,18 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Phone { get; set; } = null!;
         public string? ClassName { get; set; }
     }
+
+    public class ManagerResModel
+    {
+        public string Id { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string Phone { get; set; } = null!;
+        public string Status { get; set; } = null!;
+    }
+
+    public class UserFilter
+    {
+        public string? Keyword { get; set; }
+    }
 }

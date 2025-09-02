@@ -10,5 +10,6 @@ namespace PTEducation.Data.Repositories.UserRepositories
 {
     public interface IUserRepositories : IGenericRepositories<User>
     {
+        Task<User?> GetUserByEmail(string email);
     }
 }

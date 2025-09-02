@@ -161,6 +161,9 @@ public partial class PteducationContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.ModifiedAt).HasColumnType("datetime");
+            entity.Property(e => e.Shift)
+                .HasMaxLength(100)
+                .IsUnicode(false);
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .IsUnicode(false);

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore.Storage;
+using PTEducation.Data.DTO.ResponseModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,6 +16,14 @@ namespace PTEducation.Data.Repositories.GenericRepositories
             string includeProperties = "",
             int? pageIndex = null,
             int? pageSize = null);
+
+        Task<PagedListDataResultModel<T>> GetPagedList(
+            Expression<Func<T, bool>> filter = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>> orderBy = null,
+            string includeProperties = "",
+            int pageIndex = 1,
+            int pageSize = 10
+        );
 
         Task<T> GetSingle(
             Expression<Func<T, bool>> filter = null,

@@ -83,6 +83,17 @@ if (string.IsNullOrEmpty(rawConnectionString))
     throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
 }
 
+var StudentDefaultPassword = Environment.GetEnvironmentVariable("STUDENT_DEFAULT_PASSWORD");
+if (string.IsNullOrEmpty(StudentDefaultPassword))
+{
+    throw new InvalidOperationException("Student default password is not configured.");
+}
+var AdminDefaultPassword = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_PASSWORD");
+if (string.IsNullOrEmpty(AdminDefaultPassword))
+{
+    throw new InvalidOperationException("Admin default password is not configured.");
+}
+
 var connectionString = rawConnectionString
     .Replace("${DB_HOST}", Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost")
     .Replace("${DB_PORT}", Environment.GetEnvironmentVariable("DB_PORT") ?? "1433")

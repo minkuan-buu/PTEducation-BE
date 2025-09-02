@@ -41,4 +41,10 @@ namespace PTEducation.Data.DTO.RequestModel
         public string? DefaultPassword { get; set; }
         public List<StudentsImportWithClass> Students { get; set; } = new();
     }
+
+    public class MoveOutStudentClassModel
+    {
+        public Guid StudentId { get; set; }
+        public Guid TargetClassId { get; set; }
+    }
 }

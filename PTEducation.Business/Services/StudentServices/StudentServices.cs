@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 
 namespace PTEducation.Business.Services.StudentServices
 {
-    public class StudentServices : IStudentServices 
+    public class StudentServices : IStudentServices
     {
         private readonly IScoreRepositories _scoreRepositories;
         private readonly IAttendanceRepositories _attendanceRepositories;
@@ -47,6 +47,7 @@ namespace PTEducation.Business.Services.StudentServices
                 ScoreStudentDetailResModel ScoreDetail = new()
                 {
                     TestDateAt = score.TestDateAt,
+                    Shift = score.Shift != null ? TextConvert.ConvertFromUnicodeEscape(score.Shift) : null,
                     Score = getStudentScore != null ? getStudentScore.Score : 0,
                 };
                 ListScoreDetails.Add(ScoreDetail);
@@ -107,7 +108,7 @@ namespace PTEducation.Business.Services.StudentServices
                 .Distinct()  // Lấy ra các tháng khác nhau
                 .ToList();
             List<ScoreMonthResModel> ListRes = new();
-            foreach(var item in distinctMonths)
+            foreach (var item in distinctMonths)
             {
                 ScoreMonthResModel ScoreMonth = new()
                 {

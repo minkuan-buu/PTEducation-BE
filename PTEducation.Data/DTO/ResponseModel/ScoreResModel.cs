@@ -45,7 +45,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Status { get; set; } = null!;
     }
 
-    public class ScoreStudentResModel 
+    public class ScoreStudentResModel
     {
         public string Id { get; set; } = null!;
         public string Name { get; set; } = null!;
@@ -55,6 +55,7 @@ namespace PTEducation.Data.DTO.ResponseModel
     public class ScoreStudentDetailResModel
     {
         public DateTime TestDateAt { get; set; }
+        public string? Shift { get; set; }
         public decimal Score { get; set; }
     }
 

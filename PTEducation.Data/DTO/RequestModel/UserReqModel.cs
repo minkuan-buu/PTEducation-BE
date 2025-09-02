@@ -25,6 +25,13 @@ namespace PTEducation.Data.DTO.RequestModel
         public string Role { get; set; } = null!;
     }
 
+    public class ManagerRegisterReqModel
+    {
+        public string Name { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string Phone { get; set; } = null!;
+    }
+
     public class UserChangePasswordReqModel
     {
         public string OldPassword { get; set; } = null!;
@@ -36,5 +43,14 @@ namespace PTEducation.Data.DTO.RequestModel
     {
         public string NewPassword { get; set; } = null!;
         public string ConfirmPassword { get; set; } = null!;
+    }
+
+    public class StudentUpdateReqModel
+    {
+        public string Name { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string Phone { get; set; } = null!;
+        public string? DefaultPassword { get; set; }
+        public bool IsResendInfo { get; set; } = false;
     }
 }
