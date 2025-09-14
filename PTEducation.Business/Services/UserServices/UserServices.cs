@@ -55,7 +55,7 @@ namespace PTEducation.Business.Services.UserServices
             }
             var User = _mapper.Map<UserLoginResModel>(CheckExist);
             User.Token = Authentication.GenerateJWT(CheckExist);
-            User.IsNeedChangePassword = CheckExist.IsNeedResetPassoword;
+            User.IsNeedChangePassword = CheckExist.IsNeedResetPassword;
             return new DataResultModel<UserLoginResModel>()
             {
                 Data = User
@@ -128,7 +128,7 @@ namespace PTEducation.Business.Services.UserServices
             CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(ReqModel.NewPassword);
             user.Password = HashedPassword.HashedPassword;
             user.Salt = HashedPassword.Salt;
-            user.IsNeedResetPassoword = false;
+            user.IsNeedResetPassword = false;
             await _userRepositories.Update(user);
             return new MessageResultModel
             {
@@ -172,7 +172,7 @@ namespace PTEducation.Business.Services.UserServices
                 var Auth = Authentication.CreateHashPassword(ReqModel.NewPassword);
                 user.Password = Auth.HashedPassword;
                 user.Salt = Auth.Salt;
-                user.IsNeedResetPassoword = false;
+                user.IsNeedResetPassword = false;
                 user.Status = GeneralStatusEnums.Active.ToString();
                 await _userRepositories.Update(user);
                 return new MessageResultModel
@@ -320,7 +320,7 @@ namespace PTEducation.Business.Services.UserServices
             CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
             StudentClass.Student.Password = HashedPassword.HashedPassword;
             StudentClass.Student.Salt = HashedPassword.Salt;
-            StudentClass.Student.IsNeedResetPassoword = true;
+            StudentClass.Student.IsNeedResetPassword = true;
 
             await _studentClassRepositories.Update(StudentClass);
             if (ReqModel.IsResendInfo)

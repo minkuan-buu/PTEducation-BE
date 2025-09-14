@@ -47,6 +47,7 @@ namespace PTEducation.Data.DTO.RequestModel
     {
         public Guid StudentClassId { get; set; }
         public decimal Score { get; set; }
+        public string? Note { get; set; }
     }
 
     public class ScoreStudentReqModel

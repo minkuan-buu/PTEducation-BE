@@ -49,6 +49,7 @@ namespace PTEducation.Business.Services.StudentServices
                     TestDateAt = score.TestDateAt,
                     Shift = score.Shift != null ? TextConvert.ConvertFromUnicodeEscape(score.Shift) : null,
                     Score = getStudentScore != null ? getStudentScore.Score : 0,
+                    Note = getStudentScore != null && getStudentScore.Note != null ? TextConvert.ConvertFromUnicodeEscape(getStudentScore.Note) : null
                 };
                 ListScoreDetails.Add(ScoreDetail);
             }

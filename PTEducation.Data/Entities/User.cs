@@ -21,7 +21,7 @@ public partial class User
 
     public string Status { get; set; } = null!;
 
-    public bool IsNeedResetPassoword { get; set; }
+    public bool IsNeedResetPassword { get; set; }
 
     public virtual ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
 

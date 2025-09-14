@@ -15,6 +15,8 @@ public partial class ScoreDetail
 
     public string Status { get; set; } = null!;
 
+    public string? Note { get; set; }
+
     public virtual Score ScoreNavigation { get; set; } = null!;
 
     public virtual StudentClass StudentClass { get; set; } = null!;

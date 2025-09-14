@@ -191,6 +191,9 @@ public partial class PteducationContext : DbContext
             entity.HasIndex(e => e.StudentClassId, "IX_ScoreDetail_StudentClassId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Note)
+                .HasMaxLength(500)
+                .IsUnicode(false);
             entity.Property(e => e.Score).HasColumnType("decimal(4, 2)");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)

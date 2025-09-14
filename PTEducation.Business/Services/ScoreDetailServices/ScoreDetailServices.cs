@@ -1,4 +1,5 @@
-﻿using PTEducation.Data.DTO.RequestModel;
+﻿using PTEducation.Business.ApplicationMiddleware;
+using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Data.DTO.ResponseModel;
 using PTEducation.Data.Entities;
 using PTEducation.Data.Enums;
@@ -26,12 +27,13 @@ namespace PTEducation.Business.Services.ScoreDetailServices
         {
             var Score = await _scoreRepositories.GetSingle(x => x.Id.Equals(ScoreReq.Id), includeProperties: "ScoreDetails");
             var ScoreDetail = Score.ScoreDetails.ToList();
-            foreach(var score in ScoreReq.ScoreReqList)
+            foreach (var score in ScoreReq.ScoreReqList)
             {
                 var ScoreUpdate = ScoreDetail.FirstOrDefault(x => x.StudentClassId.Equals(score.StudentClassId));
                 if (ScoreUpdate != null)
                 {
-                     ScoreUpdate.Score = score.Score;
+                    ScoreUpdate.Score = score.Score;
+                    ScoreUpdate.Note = score.Note != null ? TextConvert.ConvertToUnicodeEscape(score.Note) : null;
                 }
                 else
                 {
@@ -41,6 +43,7 @@ namespace PTEducation.Business.Services.ScoreDetailServices
                         ScoreId = ScoreReq.Id,
                         StudentClassId = score.StudentClassId,
                         Score = score.Score,
+                        Note = score.Note != null ? TextConvert.ConvertToUnicodeEscape(score.Note) : null,
                         Status = GeneralStatusEnums.Active.ToString()
                     };
                     ScoreDetail.Add(NewScore);

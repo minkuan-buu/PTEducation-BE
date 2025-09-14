@@ -115,7 +115,7 @@ namespace PTEducation.Business.Services.ClassServices
                 NewUser.Password = HashedPassword.HashedPassword;
                 NewUser.Salt = HashedPassword.Salt;
                 NewUser.Role = RoleEnums.Student.ToString();
-                NewUser.IsNeedResetPassoword = true;
+                NewUser.IsNeedResetPassword = true;
                 ListNewUser.Add(NewUser);
                 StudentClass NewStudentClass = new()
                 {
@@ -355,11 +355,12 @@ namespace PTEducation.Business.Services.ClassServices
                 if (CheckExistStudent == null)
                 {
                     var NewUser = _mapper.Map<User>(item);
-                    var GeneratePassword = AddStudentsReq.DefaultPassword ?? "Sinhhocvui@123";
+                    var GeneratePassword = AddStudentsReq.DefaultPassword ?? Environment.GetEnvironmentVariable("STUDENT_DEFAULT_PASSWORD") ?? throw new CustomException("Default student password is not configured in the system. Please contact the administrator.");
                     CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
                     NewUser.Password = HashedPassword.HashedPassword;
                     NewUser.Salt = HashedPassword.Salt;
                     NewUser.Role = RoleEnums.Student.ToString();
+                    NewUser.IsNeedResetPassword = true;
                     ListNewUser.Add(NewUser);
                     Html = Html.Replace("{{ID}}", item.Id);
                     Html = Html.Replace("{{Password}}", GeneratePassword);

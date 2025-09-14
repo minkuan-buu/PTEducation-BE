@@ -45,6 +45,7 @@ namespace PTEducation.Business.MapperProfiles
                     src.StudentClasses.Select(x => new StudentClassModel
                     {
                         Id = x.Id,
+                        StudentCode = x.Student.Id,
                         Name = TextConvert.ConvertFromUnicodeEscape(x.Student.Name),
                         Email = x.Student.Email,
                         Phone = x.Student.Phone
@@ -73,7 +74,7 @@ namespace PTEducation.Business.MapperProfiles
                     GeneralStatusEnums.Active.ToString()))
                 .ForMember(dest => dest.Role, opt => opt.MapFrom(src =>
                     RoleEnums.Manager.ToString()))
-                .ForMember(dest => dest.IsNeedResetPassoword, opt => opt.MapFrom(src =>
+                .ForMember(dest => dest.IsNeedResetPassword, opt => opt.MapFrom(src =>
                     true));
             CreateMap<Class, ClassListSelectResModel>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
@@ -105,7 +106,8 @@ namespace PTEducation.Business.MapperProfiles
                         StudentClassId = x.StudentClassId,
                         Id = x.StudentClass.Student.Id,
                         Name = TextConvert.ConvertFromUnicodeEscape(x.StudentClass.Student.Name),
-                        Score = x.Score
+                        Score = x.Score,
+                        Note = x.Note != null ? TextConvert.ConvertFromUnicodeEscape(x.Note) : null
                     }).ToList()));
             CreateMap<Score, ScoreListResModel>()
                 .ForMember(dest => dest.CreateBy, opt => opt.MapFrom(src => new ScoreCreatedByModel()

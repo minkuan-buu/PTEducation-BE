@@ -34,6 +34,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Id { get; set; } = null!;
         public string Name { get; set; } = null!;
         public decimal Score { get; set; }
+        public string? Note { get; set; }
     }
 
     public class ScoreListResModel
@@ -57,6 +58,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public DateTime TestDateAt { get; set; }
         public string? Shift { get; set; }
         public decimal Score { get; set; }
+        public string? Note { get; set; }
     }
 
     public class ScoreMonthResModel
