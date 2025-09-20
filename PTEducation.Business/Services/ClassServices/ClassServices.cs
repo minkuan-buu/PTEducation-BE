@@ -160,7 +160,18 @@ namespace PTEducation.Business.Services.ClassServices
             catch (Exception ex)
             {
                 await _classRepositories.RollbackTransactionAsync();
-                if (ex.InnerException.Message.Contains("duplicate key") && ex.InnerException.Message.Contains("dbo.User"))
+                if (ex.Message.Contains("cannot be tracked because another instance with the key value"))
+                {
+                    // Tìm Id bị trùng trong message
+                    var match = System.Text.RegularExpressions.Regex.Match(
+                        ex.Message, @"\{Id:\s*(\d+)\}"
+                    );
+
+                    var duplicatedId = match.Success ? match.Groups[1].Value : "unknown";
+
+                    throw new CustomException($"Phát hiện sinh viên với Id {duplicatedId} đã tồn tại trong hệ thống hoặc trong danh sách đang thêm vào. Vui lòng kiểm tra lại danh sách sinh viên.");
+                }
+                else if (ex.InnerException.Message.Contains("duplicate key") && ex.InnerException.Message.Contains("dbo.User"))
                 {
                     throw new CustomException("Phát hiện trùng lặp ID sinh viên. Vui lòng kiểm tra lại danh sách sinh viên.");
                 }
