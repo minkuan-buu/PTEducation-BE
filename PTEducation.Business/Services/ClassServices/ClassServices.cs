@@ -11,6 +11,7 @@ using PTEducation.Data.Enums;
 using PTEducation.Data.Repositories.AttendanceDetailRepositories;
 using PTEducation.Data.Repositories.AttendanceRepositories;
 using PTEducation.Data.Repositories.ClassRepositories;
+using PTEducation.Data.Repositories.OTPRepositories;
 using PTEducation.Data.Repositories.ScoreDetailRepositories;
 using PTEducation.Data.Repositories.ScoreRepositories;
 using PTEducation.Data.Repositories.StudentClassRepositories;
@@ -33,9 +34,10 @@ namespace PTEducation.Business.Services.ClassServices
         private readonly IScoreRepositories _scoreRepositories;
         private readonly IUserRepositories _userRepositories;
         private readonly IStudentClassRepositories _studentClassRepositories;
+        private readonly IOTPRepositories _otpRepositories;
         private readonly IEmail _email;
         private readonly IMapper _mapper;
-        public ClassServices(IClassRepositories classRepositories, IMapper mapper, IUserRepositories userRepositories, IStudentClassRepositories studentClassRepositories, IEmail email, IAttendanceDetailRepositories attendanceDetailRepositories, IAttendanceRepositories attendanceRepositories, IScoreDetailRepositories scoreDetailRepositories, IScoreRepositories scoreRepositories)
+        public ClassServices(IClassRepositories classRepositories, IMapper mapper, IUserRepositories userRepositories, IStudentClassRepositories studentClassRepositories, IEmail email, IAttendanceDetailRepositories attendanceDetailRepositories, IAttendanceRepositories attendanceRepositories, IScoreDetailRepositories scoreDetailRepositories, IScoreRepositories scoreRepositories, IOTPRepositories otpRepositories)
         {
             _classRepositories = classRepositories;
             _userRepositories = userRepositories;
@@ -46,6 +48,7 @@ namespace PTEducation.Business.Services.ClassServices
             _attendanceRepositories = attendanceRepositories;
             _scoreDetailRepositories = scoreDetailRepositories;
             _scoreRepositories = scoreRepositories;
+            _otpRepositories = otpRepositories;
         }
 
         public async Task<DataResultModel<ClassDetailResModel>> GetClassDetail(Guid Id)
@@ -287,7 +290,7 @@ namespace PTEducation.Business.Services.ClassServices
         {
             var CheckExist = await _classRepositories.GetSingle(
                 x => x.Id == Id,
-                includeProperties: "StudentClasses.Student,Scores.ScoreDetails,Attendances.AttendanceDetails"
+                includeProperties: "StudentClasses.Student.Otps,Scores.ScoreDetails,Attendances.AttendanceDetails"
             );
 
             if (CheckExist == null)
@@ -305,31 +308,38 @@ namespace PTEducation.Business.Services.ClassServices
                     .Distinct()
                     .ToList();
 
+                var userOTP = usersToDelete
+                    .SelectMany(u => u.Otps)
+                    .ToList();
+
                 // 2. Xóa AttendanceDetails
                 var attendanceDetails = CheckExist.Attendances
                     .SelectMany(a => a.AttendanceDetails)
                     .ToList();
-                _attendanceDetailRepositories.DeleteRange(attendanceDetails);
+                await _attendanceDetailRepositories.DeleteRange(attendanceDetails);
 
                 // 3. Xóa Attendance
-                _attendanceRepositories.DeleteRange(CheckExist.Attendances.ToList());
+                await _attendanceRepositories.DeleteRange(CheckExist.Attendances.ToList());
 
                 // 4. Xóa ScoreDetails
                 var scoreDetails = CheckExist.Scores
                     .SelectMany(s => s.ScoreDetails)
                     .ToList();
-                _scoreDetailRepositories.DeleteRange(scoreDetails);
+                await _scoreDetailRepositories.DeleteRange(scoreDetails);
 
                 // 5. Xóa Scores
-                _scoreRepositories.DeleteRange(CheckExist.Scores.ToList());
+                await _scoreRepositories.DeleteRange(CheckExist.Scores.ToList());
 
                 // 6. Xóa StudentClasses
-                _studentClassRepositories.DeleteRange(CheckExist.StudentClasses.ToList());
+                await _studentClassRepositories.DeleteRange(CheckExist.StudentClasses.ToList());
 
-                // 7. Xóa Users (Student)
-                _userRepositories.DeleteRange(usersToDelete);
+                // 7. Xóa Otps của Users
+                await _otpRepositories.DeleteRange(userOTP);
 
-                // 8. Xóa Class
+                // 8. Xóa Users (Student)
+                await _userRepositories.DeleteRange(usersToDelete);
+
+                // 9. Xóa Class
                 await _classRepositories.Delete(CheckExist);
 
                 await _classRepositories.SaveChangesAsync();
