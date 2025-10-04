@@ -302,15 +302,16 @@ namespace PTEducation.Business.Services.UserServices
 
         public async Task<MessageResultModel> UpdateStudentInfo(StudentUpdateReqModel ReqModel, Guid StudentClassId)
         {
-            var CheckEmailExist = await _userRepositories.GetUserByEmail(ReqModel.Email);
-            if (CheckEmailExist != null)
-            {
-                throw new CustomException("Email đã tồn tại!");
-            }
             var StudentClass = await _studentClassRepositories.GetSingle(x => x.Id == StudentClassId, includeProperties: "Student");
             if (StudentClass == null || StudentClass.Student == null)
             {
                 throw new CustomException("Không tìm thấy học sinh!");
+            }
+
+            var CheckEmailExist = await _userRepositories.GetOtherUserByEmail(ReqModel.Email, StudentClass.Student.Id);
+            if (CheckEmailExist != null)
+            {
+                throw new CustomException("Email đã tồn tại!");
             }
 
             StudentClass.Student.Name = ReqModel.Name;

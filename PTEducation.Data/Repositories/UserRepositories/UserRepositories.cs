@@ -17,9 +17,9 @@ namespace PTEducation.Data.Repositories.UserRepositories
         {
         }
 
-        public async Task<User?> GetUserByEmail(string email)
+        public async Task<User?> GetOtherUserByEmail(string email, string UserId)
         {
-            return await context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Email == email);
+            return await context.Users.AsNoTracking().FirstOrDefaultAsync(x => x.Email == email && x.Id != UserId);
         }
     }
 }

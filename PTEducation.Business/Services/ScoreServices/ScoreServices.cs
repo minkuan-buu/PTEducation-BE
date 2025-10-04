@@ -150,6 +150,34 @@ namespace PTEducation.Business.Services.ScoreServices
             };
         }
 
+        public async Task<MessageResultModel> HardDeleteScore(Guid Id)
+        {
+            var CheckExist = await _scoreRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "ScoreDetails");
+            if (CheckExist == null)
+            {
+                throw new CustomException("Score not found");
+            }
+            var transaction = await _scoreRepositories.BeginTransactionAsync();
+            try
+            {
+                await _scoreDetailRepositories.DeleteRange(CheckExist.ScoreDetails.ToList());
+                await _scoreRepositories.Delete(CheckExist);
+
+                await _scoreRepositories.SaveChangesAsync();
+                await _scoreRepositories.CommitTransactionAsync();
+
+                return new MessageResultModel()
+                {
+                    Message = "Ok"
+                };
+            }
+            catch (Exception ex)
+            {
+                await _scoreRepositories.RollbackTransactionAsync();
+                throw new CustomException("Error occurred while deleting score!");
+            }
+        }
+
         public async Task<MessageResultModel> RestoreScore(Guid Id)
         {
             var CheckExist = await _scoreRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "ScoreDetails");

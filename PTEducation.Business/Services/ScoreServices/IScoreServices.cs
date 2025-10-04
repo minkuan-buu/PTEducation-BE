@@ -15,6 +15,7 @@ namespace PTEducation.Business.Services.ScoreServices
         Task<MessageResultModel> CreateScore(ScoreCreateReqModel ScoreReq, string token);
         Task<MessageResultModel> UpdateScore(ScoreUpdateReqModel ScoreReq);
         Task<MessageResultModel> SoftDeleteScore(Guid Id);
+        Task<MessageResultModel> HardDeleteScore(Guid Id);
         Task<MessageResultModel> RestoreScore(Guid Id);
     }
 }

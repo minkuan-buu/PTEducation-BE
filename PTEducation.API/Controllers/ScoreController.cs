@@ -110,5 +110,13 @@ namespace PTEducation.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpDelete("delete/{Id}")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> HardDeleteScore(Guid Id)
+        {
+            var Result = await _scoreServices.HardDeleteScore(Id);
+            return Ok(Result);
+        }
     }
 }
