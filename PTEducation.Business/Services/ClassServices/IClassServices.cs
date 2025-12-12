@@ -21,5 +21,6 @@ namespace PTEducation.Business.Services.ClassServices
         Task<MessageResultModel> ManualAddStudent(ManualAddStudentClassModel AddStudentsReq);
         Task<MessageResultModel> MoveOutStudent(MoveOutStudentClassModel MoveOutReq);
         Task<ListDataResultModel<ClassListSelectResModel>> GetClassSelectList();
+        Task<DataResultModel<Guid>> GetClassIdByName(string ClassName);
     }
 }

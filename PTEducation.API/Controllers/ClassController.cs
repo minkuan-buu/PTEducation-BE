@@ -171,5 +171,20 @@ namespace PTEducation.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpGet]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetClassIdByName([FromQuery] string ClassName)
+        {
+            try
+            {
+                var Result = await _classServices.GetClassIdByName(ClassName);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

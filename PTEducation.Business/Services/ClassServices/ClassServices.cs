@@ -509,5 +509,18 @@ namespace PTEducation.Business.Services.ClassServices
 
             return allClass;
         }
+
+        public async Task<DataResultModel<Guid>> GetClassIdByName(string ClassName)
+        {
+            var Class = await _classRepositories.GetSingle(x => x.Name.Equals(TextConvert.ConvertToUnicodeEscape(ClassName)) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            if (Class == null)
+            {
+                throw new CustomException("Class not found!");
+            }
+            return new DataResultModel<Guid>()
+            {
+                Data = Class.Id
+            };
+        }
     }
 }
