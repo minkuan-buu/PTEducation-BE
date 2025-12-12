@@ -90,7 +90,8 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src =>
                     Guid.NewGuid()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
-                    GeneralStatusEnums.Active.ToString()));
+                    GeneralStatusEnums.Active.ToString()))
+                .ForMember(dest => dest.Note, opt => opt.MapFrom(src => TextConvert.ConvertToUnicodeEscape(src.Note)));
             CreateMap<Score, ScoreDetailResModel>()
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
                     TextConvert.ConvertFromUnicodeEscape(src.Class.Name)))

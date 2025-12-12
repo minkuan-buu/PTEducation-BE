@@ -77,8 +77,9 @@ namespace PTEducation.API.Controllers
                 worksheet.Cell(currentRow, 2).Value = "Id";
                 worksheet.Cell(currentRow, 3).Value = "Name";
                 worksheet.Cell(currentRow, 4).Value = "Score";
-                worksheet.Range(currentRow, 1, currentRow, 4).Style.Font.Bold = true;
-                worksheet.Range(currentRow, 1, currentRow, 4).Style.Fill.BackgroundColor = XLColor.Yellow;
+                worksheet.Cell(currentRow, 5).Value = "Note";
+                worksheet.Range(currentRow, 1, currentRow, 5).Style.Font.Bold = true;
+                worksheet.Range(currentRow, 1, currentRow, 5).Style.Fill.BackgroundColor = XLColor.Yellow;
                 var ListStudents = await _studentClassServices.GetStudentInClass(ClassId);
                 foreach (var student in ListStudents)
                 {
