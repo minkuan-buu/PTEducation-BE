@@ -84,6 +84,11 @@ namespace PTEducation.Business.Services.ScoreServices
             {
                 throw new CustomException("Score already exists");
             }
+            var CheckClass = await _classRepositories.GetSingle(x => x.Id.Equals(ScoreReq.ClassId));
+            if (CheckClass == null)
+            {
+                throw new CustomException("Class not found");
+            }
             var NewScoreId = Guid.NewGuid();
             var NewScore = _mapper.Map<Score>(ScoreReq);
             NewScore.Id = NewScoreId;
@@ -109,6 +114,47 @@ namespace PTEducation.Business.Services.ScoreServices
             return new MessageResultModel
             {
                 Message = "Ok",
+            };
+        }
+
+        public async Task<DataResultModel<Guid>> CreateScoreFromSheet(ScoreCreateReqModel ScoreReq, string token)
+        {
+            var userId = Authentication.DecodeToken(token, "userid");
+            var CheckExist = await _scoreRepositories.GetSingle(x => x.TestDateAt.Equals(ScoreReq.TestDateAt) && x.ClassId.Equals(ScoreReq.ClassId));
+            if (CheckExist != null)
+            {
+                throw new CustomException("Score already exists");
+            }
+            var CheckClass = await _classRepositories.GetSingle(x => x.Id.Equals(ScoreReq.ClassId));
+            if (CheckClass == null)
+            {
+                throw new CustomException("Class not found");
+            }
+            var NewScoreId = Guid.NewGuid();
+            var NewScore = _mapper.Map<Score>(ScoreReq);
+            NewScore.Id = NewScoreId;
+            NewScore.CreateBy = userId;
+            List<ScoreDetail> ListScoreDetail = new();
+            foreach (var item in ScoreReq.ScoreReqList)
+            {
+                var CheckStudentClass = await _studentClassRepositories.GetSingle(x => x.Id.Equals(item.StudentClassId), includeProperties: "Class,Student");
+                if (CheckStudentClass == null)
+                {
+                    throw new CustomException("An error has excuted! Please download template and try again");
+                }
+                if (CheckStudentClass.Class.Id != ScoreReq.ClassId)
+                {
+                    throw new CustomException($"Student {CheckStudentClass.Student.Id} has not attended {CheckStudentClass.Class.Name}");
+                }
+                var NewScoreDetail = _mapper.Map<ScoreDetail>(item);
+                NewScoreDetail.ScoreId = NewScoreId;
+                ListScoreDetail.Add(NewScoreDetail);
+            }
+            await _scoreRepositories.Insert(NewScore);
+            await _scoreDetailRepositories.InsertRange(ListScoreDetail);
+            return new DataResultModel<Guid>
+            {
+                Data = NewScoreId
             };
         }
 
@@ -229,6 +275,19 @@ namespace PTEducation.Business.Services.ScoreServices
             var allScore = await _scoreRepositories.GetList(filter, orderBy, includeProperties: "CreateByNavigation,ScoreDetails", pageIndex ?? 1);
 
             return allScore.ToList();
+        }
+
+        public async Task<DataResultModel<Guid>> GetScoreIdByDateAndClassId(ScoreIdReqModel scoreIdReq)
+        {
+            var CheckExist = await _scoreRepositories.GetSingle(x => x.TestDateAt.Equals(scoreIdReq.TestDateAt) && x.ClassId.Equals(scoreIdReq.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            if (CheckExist == null)
+            {
+                throw new CustomException("Score not found");
+            }
+            return new DataResultModel<Guid>
+            {
+                Data = CheckExist.Id
+            };
         }
     }
 }

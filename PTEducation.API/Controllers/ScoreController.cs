@@ -66,6 +66,38 @@ namespace PTEducation.API.Controllers
             }
         }
 
+        [HttpPost("sheet/create")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> CreateScoreFromSheet([FromBody] ScoreCreateReqModel ScoreReq)
+        {
+            try
+            {
+                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
+                var Result = await _scoreServices.CreateScoreFromSheet(ScoreReq, token);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet()]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetScoreIdByDateAndClassId([FromQuery] ScoreIdReqModel scoreIdReq)
+        {
+            try
+            {
+                // string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
+                var Result = await _scoreServices.GetScoreIdByDateAndClassId(scoreIdReq);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPut("update")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateScore([FromBody] ScoreUpdateReqModel ScoreReq)

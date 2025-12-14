@@ -1,4 +1,5 @@
 ﻿using PTEducation.Business.ApplicationMiddleware;
+using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Data.DTO.ResponseModel;
 using PTEducation.Data.Entities;
@@ -26,6 +27,10 @@ namespace PTEducation.Business.Services.ScoreDetailServices
         public async Task<MessageResultModel> UpdateScore(ScoreDetailUpdateReqModel ScoreReq)
         {
             var Score = await _scoreRepositories.GetSingle(x => x.Id.Equals(ScoreReq.Id), includeProperties: "ScoreDetails");
+            if (Score == null)
+            {
+                throw new CustomException("Score not found");
+            }
             var ScoreDetail = Score.ScoreDetails.ToList();
             foreach (var score in ScoreReq.ScoreReqList)
             {
