@@ -51,6 +51,21 @@ namespace PTEducation.API.Controllers
             }
         }
 
+        [HttpGet("sheet/all")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetList()
+        {
+            try
+            {
+                var Result = await _classServices.GetClassList();
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpGet("select/all")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetListSelect()
