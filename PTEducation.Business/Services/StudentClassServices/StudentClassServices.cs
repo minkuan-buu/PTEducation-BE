@@ -19,12 +19,29 @@ namespace PTEducation.Business.Services.StudentClassServices
 
         public async Task<List<StudentClass>> GetStudentInClass(Guid classId)
         {
-            var ListStudent = await _studentClassRepository.GetList(x => x.ClassId.Equals(classId), includeProperties:"Student");
+            var ListStudent = await _studentClassRepository.GetList(x => x.ClassId.Equals(classId), includeProperties: "Student");
             foreach (var item in ListStudent)
             {
                 item.Student.Name = TextConvert.ConvertFromUnicodeEscape(item.Student.Name);
             }
             return ListStudent.ToList();
+        }
+
+        public async Task<List<StudentClassResModelForSheet>> GetStudentInClassForSheet(Guid classId)
+        {
+            var ListStudent = await _studentClassRepository.GetList(x => x.ClassId.Equals(classId), includeProperties: "Student");
+            foreach (var item in ListStudent)
+            {
+                item.Student.Name = TextConvert.ConvertFromUnicodeEscape(item.Student.Name);
+            }
+            return ListStudent.Select(x => new StudentClassResModelForSheet()
+            {
+                StudentClassId = x.Id,
+                Id = x.Student.Id,
+                Name = x.Student.Name,
+                Score = 0,
+                Note = null
+            }).ToList();
         }
     }
 }

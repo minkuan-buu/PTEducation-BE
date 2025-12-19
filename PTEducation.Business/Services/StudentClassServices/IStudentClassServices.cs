@@ -10,5 +10,6 @@ namespace PTEducation.Business.Services.StudentClassServices
     public interface IStudentClassServices
     {
         Task<List<StudentClass>> GetStudentInClass(Guid classId);
+        Task<List<StudentClassResModelForSheet>> GetStudentInClassForSheet(Guid classId);
     }
 }
