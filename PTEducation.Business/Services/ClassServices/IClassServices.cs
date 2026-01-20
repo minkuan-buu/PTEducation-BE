@@ -23,6 +23,6 @@ namespace PTEducation.Business.Services.ClassServices
         Task<MessageResultModel> MoveOutStudent(MoveOutStudentClassModel MoveOutReq);
         Task<ListDataResultModel<ClassListSelectResModel>> GetClassSelectList();
         Task<DataResultModel<Guid>> GetClassIdByName(string ClassName);
-        Task<List<ScoreStudentResModel>> GetStudentScoreByClassIdAndRangeDate(Guid ClassId, DateTime FromDate, DateTime ToDate);
+        Task<ClassScoreStudentExport> GetStudentScoreByClassIdAndRangeDate(Guid ClassId, DateTime? FromDate, DateTime? ToDate);
     }
 }

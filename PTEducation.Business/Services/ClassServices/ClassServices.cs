@@ -532,52 +532,63 @@ namespace PTEducation.Business.Services.ClassServices
             };
         }
 
-        public async Task<List<ScoreStudentResModel>> GetStudentScoreByClassIdAndRangeDate(Guid ClassId, DateTime FromDate, DateTime ToDate)
+        public async Task<ClassScoreStudentExport> GetStudentScoreByClassIdAndRangeDate(Guid ClassId, DateTime? FromDate, DateTime? ToDate)
         {
-            // 1. Lấy danh sách các BUỔI KIỂM TRA (Score) thuộc lớp và trong khoảng thời gian
+            // --- [LOGIC MỚI] XỬ LÝ KHOẢNG THỜI GIAN ---
+            // 1. Nếu FromDate chưa nhập (là giá trị mặc định 0001-01-01) -> Lấy từ MinValue (Lấy tất cả quá khứ)
+            // Ngược lại: Giữ nguyên FromDate
+            var filterFrom = (FromDate == default(DateTime)) ? DateTime.MinValue : FromDate;
+
+            // 2. Nếu ToDate chưa nhập (là giá trị mặc định 0001-01-01) -> Lấy đến MaxValue (Lấy tất cả tương lai)
+            // Ngược lại: Giữ nguyên ToDate
+            var filterTo = (ToDate == default(DateTime)) ? DateTime.MaxValue : ToDate;
+
+
+            // --- 1. Lấy danh sách các BUỔI KIỂM TRA (Score) ---
             var scoreSessions = await _scoreRepositories.GetList(
                 filter: s => s.ClassId == ClassId &&
-                             s.TestDateAt >= FromDate &&
-                             s.TestDateAt <= ToDate,
-                // Include sâu: Score -> ScoreDetails -> StudentClass -> Student (User)
-                includeProperties: "ScoreDetails.StudentClass.Student"
+                                s.TestDateAt >= filterFrom &&  // Dùng biến đã xử lý
+                                s.TestDateAt <= filterTo,      // Dùng biến đã xử lý
+                // Include thêm Class để lấy tên lớp
+                includeProperties: "ScoreDetails.StudentClass.Student,Class" 
             );
 
-            // 2. Biến đổi dữ liệu: Từ "Danh sách buổi thi" -> "Danh sách học sinh kèm điểm"
-            var result = scoreSessions
-                // Bước A: Làm phẳng (Flatten). 
-                // Từ List<Score> (nhiều buổi thi) -> gộp hết thành một List<ScoreDetail> (nhiều điểm số lẻ)
+            // --- 2. Xử lý danh sách học sinh (Giữ nguyên) ---
+            var studentData = scoreSessions
                 .SelectMany(s => s.ScoreDetails)
-
-                // Bước B: Lọc dữ liệu rác (đề phòng null)
                 .Where(sd => sd.StudentClass != null && sd.StudentClass.Student != null)
-
-                // Bước C: Group theo Học sinh (User) lấy từ StudentClass
                 .GroupBy(sd => sd.StudentClass.Student)
-
-                // Bước D: Map sang Model trả về
                 .Select(g => new ScoreStudentResModel
                 {
-                    // g.Key lúc này là User (Student)
-                    Id = g.Key.Id.ToString(),       // ID của User
-                    Name = g.Key.Name ?? "No Name", // Hoặc g.Key.FullName tùy vào entity User của bạn
-
-                    // g là danh sách các ScoreDetail thuộc về User này
+                    Id = g.Key.Id.ToString(),
+                    Name = g.Key.Name ?? "No Name",
                     Scores = g.Select(sd => new ScoreStudentDetailResModel
                     {
-                        // Lấy thông tin ngày tháng từ ScoreNavigation (Cha của ScoreDetail)
                         TestDateAt = sd.ScoreNavigation.TestDateAt,
                         Shift = sd.ScoreNavigation.Shift,
-
-                        // Lấy điểm số
                         Score = sd.Score,
                         Note = sd.Note
                     })
-                    .OrderBy(x => x.TestDateAt) // Sắp xếp điểm theo ngày tăng dần
+                    .OrderBy(x => x.TestDateAt)
                     .ToList()
                 })
                 .ToList();
-            return result;
+
+            // --- 3. Lấy tên lớp (Fallback) ---
+            string className = scoreSessions.FirstOrDefault()?.Class?.Name;
+
+            if (string.IsNullOrEmpty(className))
+            {
+                var classObj = await _classRepositories.GetSingle(c => c.Id == ClassId);
+                className = classObj?.Name ?? "Unknown Class";
+            }
+
+            // --- 4. Trả về ---
+            return new ClassScoreStudentExport
+            {
+                Name = className,
+                StudentData = studentData
+            };
         }
     }
 }

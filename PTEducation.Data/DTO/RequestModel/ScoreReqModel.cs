@@ -65,7 +65,7 @@ namespace PTEducation.Data.DTO.RequestModel
 
     public class ScoreFromDateToDate
     {
-        public DateTime FromDate { get; set; }
-        public DateTime ToDate { get; set; }
+        public DateTime? FromDate { get; set; }
+        public DateTime? ToDate { get; set; }
     }
 }

@@ -61,6 +61,12 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string? Note { get; set; }
     }
 
+    public class ClassScoreStudentExport
+    {
+        public string Name { get; set; } = null!;
+        public List<ScoreStudentResModel> StudentData = new List<ScoreStudentResModel>();
+    }
+
     public class ScoreMonthResModel
     {
         public string Id { get; set; } = null!;

@@ -377,5 +377,27 @@ namespace PTEducation.Business.Services.UserServices
                 throw;
             }
         }
+
+        public async Task<MessageResultModel> ConvertNameFromUnicodeEscapeToUnicode()
+        {
+            try
+            {
+                var users = await _userRepositories.GetList();
+                foreach (var u in users)
+                {
+                    u.Name = TextConvert.ConvertFromUnicodeEscape(u.Name);
+                }
+                await _userRepositories.UpdateRange(users.ToList());
+                return new MessageResultModel
+                {
+                    Message = "Ok"
+                };
+            }
+            catch
+            {
+                throw new CustomException("Error");    
+            }
+            
+        }
     }
 }

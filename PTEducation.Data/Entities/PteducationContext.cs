@@ -251,9 +251,7 @@ public partial class PteducationContext : DbContext
             entity.Property(e => e.Email)
                 .HasMaxLength(200)
                 .IsUnicode(false);
-            entity.Property(e => e.Name)
-                .HasMaxLength(300)
-                .IsUnicode(false);
+            entity.Property(e => e.Name).HasMaxLength(300);
             entity.Property(e => e.Phone)
                 .HasMaxLength(20)
                 .IsUnicode(false);

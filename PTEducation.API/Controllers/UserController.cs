@@ -32,5 +32,12 @@ namespace PTEducation.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpPut("convert-all")]
+        public async Task<IActionResult> ConvertUsersName()
+        {
+            var Result = await _userServices.ConvertNameFromUnicodeEscapeToUnicode();
+            return Ok(Result);
+        }
     }
 }
