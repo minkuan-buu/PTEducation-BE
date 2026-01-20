@@ -77,7 +77,8 @@ namespace PTEducation.Business.Services.ClassServices
             };
         }
 
-        public async Task<DataResultModel<List<ListClassResModel>>> GetClassList(){
+        public async Task<DataResultModel<List<ListClassResModel>>> GetClassList()
+        {
             var ListClass = await _classRepositories.GetList(x => x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             return new DataResultModel<List<ListClassResModel>>()
             {
@@ -529,6 +530,54 @@ namespace PTEducation.Business.Services.ClassServices
             {
                 Data = Class.Id
             };
+        }
+
+        public async Task<List<ScoreStudentResModel>> GetStudentScoreByClassIdAndRangeDate(Guid ClassId, DateTime FromDate, DateTime ToDate)
+        {
+            // 1. Lấy danh sách các BUỔI KIỂM TRA (Score) thuộc lớp và trong khoảng thời gian
+            var scoreSessions = await _scoreRepositories.GetList(
+                filter: s => s.ClassId == ClassId &&
+                             s.TestDateAt >= FromDate &&
+                             s.TestDateAt <= ToDate,
+                // Include sâu: Score -> ScoreDetails -> StudentClass -> Student (User)
+                includeProperties: "ScoreDetails.StudentClass.Student"
+            );
+
+            // 2. Biến đổi dữ liệu: Từ "Danh sách buổi thi" -> "Danh sách học sinh kèm điểm"
+            var result = scoreSessions
+                // Bước A: Làm phẳng (Flatten). 
+                // Từ List<Score> (nhiều buổi thi) -> gộp hết thành một List<ScoreDetail> (nhiều điểm số lẻ)
+                .SelectMany(s => s.ScoreDetails)
+
+                // Bước B: Lọc dữ liệu rác (đề phòng null)
+                .Where(sd => sd.StudentClass != null && sd.StudentClass.Student != null)
+
+                // Bước C: Group theo Học sinh (User) lấy từ StudentClass
+                .GroupBy(sd => sd.StudentClass.Student)
+
+                // Bước D: Map sang Model trả về
+                .Select(g => new ScoreStudentResModel
+                {
+                    // g.Key lúc này là User (Student)
+                    Id = g.Key.Id.ToString(),       // ID của User
+                    Name = g.Key.Name ?? "No Name", // Hoặc g.Key.FullName tùy vào entity User của bạn
+
+                    // g là danh sách các ScoreDetail thuộc về User này
+                    Scores = g.Select(sd => new ScoreStudentDetailResModel
+                    {
+                        // Lấy thông tin ngày tháng từ ScoreNavigation (Cha của ScoreDetail)
+                        TestDateAt = sd.ScoreNavigation.TestDateAt,
+                        Shift = sd.ScoreNavigation.Shift,
+
+                        // Lấy điểm số
+                        Score = sd.Score,
+                        Note = sd.Note
+                    })
+                    .OrderBy(x => x.TestDateAt) // Sắp xếp điểm theo ngày tăng dần
+                    .ToList()
+                })
+                .ToList();
+            return result;
         }
     }
 }

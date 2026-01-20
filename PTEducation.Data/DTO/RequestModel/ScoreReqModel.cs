@@ -62,4 +62,10 @@ namespace PTEducation.Data.DTO.RequestModel
         public int Month { get; set; }
         public int Year { get; set; }
     }
+
+    public class ScoreFromDateToDate
+    {
+        public DateTime FromDate { get; set; }
+        public DateTime ToDate { get; set; }
+    }
 }
