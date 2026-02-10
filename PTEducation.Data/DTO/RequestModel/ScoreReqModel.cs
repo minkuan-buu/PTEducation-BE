@@ -68,4 +68,14 @@ namespace PTEducation.Data.DTO.RequestModel
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
     }
+
+    public class ScoreExportCommentReqModel
+    {
+        public decimal PointMilestone1 { get; set; } 
+        public decimal PointMilestone2 { get; set; } 
+
+        public string? CommentLow { get; set; }
+        public string? CommentMid { get; set; }
+        public string? CommentHigh { get; set; }
+    }
 }
