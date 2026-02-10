@@ -1,0 +1,40 @@
+name: Deploy .NET App to Server
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: SSH Deploy
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.PUBLISH_PATH }}
+
+            sudo git reset --hard
+            sudo git pull origin master
+
+            sudo rm -rf ${{ secrets.PUBLISH_PATH }}/PTEducation.API/publish
+            cd ${{ secrets.PUBLISH_PATH }}/PTEducation.API/
+
+            # Build & Publish ứng dụng
+            dotnet restore
+            dotnet build -c Release
+            dotnet publish -c Release -r linux-x64 -o ./publish
+
+            # -a: giữ nguyên thuộc tính file, -v: hiển thị quá trình, --delete: xóa file ở đích nếu ở nguồn không còn
+            sudo rsync -av ./publish/ ${{ secrets.DEPLOY_PATH }}
+            sudo chown -R www:www ${{ secrets.DEPLOY_PATH }}
+
+            sudo systemctl restart pteducation.service
