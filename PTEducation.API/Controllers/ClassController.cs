@@ -217,7 +217,7 @@ namespace PTEducation.API.Controllers
                 // --- SỬA LỖI Ở ĐÂY ---
                 // Thay vì DateTime.MinValue (năm 0001), ta dùng 01/01/1753 (Min của SQL)
                 DateTime fromDateParam = ReqDate.FromDate ?? new DateTime(1753, 1, 1);
-                
+
                 // Thay vì DateTime.MaxValue, ta dùng 31/12/9999 cho an toàn tuyệt đối
                 DateTime toDateParam = ReqDate.ToDate ?? new DateTime(9999, 12, 31);
                 // ---------------------
@@ -283,7 +283,7 @@ namespace PTEducation.API.Controllers
                     foreach (var student in students)
                     {
                         // [SỬA Ở ĐÂY]: Đổi từ double sang decimal
-                        decimal averageScore = 0; 
+                        decimal averageScore = 0;
                         string autoComment = "";
 
                         // Lấy danh sách điểm
@@ -293,7 +293,7 @@ namespace PTEducation.API.Controllers
                         if (scoresList.Any())
                         {
                             // Hàm Average() của List<decimal> sẽ trả về decimal -> Không còn lỗi convert
-                            averageScore = scoresList.Average(); 
+                            averageScore = scoresList.Where(x => x > 0).Average();
 
                             // Làm tròn 2 chữ số thập phân
                             averageScore = Math.Round(averageScore, 2);
@@ -312,7 +312,7 @@ namespace PTEducation.API.Controllers
                                 autoComment = commentReqModel.CommentHigh;
                             }
                         }
-                        else 
+                        else
                         {
                             autoComment = "Chưa có dữ liệu điểm để nhận xét.";
                         }
@@ -338,7 +338,7 @@ namespace PTEducation.API.Controllers
                             MiniWord.SaveAsByTemplate(msWord, templateBytes, value);
                             string safeName = ValidateFileName(student.Name ?? "NoName");
                             string fileName = $"{safeName}_{student.Id}.docx";
-                            
+
                             var zipEntry = zipArchive.CreateEntry(fileName);
                             using (var entryStream = zipEntry.Open())
                             {
