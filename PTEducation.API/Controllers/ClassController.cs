@@ -280,20 +280,23 @@ namespace PTEducation.API.Controllers
                     string dateRangeString = $"{displayFrom:dd/MM/yyyy} - {displayTo:dd/MM/yyyy}";
 
                     // --- [BƯỚC 2] TẠO FILE WORD CHO TỪNG HỌC SINH ---
+                    // --- [BƯỚC 2] TẠO FILE WORD CHO TỪNG HỌC SINH ---
                     foreach (var student in students)
                     {
-                        // [SỬA Ở ĐÂY]: Đổi từ double sang decimal
                         decimal averageScore = 0;
                         string autoComment = "";
 
-                        // Lấy danh sách điểm
-                        // (Lưu ý: đảm bảo s.Score trong Model ScoreStudentResModel cũng là decimal hoặc float)
+                        // Lấy danh sách điểm gốc
                         var scoresList = student.Scores.Select(s => s.Score).ToList();
 
-                        if (scoresList.Any())
+                        // [QUAN TRỌNG] Lọc ra danh sách các điểm > 0 trước
+                        var validScores = scoresList.Where(x => x > 0).ToList();
+
+                        // Kiểm tra: Phải có ít nhất 1 điểm > 0 thì mới tính Average
+                        if (validScores.Any())
                         {
-                            // Hàm Average() của List<decimal> sẽ trả về decimal -> Không còn lỗi convert
-                            averageScore = scoresList.Where(x => x > 0).Average();
+                            // Tính trung bình trên danh sách đã lọc
+                            averageScore = validScores.Average();
 
                             // Làm tròn 2 chữ số thập phân
                             averageScore = Math.Round(averageScore, 2);
@@ -314,7 +317,9 @@ namespace PTEducation.API.Controllers
                         }
                         else
                         {
-                            autoComment = "Chưa có dữ liệu điểm để nhận xét.";
+                            // Trường hợp không có điểm nào hoặc toàn bộ là điểm 0
+                            averageScore = 0;
+                            autoComment = "";
                         }
 
                         // B. Chuẩn bị dữ liệu đổ vào Template Word
@@ -322,8 +327,8 @@ namespace PTEducation.API.Controllers
                         {
                             ["Date"] = dateRangeString,
                             ["StudentName"] = student.Name ?? "No Name",
-                            ["AverageScore"] = averageScore, // Truyền thêm điểm TB nếu muốn hiện trong Word
-                            ["TeacherComment"] = autoComment, // <--- BIẾN QUAN TRỌNG: Nhận xét tự động
+                            ["AverageScore"] = averageScore,
+                            ["TeacherComment"] = autoComment,
                             ["Scores"] = student.Scores.Select((s, index) => new Dictionary<string, object>
                             {
                                 ["STT"] = index + 1,
