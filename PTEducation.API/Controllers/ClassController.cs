@@ -290,7 +290,7 @@ namespace PTEducation.API.Controllers
                                 ["STT"] = index + 1,
                                 ["TestDateAt"] = s.TestDateAt.ToString("dd/MM/yyyy"),
                                 ["Shift"] = s.Shift ?? "",
-                                ["NoteContent"] = $"Điểm: {s.Score}" + (!string.IsNullOrEmpty(s.Note) ? $" - {TextConvert.ConvertFromUnicodeEscape(s.Note)}" : "")
+                                ["NoteContent"] = $"Điểm: {s.Score}{(s.Score == 0 ? " - Vắng" : (!string.IsNullOrEmpty(s.Note) ? $" - {TextConvert.ConvertFromUnicodeEscape(s.Note)}" : ""))}"
                             }).ToList()
                         };
 
