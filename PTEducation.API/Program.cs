@@ -4,7 +4,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Swashbuckle.AspNetCore.SwaggerGen;
+using Asp.Versioning;
+using Asp.Versioning.ApiExplorer;
 using PTEducation.API.Middleware;
+using PTEducation.API.Swagger;
 using PTEducation.Business.MapperProfiles;
 using PTEducation.Business.Services.AttendanceDetailServices;
 using PTEducation.Business.Services.AttendanceServices;
@@ -39,18 +43,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 
 //========================================== SWAGGER ==============================================
 
 builder.Services.AddSwaggerGen(c =>
 {
-
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Version = "v1",
-        Title = "PTEducation.API",
-        Description = "PT Education"
-    });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In = ParameterLocation.Header,
@@ -76,6 +74,7 @@ builder.Services.AddSwaggerGen(c =>
         }
     });
 });
+//========================================== DATABASE =============================================
 
 var rawConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 if (string.IsNullOrEmpty(rawConnectionString))
@@ -107,6 +106,29 @@ builder.Services.AddDbContext<PteducationContext>(options =>
     options.EnableSensitiveDataLogging();
 }
 );
+//========================================== VERSIONING ===========================================
+builder.Services.AddApiVersioning(options =>
+{
+    // Nếu client không truyền version thì dùng mặc định v1.0
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.DefaultApiVersion = new ApiVersion(1, 0);
+
+    // Trả về các version hỗ trợ qua response header
+    options.ReportApiVersions = true;
+
+    // Hỗ trợ đọc version từ nhiều nguồn
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new HeaderApiVersionReader("x-api-version"),      // Header: x-api-version: 1.0
+        new MediaTypeApiVersionReader("x-api-version"),   // Accept: application/json; x-api-version=1.0
+        new UrlSegmentApiVersionReader()                    // /api/v1/users
+    );
+})
+.AddMvc()
+.AddApiExplorer(options =>
+{
+    options.GroupNameFormat = "'v'VVV";    // v1, v1.0, v2 ...
+    options.SubstituteApiVersionInUrl = true;
+});
 //========================================== MAPPER ===============================================
 
 builder.Services.AddAutoMapper(typeof(MapperProfileConfiguration).Assembly);
@@ -190,8 +212,18 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    var apiVersionDescriptionProvider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
+
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        foreach (var description in apiVersionDescriptionProvider.ApiVersionDescriptions)
+        {
+            options.SwaggerEndpoint(
+                $"/swagger/{description.GroupName}/swagger.json",
+                description.GroupName.ToUpperInvariant());
+        }
+    });
 }
 
 app.UseCors("AllowAllOrigin");
