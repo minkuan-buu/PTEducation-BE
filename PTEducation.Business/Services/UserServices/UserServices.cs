@@ -100,6 +100,43 @@ namespace PTEducation.Business.Services.UserServices
             };
         }
 
+        public async Task<MessageResultModel> Register(UserRegisterWithGuardianInfo ReqModel)
+        {
+            var CheckExist = await _userRepositories.GetSingle(x => x.Email == ReqModel.Email);
+            if (CheckExist != null)
+            {
+                throw new CustomException("Tài khoản với Email này đã tồn tại!");
+            }
+            List<User> ListAddUser = new List<User>();
+            var NewStudent = _mapper.Map<User>(ReqModel);
+            var GeneratePassword = Authentication.GenerateRandomPassword();
+            string HashedPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
+            NewStudent.PasswordBcrypt = HashedPassword;
+            NewStudent.Status = AccountStatusEnums.Active.ToString();
+            ListAddUser.Add(NewStudent);
+            List<StudentGuardian> ListStudentGuardian = new List<StudentGuardian>();
+            foreach (var guardian in ReqModel.Guardians)
+            {
+                var NewGuardian = _mapper.Map<User>(guardian);
+                NewGuardian.PasswordBcrypt = HashedPassword;
+                NewGuardian.Status = AccountStatusEnums.Active.ToString();
+                ListAddUser.Add(NewGuardian);
+
+                var NewStudentGuardian = new StudentGuardian
+                {
+                    Id = Guid.NewGuid(),
+                    
+                    Guardian = NewGuardian,
+                    IsPrimary = guardian.IsPrimary,
+                    Relationship = guardian.Relationship
+                };
+            }
+            return new MessageResultModel
+            {
+                Message = "Ok"
+            };
+        }
+
         public async Task<MessageResultModel> ChangePassword(UserChangePasswordReqModel ReqModel, string token)
         {
             var userId = Authentication.DecodeToken(token, "userid");

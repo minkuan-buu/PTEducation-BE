@@ -33,6 +33,14 @@ public class Authentication
         return BitConverter.ToString(Salt).Replace("-", "");
     }
 
+    public static string CreateHashPasswordBCrypt(string Password)
+    {
+        int costFactor = 12;
+        string Salt = BCrypt.Net.BCrypt.GenerateSalt(costFactor);
+        string HashedPasswordString = BCrypt.Net.BCrypt.HashPassword(Password, Salt);
+        return HashedPasswordString;
+    }
+
     public static CreateHashPasswordModel CreateHashPassword(string Password)
     {
         string SaltString = GenerateSalt();

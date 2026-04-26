@@ -23,6 +23,8 @@ public partial class User
 
     public bool IsNeedResetPassword { get; set; }
 
+    public string? PasswordBcrypt { get; set; }
+
     public virtual ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
@@ -32,4 +34,8 @@ public partial class User
     public virtual ICollection<Score> Scores { get; set; } = new List<Score>();
 
     public virtual ICollection<StudentClass> StudentClasses { get; set; } = new List<StudentClass>();
+
+    public virtual ICollection<StudentGuardian> StudentGuardianGuardians { get; set; } = new List<StudentGuardian>();
+
+    public virtual ICollection<StudentGuardian> StudentGuardianStudents { get; set; } = new List<StudentGuardian>();
 }

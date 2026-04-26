@@ -25,6 +25,25 @@ namespace PTEducation.Data.DTO.RequestModel
         public string Role { get; set; } = null!;
     }
 
+    public class UserRegisterWithGuardianInfo
+    {
+        public string Name { get; set; } = null!;
+        public Guid ClassId { get; set; }
+        public string Email { get; set; } = null!;
+        public string Phone { get; set; } = null!;
+        public string? School { get; set; }
+        public List<GuardianInfoReqModel> Guardians { get; set; } = new List<GuardianInfoReqModel>();
+    }
+
+    public class GuardianInfoReqModel
+    {
+        public string Name { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string Phone { get; set; } = null!;
+        public string Relationship { get; set; } = null!;
+        public bool IsPrimary { get; set; } = false;
+    }
+
     public class ManagerRegisterReqModel
     {
         public string Name { get; set; } = null!;

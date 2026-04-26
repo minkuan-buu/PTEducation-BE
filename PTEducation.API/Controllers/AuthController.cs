@@ -4,11 +4,14 @@ using PTEducation.Business.Services.UserServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PTEducation.Business.Services.AuthServices;
+using Asp.Versioning;
 
 namespace PTEducation.API.Controllers
 {
     [ApiController]
-    [Route("api/authentication")]
+    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
+    [Route("api/{version}/authentication")]
     public class AuthController : ControllerBase
     {
         private readonly IUserServices _userServices;
@@ -19,6 +22,8 @@ namespace PTEducation.API.Controllers
             _userServices = userServices;
         }
 
+
+        [MapToApiVersion("1.0")]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserLoginReqModel User)
         {
@@ -33,6 +38,7 @@ namespace PTEducation.API.Controllers
             }
         }
 
+        [MapToApiVersion("1.0")]
         [HttpPost("register")]
         //[Authorize("Admin")]
         public async Task<IActionResult> Register([FromBody] UserRegisterReqModel User)
@@ -48,6 +54,22 @@ namespace PTEducation.API.Controllers
             }
         }
 
+        [MapToApiVersion("2.0")]
+        [HttpPost("register")]
+        public async Task<IActionResult> RegisterForStudentWithGuadianInfo([FromBody] UserRegisterReqModel User)
+        {
+            try
+            {
+                var Result = await _userServices.Register(User);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [MapToApiVersion("1.0")]
         [HttpPost("change-password")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
         public async Task<IActionResult> ChangePassword([FromBody] UserChangePasswordReqModel User)
@@ -65,6 +87,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("check-server")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
         public IActionResult CheckServer()
         {
@@ -80,6 +103,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPost("reset-password")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
         public async Task<IActionResult> ResetPassword([FromBody] UserResetPasswordReqModel User)
         {

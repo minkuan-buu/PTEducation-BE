@@ -11,10 +11,6 @@ public partial class PteducationContext : DbContext
     {
     }
 
-    public PteducationContext()
-    {
-    }
-
     public virtual DbSet<Attendance> Attendances { get; set; }
 
     public virtual DbSet<AttendanceDetail> AttendanceDetails { get; set; }
@@ -28,6 +24,8 @@ public partial class PteducationContext : DbContext
     public virtual DbSet<ScoreDetail> ScoreDetails { get; set; }
 
     public virtual DbSet<StudentClass> StudentClasses { get; set; }
+
+    public virtual DbSet<StudentGuardian> StudentGuardians { get; set; }
 
     public virtual DbSet<User> Users { get; set; }
 
@@ -239,6 +237,32 @@ public partial class PteducationContext : DbContext
                 .HasConstraintName("FK__StudentCl__Stude__4CA06362");
         });
 
+        modelBuilder.Entity<StudentGuardian>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__StudentG__3214EC07F3369D1D");
+
+            entity.HasIndex(e => new { e.StudentId, e.GuardianId }, "UQ_StudentGuardians_Student_Guardian").IsUnique();
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.GuardianId)
+                .HasMaxLength(30)
+                .IsUnicode(false);
+            entity.Property(e => e.Relationship).HasMaxLength(50);
+            entity.Property(e => e.StudentId)
+                .HasMaxLength(30)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.Guardian).WithMany(p => p.StudentGuardianGuardians)
+                .HasForeignKey(d => d.GuardianId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StudentGuardians_User_2");
+
+            entity.HasOne(d => d.Student).WithMany(p => p.StudentGuardianStudents)
+                .HasForeignKey(d => d.StudentId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_StudentGuardians_User");
+        });
+
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(e => e.Id).HasName("PK__User__3214EC075BB62C12");
@@ -252,6 +276,11 @@ public partial class PteducationContext : DbContext
                 .HasMaxLength(200)
                 .IsUnicode(false);
             entity.Property(e => e.Name).HasMaxLength(300);
+            entity.Property(e => e.PasswordBcrypt)
+                .HasMaxLength(200)
+                .IsUnicode(false)
+                .HasComment("")
+                .HasColumnName("PasswordBCrypt");
             entity.Property(e => e.Phone)
                 .HasMaxLength(20)
                 .IsUnicode(false);

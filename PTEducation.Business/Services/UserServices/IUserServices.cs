@@ -12,6 +12,7 @@ namespace PTEducation.Business.Services.UserServices
     {
         Task<DataResultModel<UserLoginResModel>> Login(string Username, string Password);
         Task<MessageResultModel> Register(UserRegisterReqModel ReqModel);
+        Task<MessageResultModel> Register(UserRegisterWithGuardianInfo ReqModel);
         Task<MessageResultModel> ChangePassword(UserChangePasswordReqModel ReqModel, string token);
         Task<DataResultModel<UserProfileResModel>> GetMyProfile(string token);
         Task<MessageResultModel> ResetPassword(UserResetPasswordReqModel ReqModel, string token);
