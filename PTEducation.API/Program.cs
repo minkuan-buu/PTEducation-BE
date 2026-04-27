@@ -33,6 +33,7 @@ using PTEducation.Data.Repositories.StudentClassRepositories;
 using PTEducation.Data.Repositories.UserRepositories;
 using System.Text;
 using System.Text.Json.Serialization;
+using PTEducation.Data.Repositories.StudentGuardianRepositories;
 
 DotNetEnv.Env.Load();
 
@@ -151,6 +152,7 @@ builder.Services.AddTransient<IScoreRepositories, ScoreRepositories>();
 builder.Services.AddTransient<IScoreDetailRepositories, ScoreDetailRepositories>();
 builder.Services.AddTransient<IAttendanceRepositories, AttendanceRepositories>();
 builder.Services.AddTransient<IAttendanceDetailRepositories, AttendanceDetailRepositories>();
+builder.Services.AddTransient<IStudentGuardianRepositories, StudentGuardianRepositories>();
 builder.Services.AddTransient<IOTPRepositories, OTPRepositories>();
 builder.Services.AddScoped(typeof(IGenericRepositories<>), typeof(GenericRepositories<>));
 

@@ -18,24 +18,30 @@ using Org.BouncyCastle.Ocsp;
 using PTEducation.Data.Repositories.AttendanceDetailRepositories;
 using PTEducation.Data.Repositories.ScoreDetailRepositories;
 using PTEducation.Data.Repositories.OTPRepositories;
+using PTEducation.Data.Repositories.ClassRepositories;
+using PTEducation.Data.Repositories.StudentGuardianRepositories;
 
 namespace PTEducation.Business.Services.UserServices
 {
     public class UserServices : IUserServices
     {
         private readonly IUserRepositories _userRepositories;
+        private readonly IStudentGuardianRepositories _studentGuardianRepositories;
+        private readonly IClassRepositories _classRepositories;
         private readonly IStudentClassRepositories _studentClassRepositories;
         private readonly IOTPRepositories _otpRepositories;
         private readonly IAttendanceDetailRepositories _attendanceDetailRepositories;
         private readonly IScoreDetailRepositories _scoreDetailRepositories;
         private readonly IEmail _email;
         private readonly IMapper _mapper;
-        public UserServices(IUserRepositories userRepositories, IMapper mapper, IEmail email, IStudentClassRepositories studentClassRepositories, IAttendanceDetailRepositories attendanceDetailRepositories, IScoreDetailRepositories scoreDetailRepositories, IOTPRepositories otpRepositories)
+        public UserServices(IUserRepositories userRepositories, IMapper mapper, IEmail email, IStudentClassRepositories studentClassRepositories, IAttendanceDetailRepositories attendanceDetailRepositories, IScoreDetailRepositories scoreDetailRepositories, IOTPRepositories otpRepositories, IClassRepositories classRepositories, IStudentGuardianRepositories studentGuardianRepositories)
         {
             _studentClassRepositories = studentClassRepositories;
+            _studentGuardianRepositories = studentGuardianRepositories;
             _userRepositories = userRepositories;
             _email = email;
             _mapper = mapper;
+            _classRepositories = classRepositories;
             _attendanceDetailRepositories = attendanceDetailRepositories;
             _scoreDetailRepositories = scoreDetailRepositories;
             _otpRepositories = otpRepositories;
@@ -103,34 +109,95 @@ namespace PTEducation.Business.Services.UserServices
         public async Task<MessageResultModel> Register(UserRegisterWithGuardianInfo ReqModel)
         {
             var CheckExist = await _userRepositories.GetSingle(x => x.Email == ReqModel.Email);
+            var GetClass = await _classRepositories.GetSingle(x => x.Id == ReqModel.ClassId);
             if (CheckExist != null)
             {
                 throw new CustomException("Tài khoản với Email này đã tồn tại!");
             }
+            if (GetClass == null)
+            {
+                throw new CustomException("Lớp học không tồn tại!");
+            }
+            var className = TextConvert.ConvertFromUnicodeEscape(GetClass.Name).Trim();
+            var classBlockMatch = System.Text.RegularExpressions.Regex.Match(className, @"^\d+");
+            var classBlock = classBlockMatch.Success ? classBlockMatch.Value : className;
+            if (!int.TryParse(classBlock, out var classBlockNumber))
+            {
+                throw new CustomException("Không thể tạo mã định danh vì tên lớp không hợp lệ.");
+            }
+            var classBlockCode = classBlockNumber.ToString("D2");
+
+            var usersInClassBlock = await _userRepositories.GetList(x =>
+                x.Id.StartsWith($"1{classBlockCode}") || x.Id.StartsWith($"2{classBlockCode}"));
+
+            var maxStudentSequence = usersInClassBlock
+                .Where(x => x.Id.StartsWith($"1{classBlockCode}") && x.Id.Length == 6)
+                .Select(x => int.TryParse(x.Id.Substring(3, 3), out var seq) ? seq : 0)
+                .DefaultIfEmpty(0)
+                .Max();
+            var nextStudentSequence = maxStudentSequence + 1;
+            if (nextStudentSequence > 999)
+            {
+                throw new CustomException($"Đã vượt quá giới hạn mã học sinh cho khối {classBlockCode}.");
+            }
+
+            var maxGuardianSequence = usersInClassBlock
+                .Where(x => x.Id.StartsWith($"2{classBlockCode}") && x.Id.Length == 7)
+                .Select(x => int.TryParse(x.Id.Substring(3, 4), out var seq) ? seq : 0)
+                .DefaultIfEmpty(0)
+                .Max();
+            var nextGuardianSequence = maxGuardianSequence + 1;
+
             List<User> ListAddUser = new List<User>();
-            var NewStudent = _mapper.Map<User>(ReqModel);
+
+            var NewStudent = new User
+            {
+                Id = $"1{classBlockCode}{nextStudentSequence:000}",
+                Name = TextConvert.ConvertToUnicodeEscape(ReqModel.Name),
+                Email = ReqModel.Email,
+                Phone = ReqModel.Phone,
+                Role = RoleEnums.Student.ToString()
+            };
             var GeneratePassword = Authentication.GenerateRandomPassword();
             string HashedPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
             NewStudent.PasswordBcrypt = HashedPassword;
             NewStudent.Status = AccountStatusEnums.Active.ToString();
             ListAddUser.Add(NewStudent);
             List<StudentGuardian> ListStudentGuardian = new List<StudentGuardian>();
+
             foreach (var guardian in ReqModel.Guardians)
             {
-                var NewGuardian = _mapper.Map<User>(guardian);
-                NewGuardian.PasswordBcrypt = HashedPassword;
-                NewGuardian.Status = AccountStatusEnums.Active.ToString();
+                if (nextGuardianSequence > 9999)
+                {
+                    throw new CustomException($"Đã vượt quá giới hạn mã giám hộ cho khối {classBlockCode}.");
+                }
+
+                var NewGuardian = new User
+                {
+                    Id = $"2{classBlockCode}{nextGuardianSequence:0000}",
+                    Name = TextConvert.ConvertToUnicodeEscape(guardian.Name),
+                    Email = guardian.Email,
+                    Phone = guardian.Phone,
+                    Role = "Guardian",
+                    Status = AccountStatusEnums.Active.ToString(),
+                    PasswordBcrypt = Authentication.CreateHashPasswordBCrypt(Authentication.GenerateRandomPassword())
+                };
                 ListAddUser.Add(NewGuardian);
+                nextGuardianSequence++;
 
                 var NewStudentGuardian = new StudentGuardian
                 {
                     Id = Guid.NewGuid(),
-                    
+                    StudentId = NewStudent.Id,
+                    GuardianId = NewGuardian.Id,
                     Guardian = NewGuardian,
                     IsPrimary = guardian.IsPrimary,
                     Relationship = guardian.Relationship
                 };
+                ListStudentGuardian.Add(NewStudentGuardian);
             }
+            await _userRepositories.InsertRange(ListAddUser);
+            await _studentGuardianRepositories.InsertRange(ListStudentGuardian);
             return new MessageResultModel
             {
                 Message = "Ok"
