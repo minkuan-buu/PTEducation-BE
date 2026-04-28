@@ -11,7 +11,7 @@ namespace PTEducation.API.Controllers
     [ApiController]
     [ApiVersion("1.0")]
     [ApiVersion("2.0")]
-    [Route("api/{version}/authentication")]
+    [Route("api/v{version:apiVersion}/authentication")]
     public class AuthController : ControllerBase
     {
         private readonly IUserServices _userServices;
@@ -23,7 +23,7 @@ namespace PTEducation.API.Controllers
         }
 
 
-        [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] UserLoginReqModel User)
         {
@@ -56,7 +56,7 @@ namespace PTEducation.API.Controllers
 
         [MapToApiVersion("2.0")]
         [HttpPost("register")]
-        public async Task<IActionResult> RegisterForStudentWithGuadianInfo([FromBody] UserRegisterReqModel User)
+        public async Task<IActionResult> RegisterForStudentWithGuadianInfo([FromBody] UserRegisterWithGuardianInfo User)
         {
             try
             {

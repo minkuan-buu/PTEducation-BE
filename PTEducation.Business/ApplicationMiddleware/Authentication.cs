@@ -41,6 +41,15 @@ public class Authentication
         return HashedPasswordString;
     }
 
+    public static bool VerifyPasswordBCrypt(string Password, string HashedPassword)
+    {
+        if (string.IsNullOrWhiteSpace(HashedPassword))
+        {
+            return false;
+        }
+        return BCrypt.Net.BCrypt.Verify(Password, HashedPassword);
+    }
+
     public static CreateHashPasswordModel CreateHashPassword(string Password)
     {
         string SaltString = GenerateSalt();

@@ -21,6 +21,7 @@ using PTEducation.Business.Services.StudentClassServices;
 using PTEducation.Business.Services.StudentServices;
 using PTEducation.Business.Services.UserServices;
 using PTEducation.Business.Ultilities.Email;
+using PTEducation.API.HostedServices;
 using PTEducation.Data.Entities;
 using PTEducation.Data.Repositories.AttendanceDetailRepositories;
 using PTEducation.Data.Repositories.AttendanceRepositories;
@@ -169,6 +170,8 @@ builder.Services.AddScoped<IEmail, Email>();
 builder.Services.AddScoped<IAttendanceServices, AttendanceServices>();
 builder.Services.AddScoped<IAttendanceDetailServices, AttendanceDetailServices>();
 builder.Services.AddScoped<IOTPServices, OTPServices>();
+
+builder.Services.AddHostedService<AdminInitializerHostedService>();
 
 //=========================================== CORS ================================================
 

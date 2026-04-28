@@ -10,6 +10,7 @@ namespace PTEducation.Data.Enums
     {
         Admin,
         Manager,
-        Student
+        Student,
+        Guardan
     }
 }

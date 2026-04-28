@@ -54,10 +54,21 @@ namespace PTEducation.Business.Services.UserServices
             {
                 throw new CustomException("Không tìm thấy tài khoản!");
             }
-            var Auth = Authentication.VerifyPasswordHashed(Password, CheckExist.Salt, CheckExist.Password);
-            if (!Auth)
+            if (!string.IsNullOrWhiteSpace(CheckExist.PasswordBcrypt))
             {
-                throw new CustomException("Mật khẩu không chính xác!");
+                var Auth = Authentication.VerifyPasswordBCrypt(Password, CheckExist.PasswordBcrypt);
+                if (!Auth)
+                {
+                    throw new CustomException("Mật khẩu không chính xác!");
+                }
+            }
+            else
+            {
+                var Auth = Authentication.VerifyPasswordHashed(Password, CheckExist.Salt, CheckExist.Password);
+                if (!Auth)
+                {
+                    throw new CustomException("Mật khẩu không chính xác!");
+                }
             }
             var User = _mapper.Map<UserLoginResModel>(CheckExist);
             User.Token = Authentication.GenerateJWT(CheckExist);
@@ -66,6 +77,50 @@ namespace PTEducation.Business.Services.UserServices
             {
                 Data = User
             };
+        }
+
+        public async Task InitAdminIfNeeded()
+        {
+            var existingAdmin = await _userRepositories.GetSingle(x => x.Id.StartsWith("Admin-"));
+            if (existingAdmin != null)
+            {
+                return;
+            }
+
+            var defaultPassword = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_PASSWORD");
+            if (string.IsNullOrWhiteSpace(defaultPassword))
+            {
+                throw new CustomException("Admin default password is not configured.");
+            }
+
+            var adminId = await GenerateUniqueAdminId();
+            var admin = new User
+            {
+                Id = adminId,
+                Name = Environment.GetEnvironmentVariable("ADMIN_NAME") ?? "Administrator",
+                Email = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "admin@pteducation.local",
+                Phone = Environment.GetEnvironmentVariable("ADMIN_PHONE") ?? "0000000000",
+                Role = RoleEnums.Admin.ToString(),
+                Status = AccountStatusEnums.Active.ToString(),
+                PasswordBcrypt = Authentication.CreateHashPasswordBCrypt(defaultPassword),
+                Password = Array.Empty<byte>(),
+                Salt = Array.Empty<byte>(),
+                IsNeedResetPassword = true
+            };
+
+            await _userRepositories.Insert(admin);
+        }
+
+        private async Task<string> GenerateUniqueAdminId()
+        {
+            var random = new Random();
+            string adminId;
+            do
+            {
+                adminId = $"Admin-{random.Next(100000, 999999)}";
+            } while (await _userRepositories.GetSingle(x => x.Id == adminId) != null);
+
+            return adminId;
         }
 
         public async Task<MessageResultModel> Register(UserRegisterReqModel ReqModel)
@@ -153,10 +208,11 @@ namespace PTEducation.Business.Services.UserServices
             var NewStudent = new User
             {
                 Id = $"1{classBlockCode}{nextStudentSequence:000}",
-                Name = TextConvert.ConvertToUnicodeEscape(ReqModel.Name),
+                Name = ReqModel.Name,
                 Email = ReqModel.Email,
                 Phone = ReqModel.Phone,
-                Role = RoleEnums.Student.ToString()
+                Role = RoleEnums.Student.ToString(),
+                IsNeedResetPassword = true,
             };
             var GeneratePassword = Authentication.GenerateRandomPassword();
             string HashedPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
@@ -175,11 +231,12 @@ namespace PTEducation.Business.Services.UserServices
                 var NewGuardian = new User
                 {
                     Id = $"2{classBlockCode}{nextGuardianSequence:0000}",
-                    Name = TextConvert.ConvertToUnicodeEscape(guardian.Name),
+                    Name = guardian.Name,
                     Email = guardian.Email,
                     Phone = guardian.Phone,
-                    Role = "Guardian",
+                    Role = RoleEnums.Guardan.ToString(),
                     Status = AccountStatusEnums.Active.ToString(),
+                    IsNeedResetPassword = true,
                     PasswordBcrypt = Authentication.CreateHashPasswordBCrypt(Authentication.GenerateRandomPassword())
                 };
                 ListAddUser.Add(NewGuardian);
