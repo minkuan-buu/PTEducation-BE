@@ -40,7 +40,7 @@ namespace PTEducation.Data.DTO.ResponseModel
 
     public class ClassCreatedByModel
     {
-        public Guid Id { get; set; }
+        public String Id { get; set; } = null!;
         public string Name { get; set; } = null!;
         public string Email { get; set; } = null!;
     }

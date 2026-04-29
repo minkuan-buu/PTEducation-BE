@@ -37,8 +37,8 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src =>
                     new ClassCreatedByModel
                     {
-                        Id = src.Id,
-                        Name = TextConvert.ConvertFromUnicodeEscape(src.CreatedByNavigation.Name),
+                        Id = src.CreatedByNavigation.Id,
+                        Name = src.CreatedByNavigation.Name,
                         Email = src.CreatedByNavigation.Email
                     }))
                 .ForMember(dest => dest.Students, opt => opt.MapFrom(src =>
@@ -58,8 +58,8 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src =>
                     new ClassCreatedByModel
                     {
-                        Id = src.Id,
-                        Name = TextConvert.ConvertFromUnicodeEscape(src.CreatedByNavigation.Name),
+                        Id = src.CreatedByNavigation.Id,
+                        Name = src.CreatedByNavigation.Name,
                         Email = src.CreatedByNavigation.Email
                     }))
                 .ForMember(dest => dest.TotalStudent, opt => opt.MapFrom(src =>
