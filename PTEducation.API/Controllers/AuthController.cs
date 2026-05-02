@@ -30,6 +30,13 @@ namespace PTEducation.API.Controllers
             try
             {
                 var Result = await _userServices.Login(User.Username, User.Password);
+                Response.Cookies.Append("at", Result.Data!.Token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = true,
+                    SameSite = SameSiteMode.Strict,
+                    Expires = DateTimeOffset.UtcNow.AddDays(7)
+                });
                 return Ok(Result);
             }
             catch (CustomException ex)
