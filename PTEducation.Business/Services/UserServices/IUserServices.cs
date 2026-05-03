@@ -10,7 +10,7 @@ namespace PTEducation.Business.Services.UserServices
 {
     public interface IUserServices
     {
-        Task<DataResultModel<UserLoginResModel>> Login(string Username, string Password);
+        Task<DataResultModel<RawUserLoginResModel>> Login(string Username, string Password);
         Task<MessageResultModel> Register(UserRegisterReqModel ReqModel);
         Task<MessageResultModel> Register(UserRegisterWithGuardianInfo ReqModel);
         Task<MessageResultModel> ChangePassword(UserChangePasswordReqModel ReqModel, string token);

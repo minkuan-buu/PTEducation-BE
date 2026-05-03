@@ -47,7 +47,7 @@ namespace PTEducation.Business.Services.UserServices
             _otpRepositories = otpRepositories;
         }
 
-        public async Task<DataResultModel<UserLoginResModel>> Login(string Username, string Password)
+        public async Task<DataResultModel<RawUserLoginResModel>> Login(string Username, string Password)
         {
             var CheckExist = await _userRepositories.GetSingle(x => (x.Email.Equals(Username) || x.Id.Equals(Username)) && x.Status.Equals(AccountStatusEnums.Active.ToString()));
             if (CheckExist == null)
@@ -70,10 +70,11 @@ namespace PTEducation.Business.Services.UserServices
                     throw new CustomException("Mật khẩu không chính xác!");
                 }
             }
-            var User = _mapper.Map<UserLoginResModel>(CheckExist);
+            var User = _mapper.Map<RawUserLoginResModel>(CheckExist);
             User.Token = Authentication.GenerateJWT(CheckExist);
+            User.EncryptedToken = SelfCrypto.Encrypt(User.Token);
             User.IsNeedChangePassword = CheckExist.IsNeedResetPassword;
-            return new DataResultModel<UserLoginResModel>()
+            return new DataResultModel<RawUserLoginResModel>()
             {
                 Data = User
             };

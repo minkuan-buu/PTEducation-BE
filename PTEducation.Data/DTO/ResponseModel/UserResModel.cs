@@ -28,6 +28,19 @@ namespace PTEducation.Data.DTO.ResponseModel
         public bool IsNeedChangePassword { get; set; } = false;
     }
 
+    public class RawUserLoginResModel
+    {
+        public string Id { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string PhoneNumber { get; set; } = null!;
+        public string Role { get; set; } = null!;
+        public bool IsResetPassword = false;
+        public string Token { get; set; } = null!;
+        public string EncryptedToken { get; set; } = null!;
+        public bool IsNeedChangePassword { get; set; } = false;
+    }
+
     public class UserTemp
     {
         public string TempToken { get; set; } = null!;

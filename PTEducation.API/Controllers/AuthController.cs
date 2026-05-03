@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PTEducation.Business.Services.AuthServices;
 using Asp.Versioning;
+using AutoMapper;
+using PTEducation.Data.DTO.ResponseModel;
 
 namespace PTEducation.API.Controllers
 {
@@ -14,12 +16,14 @@ namespace PTEducation.API.Controllers
     [Route("api/v{version:apiVersion}/authentication")]
     public class AuthController : ControllerBase
     {
+        private readonly IMapper _mapper;
         private readonly IUserServices _userServices;
         private readonly IAuthServices _authServices;
-        public AuthController(IUserServices userServices, IAuthServices authServices)
+        public AuthController(IUserServices userServices, IMapper mapper, IAuthServices authServices)
         {
             _authServices = authServices;
             _userServices = userServices;
+            _mapper = mapper;
         }
 
 
@@ -29,14 +33,15 @@ namespace PTEducation.API.Controllers
         {
             try
             {
-                var Result = await _userServices.Login(User.Username, User.Password);
-                Response.Cookies.Append("at", Result.Data!.Token, new CookieOptions
+                var RawResult = await _userServices.Login(User.Username, User.Password);
+                Response.Cookies.Append("at", RawResult.Data!.EncryptedToken, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
                     SameSite = SameSiteMode.Strict,
                     Expires = DateTimeOffset.UtcNow.AddDays(7)
                 });
+                var Result = _mapper.Map<DataResultModel<UserLoginResModel>>(RawResult);
                 return Ok(Result);
             }
             catch (CustomException ex)

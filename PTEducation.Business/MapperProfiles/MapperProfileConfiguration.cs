@@ -12,7 +12,9 @@ namespace PTEducation.Business.MapperProfiles
     {
         public MapperProfileConfiguration()
         {
-            CreateMap<User, UserLoginResModel>()
+            CreateMap(typeof(DataResultModel<>), typeof(DataResultModel<>));
+            CreateMap<RawUserLoginResModel, UserLoginResModel>();
+            CreateMap<User, RawUserLoginResModel>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
                     TextConvert.ConvertFromUnicodeEscape(src.Name)))
                 .ForMember(dest => dest.IsResetPassword, opt => opt.MapFrom(src => src.Status.Equals(AccountStatusEnums.ResetPassword.ToString())));
