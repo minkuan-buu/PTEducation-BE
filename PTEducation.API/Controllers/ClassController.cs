@@ -1,4 +1,5 @@
-﻿using PTEducation.Data.DTO.Custom;
+﻿using Asp.Versioning;
+using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Business.Services.UserServices;
 using Microsoft.AspNetCore.Authorization;
@@ -14,7 +15,9 @@ using PTEducation.Business.ApplicationMiddleware;
 namespace PTEducation.API.Controllers
 {
     [ApiController]
-    [Route("api/class")]
+    [Route("api/v{version:apiVersion}/classes")]
+    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     public class ClassController : ControllerBase
     {
         private readonly IClassServices _classServices;
@@ -27,7 +30,8 @@ namespace PTEducation.API.Controllers
 
 
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:guid}")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetClassDetail(Guid id)
         {
@@ -42,7 +46,8 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpGet("all")]
+        [HttpGet]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetList(int? pageIndex, [FromQuery] ClassFilter searchModel)
         {
@@ -57,7 +62,8 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpGet("sheet/all")]
+        [HttpGet("sheet")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetList()
         {
@@ -72,14 +78,31 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpGet("select/all")]
-        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> GetListSelect()
+        // [HttpGet("select")]
+        // [MapToApiVersion("1.0")]
+        // [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        // public async Task<IActionResult> GetListSelect()
+        // {
+        //     try
+        //     {
+        //         var Result = await _classServices.GetClassSelectList();
+        //         return Ok(Result);
+        //     }
+        //     catch (CustomException ex)
+        //     {
+        //         return BadRequest(new { message = ex.Message });
+        //     }
+        // }
+
+        [HttpGet("select")]
+        [MapToApiVersion("2.0")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetListSelectV2()
         {
             try
             {
-                var Result = await _classServices.GetClassSelectList();
-                return Ok(Result);
+                var result = await _classServices.GetClassSelectList();
+                return Ok(result);
             }
             catch (CustomException ex)
             {
@@ -87,7 +110,8 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpPost("create")]
+        [HttpPost]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> CreateClass([FromBody] ClassCreateReqModel ClassReq)
         {
@@ -103,12 +127,14 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpPut("update")]
+        [HttpPut("{id:guid}")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> UpdateClass([FromBody] ClassUpdateReqModel ClassReq)
+        public async Task<IActionResult> UpdateClass(Guid id, [FromBody] ClassUpdateReqModel ClassReq)
         {
             try
             {
+                ClassReq.Id = id;
                 var Result = await _classServices.UpdateClass(ClassReq);
                 return Ok(Result);
             }
@@ -118,13 +144,14 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpPut("delete")]
+        [HttpDelete("{id:guid}")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> SoftDeleteClass([FromBody] Guid Id)
+        public async Task<IActionResult> SoftDeleteClass(Guid id)
         {
             try
             {
-                var Result = await _classServices.SoftDeleteClass(Id);
+                var Result = await _classServices.SoftDeleteClass(id);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -133,13 +160,14 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpDelete("delete")]
+        [HttpDelete("{id:guid}/hard")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> HardDeleteClass([FromBody] Guid Id)
+        public async Task<IActionResult> HardDeleteClass(Guid id)
         {
             try
             {
-                var Result = await _classServices.HardDeleteClass(Id);
+                var Result = await _classServices.HardDeleteClass(id);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -148,13 +176,14 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpPut("restore")]
+        [HttpPatch("{id:guid}/restore")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> RestoreClass([FromBody] Guid Id)
+        public async Task<IActionResult> RestoreClass(Guid id)
         {
             try
             {
-                var Result = await _classServices.RestoreClass(Id);
+                var Result = await _classServices.RestoreClass(id);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -163,12 +192,14 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpPost("add-student")]
+        [HttpPost("{id:guid}/students")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> ManualAddStudentClass([FromBody] ManualAddStudentClassModel AddStudentsReq)
+        public async Task<IActionResult> ManualAddStudentClass(Guid id, [FromBody] ManualAddStudentClassModel AddStudentsReq)
         {
             try
             {
+                AddStudentsReq.Id = id;
                 var Result = await _classServices.ManualAddStudent(AddStudentsReq);
                 return Ok(Result);
             }
@@ -178,7 +209,8 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpPut("move-out")]
+        [HttpPost("students/move-out")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> MoveOutStudent([FromBody] MoveOutStudentClassModel MoveOutReq)
         {
@@ -193,7 +225,8 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpGet]
+        [HttpGet("lookup")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetClassIdByName([FromQuery] string ClassName)
         {
@@ -208,7 +241,8 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpPost("{id}/score/")]
+        [HttpPost("{id:guid}/scores/report")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetReportByClass(Guid id, [FromQuery] ScoreFromDateToDate ReqDate, [FromBody] ScoreExportCommentReqModel commentReqModel)
         {

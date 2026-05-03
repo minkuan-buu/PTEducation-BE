@@ -11,5 +11,6 @@ namespace PTEducation.Data.Enums
         Active,
         Inactive,
         ResetPassword,
+        PendingApproved,
     }
 }

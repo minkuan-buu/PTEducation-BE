@@ -30,8 +30,8 @@ namespace PTEducation.Data.DTO.RequestModel
         public string Name { get; set; } = null!;
         public Guid ClassId { get; set; }
         public string Email { get; set; } = null!;
-        public string Phone { get; set; } = null!;
-        public string? School { get; set; }
+        public string? Phone { get; set; }
+        public string School { get; set; } = null!;
         public List<GuardianInfoReqModel> Guardians { get; set; } = new List<GuardianInfoReqModel>();
     }
 

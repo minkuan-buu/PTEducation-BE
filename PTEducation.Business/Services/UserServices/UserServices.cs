@@ -211,14 +211,23 @@ namespace PTEducation.Business.Services.UserServices
                 Id = $"1{classBlockCode}{nextStudentSequence:000}",
                 Name = ReqModel.Name,
                 Email = ReqModel.Email,
-                Phone = ReqModel.Phone,
+                Phone = ReqModel.Phone ?? "",
                 Role = RoleEnums.Student.ToString(),
                 IsNeedResetPassword = true,
             };
+
+            StudentClass NewStudentClass = new()
+            {
+                Id = Guid.NewGuid(),
+                ClassId = ReqModel.ClassId,
+                StudentId = NewStudent.Id,
+                Status = AccountStatusEnums.PendingApproved.ToString(),
+            };
+
             var GeneratePassword = Authentication.GenerateRandomPassword();
             string HashedPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
             NewStudent.PasswordBcrypt = HashedPassword;
-            NewStudent.Status = AccountStatusEnums.Active.ToString();
+            NewStudent.Status = AccountStatusEnums.PendingApproved.ToString();
             ListAddUser.Add(NewStudent);
             List<StudentGuardian> ListStudentGuardian = new List<StudentGuardian>();
 
@@ -234,9 +243,9 @@ namespace PTEducation.Business.Services.UserServices
                     Id = $"2{classBlockCode}{nextGuardianSequence:0000}",
                     Name = guardian.Name,
                     Email = guardian.Email,
-                    Phone = guardian.Phone,
+                    Phone = guardian.Phone ?? "",
                     Role = RoleEnums.Guardan.ToString(),
-                    Status = AccountStatusEnums.Active.ToString(),
+                    Status = AccountStatusEnums.PendingApproved.ToString(),
                     IsNeedResetPassword = true,
                     PasswordBcrypt = Authentication.CreateHashPasswordBCrypt(Authentication.GenerateRandomPassword())
                 };
@@ -256,6 +265,7 @@ namespace PTEducation.Business.Services.UserServices
             }
             await _userRepositories.InsertRange(ListAddUser);
             await _studentGuardianRepositories.InsertRange(ListStudentGuardian);
+            await _studentClassRepositories.Insert(NewStudentClass);
             return new MessageResultModel
             {
                 Message = "Ok"
