@@ -23,6 +23,7 @@ namespace PTEducation.Business.Services.UserServices
         Task<MessageResultModel> UpdateStudentInfo(StudentUpdateReqModel ReqModel, Guid StudentClassId);
         Task<MessageResultModel> DeleteStudent(Guid StudentClassId);
         Task<MessageResultModel> ConvertNameFromUnicodeEscapeToUnicode();
+        Task<PagedListDataResultModel<UserListResModel>> GetAllStudents(int? pageIndex, UserFilter searchModel);
         Task InitAdminIfNeeded();
         //Task<bool> SendMail();
     }

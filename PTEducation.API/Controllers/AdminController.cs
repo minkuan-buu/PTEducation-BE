@@ -6,11 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 using PTEducation.Business.Services.AuthServices;
 using Org.BouncyCastle.Ocsp;
 using PTEducation.Data.DTO.ResponseModel;
+using Asp.Versioning;
 
 namespace PTEducation.API.Controllers
 {
     [ApiController]
-    [Route("api/admin")]
+    [Route("api/v{version:apiVersion}/admin")]
+    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     public class AdminController : ControllerBase
     {
         private readonly IUserServices _userServices;
@@ -20,6 +23,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("managers")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetManagers(int? pageIndex, [FromQuery] UserFilter searchModel)
         {
@@ -29,6 +33,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPost("managers")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> RegisterManager([FromBody] List<ManagerRegisterReqModel> ReqModel)
         {
@@ -38,6 +43,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPost("manager/deactivate/{id}")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> DeactivateManager(string id)
         {
@@ -47,6 +53,8 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPost("manager/reactivate/{id}")]
+        [MapToApiVersion("1.0")]
+
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> ReactivateManager(string id)
         {
@@ -56,6 +64,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPut("student/{studentClassId}")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateStudent(Guid studentClassId, [FromBody] StudentUpdateReqModel reqModel)
         {
@@ -64,10 +73,20 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpDelete("student/{studentClassId}")]
+        [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> DeleteStudent(Guid studentClassId)
         {
             var Result = await _userServices.DeleteStudent(studentClassId);
+            return Ok(Result);
+        }
+
+        [HttpGet("students")]
+        [MapToApiVersion("2.0")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetAllStudents(int? pageIndex, [FromQuery] UserFilter searchModel)
+        {
+            var Result = await _userServices.GetAllStudents(pageIndex, searchModel);
             return Ok(Result);
         }
     }

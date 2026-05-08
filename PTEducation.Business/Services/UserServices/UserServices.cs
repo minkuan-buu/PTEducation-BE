@@ -567,8 +567,40 @@ namespace PTEducation.Business.Services.UserServices
             }
             catch
             {
-                throw new CustomException("Error");    
+                throw new CustomException("Error");
             }
+
+        }
+        
+        public async Task<PagedListDataResultModel<UserListResModel>> GetAllStudents(int? pageIndex, UserFilter searchModel)
+        {
+            Func<IQueryable<User>, IOrderedQueryable<User>> orderBy = o => o.OrderBy(p => p.Name);
+            Expression<Func<User, bool>> filter = p => true;
+
+            if (searchModel != null)
+            {
+                if (!string.IsNullOrEmpty(searchModel.Keyword))
+                {
+                    var keyword = searchModel.Keyword.ToLower();
+                    var unicodeKeyword = TextConvert.ConvertToUnicodeEscape(searchModel.Keyword).ToLower();
+                    filter = filter.And(p =>
+                        p.Name.ToLower().Contains(unicodeKeyword) ||
+                        p.Email.ToLower().StartsWith(keyword)
+                    );
+                }
+            }
+
+            filter = filter.And(p => p.Role.Equals("Student") || p.Role.Equals("Guardian"));
+
+            var allStudents = await _userRepositories.GetPagedList(filter, orderBy, string.Empty, pageIndex ?? 1, 10);
+
+            return new PagedListDataResultModel<UserListResModel>()
+            {
+                Data = _mapper.Map<List<UserListResModel>>(allStudents.Data),
+                PageNumber = pageIndex ?? 1,
+                PageSize = 10,
+                TotalPages = allStudents.TotalPages
+            };
             
         }
     }
