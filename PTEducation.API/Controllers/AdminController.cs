@@ -89,5 +89,14 @@ namespace PTEducation.API.Controllers
             var Result = await _userServices.GetAllStudents(pageIndex, searchModel);
             return Ok(Result);
         }
+
+        [HttpPatch("students/{userId}")]
+        [MapToApiVersion("2.0")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> UpdateStudent(string userId, [FromBody] AccessReqModel reqModel)
+        {
+            var Result = await _userServices.UpdateStudentAccess(userId, reqModel);
+            return Ok(Result);
+        }
     }
 }

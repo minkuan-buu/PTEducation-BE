@@ -583,7 +583,7 @@ namespace PTEducation.Business.Services.UserServices
                 TotalPages = ListStudent.TotalPages
             };
         }
-        
+
         private async Task<PagedListDataResultModel<User>> ViewAllStudents(int? pageIndex, int? pageSize, UserFilter searchModel)
         {
             Func<IQueryable<User>, IOrderedQueryable<User>> orderBy = o => o.OrderBy(p => p.Name);
@@ -607,6 +607,130 @@ namespace PTEducation.Business.Services.UserServices
             var allStudents = await _userRepositories.GetPagedList(filter, orderBy, "StudentGuardianStudents.Guardian,StudentClasses.Class", pageIndex ?? 1, pageSize ?? 10);
 
             return allStudents;
+        }
+        
+        public async Task<MessageResultModel> UpdateStudentAccess(string userId, AccessReqModel reqModel)
+        {
+            var user = await _userRepositories.GetSingle(x => x.Id == userId && x.Role.Equals(RoleEnums.Student.ToString()));
+            if (user == null)
+            {
+                throw new CustomException("Không tìm thấy học sinh!");
+            }
+            if (reqModel.AccessStatus != "Approved" && reqModel.AccessStatus != "Rejected")
+            {
+                throw new CustomException("Trạng thái truy cập không hợp lệ!");
+            }
+            var studentClasses = (await _studentClassRepositories.GetList(
+                x => x.StudentId == userId,
+                includeProperties: "AttendanceDetails,ScoreDetails")).ToList();
+
+            var studentGuardians = (await _studentGuardianRepositories.GetList(
+                x => x.StudentId == userId,
+                includeProperties: "Guardian")).ToList();
+
+            var guardians = studentGuardians
+                .Where(x => x.Guardian != null)
+                .Select(x => x.Guardian)
+                .GroupBy(x => x.Id)
+                .Select(x => x.First())
+                .ToList();
+
+            using var transaction = await _userRepositories.BeginTransactionAsync();
+            try
+            {
+                if (reqModel.AccessStatus == "Approved")
+                {
+                    user.Status = AccountStatusEnums.Active.ToString();
+
+                    foreach (var studentClass in studentClasses)
+                    {
+                        studentClass.Status = AccountStatusEnums.Active.ToString();
+                    }
+
+                    foreach (var guardian in guardians)
+                    {
+                        guardian.Status = AccountStatusEnums.Active.ToString();
+                    }
+
+                    await _userRepositories.Update(user, saveChanges: false);
+
+                    if (studentClasses.Count > 0)
+                    {
+                        await _studentClassRepositories.UpdateRange(studentClasses, saveChanges: false);
+                    }
+
+                    if (guardians.Count > 0)
+                    {
+                        await _userRepositories.UpdateRange(guardians, saveChanges: false);
+                    }
+
+                    await _userRepositories.SaveChangesAsync();
+                    await _userRepositories.CommitTransactionAsync();
+
+                    return new MessageResultModel
+                    {
+                        Message = "Ok"
+                    };
+                }
+
+                var attendanceDetails = studentClasses.SelectMany(x => x.AttendanceDetails).ToList();
+                var scoreDetails = studentClasses.SelectMany(x => x.ScoreDetails).ToList();
+
+                if (attendanceDetails.Count > 0)
+                {
+                    await _attendanceDetailRepositories.DeleteRange(attendanceDetails, saveChanges: false);
+                }
+
+                if (scoreDetails.Count > 0)
+                {
+                    await _scoreDetailRepositories.DeleteRange(scoreDetails, saveChanges: false);
+                }
+
+                if (studentGuardians.Count > 0)
+                {
+                    await _studentGuardianRepositories.DeleteRange(studentGuardians, saveChanges: false);
+                }
+
+                var studentOtps = (await _otpRepositories.GetList(x => x.UserId == userId)).ToList();
+                if (studentOtps.Count > 0)
+                {
+                    await _otpRepositories.DeleteRange(studentOtps, saveChanges: false);
+                }
+
+                if (guardians.Count > 0)
+                {
+                    var guardianIds = guardians.Select(x => x.Id).ToList();
+                    var guardianOtps = (await _otpRepositories.GetList(x => guardianIds.Contains(x.UserId))).ToList();
+                    if (guardianOtps.Count > 0)
+                    {
+                        await _otpRepositories.DeleteRange(guardianOtps, saveChanges: false);
+                    }
+                }
+
+                if (studentClasses.Count > 0)
+                {
+                    await _studentClassRepositories.DeleteRange(studentClasses, saveChanges: false);
+                }
+
+                if (guardians.Count > 0)
+                {
+                    await _userRepositories.DeleteRange(guardians, saveChanges: false);
+                }
+
+                await _userRepositories.Delete(user, saveChanges: false);
+                await _userRepositories.SaveChangesAsync();
+                await _userRepositories.CommitTransactionAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+
+            return new MessageResultModel
+            {
+                Message = "Ok"
+            };
         }
     }
 }
