@@ -162,7 +162,8 @@ namespace PTEducation.Business.MapperProfiles
                         Name = x.Guardian.Name,
                         Email = x.Guardian.Email,
                         Phone = x.Guardian.Phone,
-                        Relationship = x.Relationship
+                        Relationship = x.Relationship,
+                        IsPrimary = x.IsPrimary
                     }).ToList()));
         }
     }

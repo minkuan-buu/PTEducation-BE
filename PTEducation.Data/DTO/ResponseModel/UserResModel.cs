@@ -88,5 +88,6 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Email { get; set; } = null!;
         public string Phone { get; set; } = null!;
         public string Relationship { get; set; } = null!;
+        public bool IsPrimary { get; set; } = false;
     }
 }
