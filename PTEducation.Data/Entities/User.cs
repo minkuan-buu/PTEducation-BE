@@ -15,9 +15,9 @@ public partial class User
 
     public string Role { get; set; } = null!;
 
-    public byte[] Password { get; set; } = null!;
+    public byte[]? Password { get; set; }
 
-    public byte[] Salt { get; set; } = null!;
+    public byte[]? Salt { get; set; }
 
     public string Status { get; set; } = null!;
 

@@ -77,6 +77,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Phone { get; set; } = null!;
         public string Role { get; set; } = null!;
         public string Status { get; set; } = null!;
+        public string? ClassName { get; set; }
         public List<UserGuardianListResModel> Guardians { get; set; } = null!;
     }
 
@@ -86,7 +87,6 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Name { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string Phone { get; set; } = null!;
-        public string Role { get; set; } = null!;
         public string Relationship { get; set; } = null!;
     }
 }

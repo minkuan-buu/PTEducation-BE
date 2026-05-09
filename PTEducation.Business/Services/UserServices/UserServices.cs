@@ -244,7 +244,7 @@ namespace PTEducation.Business.Services.UserServices
                     Name = guardian.Name,
                     Email = guardian.Email,
                     Phone = guardian.Phone ?? "",
-                    Role = RoleEnums.Guardan.ToString(),
+                    Role = RoleEnums.Guardian.ToString(),
                     Status = AccountStatusEnums.PendingApproved.ToString(),
                     IsNeedResetPassword = true,
                     PasswordBcrypt = Authentication.CreateHashPasswordBCrypt(Authentication.GenerateRandomPassword())
@@ -571,8 +571,20 @@ namespace PTEducation.Business.Services.UserServices
             }
 
         }
-        
+
         public async Task<PagedListDataResultModel<UserListResModel>> GetAllStudents(int? pageIndex, UserFilter searchModel)
+        {
+            var ListStudent = await ViewAllStudents(pageIndex, 20, searchModel);
+            return new PagedListDataResultModel<UserListResModel>()
+            {
+                Data = _mapper.Map<List<UserListResModel>>(ListStudent.Data),
+                PageNumber = pageIndex ?? 1,
+                PageSize = 20,
+                TotalPages = ListStudent.TotalPages
+            };
+        }
+        
+        private async Task<PagedListDataResultModel<User>> ViewAllStudents(int? pageIndex, int? pageSize, UserFilter searchModel)
         {
             Func<IQueryable<User>, IOrderedQueryable<User>> orderBy = o => o.OrderBy(p => p.Name);
             Expression<Func<User, bool>> filter = p => true;
@@ -590,18 +602,11 @@ namespace PTEducation.Business.Services.UserServices
                 }
             }
 
-            filter = filter.And(p => p.Role.Equals("Student") || p.Role.Equals("Guardian"));
+            filter = filter.And(p => p.Role.Equals(RoleEnums.Student.ToString()));
 
-            var allStudents = await _userRepositories.GetPagedList(filter, orderBy, string.Empty, pageIndex ?? 1, 10);
+            var allStudents = await _userRepositories.GetPagedList(filter, orderBy, "StudentGuardianStudents.Guardian,StudentClasses.Class", pageIndex ?? 1, pageSize ?? 10);
 
-            return new PagedListDataResultModel<UserListResModel>()
-            {
-                Data = _mapper.Map<List<UserListResModel>>(allStudents.Data),
-                PageNumber = pageIndex ?? 1,
-                PageSize = 10,
-                TotalPages = allStudents.TotalPages
-            };
-            
+            return allStudents;
         }
     }
 }

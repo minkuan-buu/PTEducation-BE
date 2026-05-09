@@ -152,6 +152,18 @@ namespace PTEducation.Business.MapperProfiles
                         Name = TextConvert.ConvertFromUnicodeEscape(x.StudentClass.Student.Name),
                         AttendanceStatus = AttendanceEnums.Có_mặt.ToString()
                     }).ToList()));
+            CreateMap<User, UserListResModel>()
+                .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
+                    src.StudentClasses.Count == 0 ? null :src.StudentClasses.First().Class.Name))
+                .ForMember(dest => dest.Guardians, opt => opt.MapFrom(src =>
+                    src.StudentGuardianStudents.Select(x => new UserGuardianListResModel
+                    {
+                        Id = x.Guardian.Id,
+                        Name = x.Guardian.Name,
+                        Email = x.Guardian.Email,
+                        Phone = x.Guardian.Phone,
+                        Relationship = x.Relationship
+                    }).ToList()));
         }
     }
 }

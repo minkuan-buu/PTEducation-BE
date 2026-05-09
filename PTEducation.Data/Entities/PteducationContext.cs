@@ -33,23 +33,26 @@ public partial class PteducationContext : DbContext
     {
         modelBuilder.Entity<Attendance>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("Attendance_pk");
+            entity.HasKey(e => e.Id).HasName("PK__Attendan__3214EC07E72A84E8");
 
             entity.ToTable("Attendance");
 
-            entity.HasIndex(e => e.ClassId, "IX_Attendance_ClassId");
-
-            entity.HasIndex(e => e.CreatedBy, "IX_Attendance_CreatedBy");
-
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.ClassId).HasDefaultValueSql("(NULL)");
             entity.Property(e => e.CreatedBy)
                 .HasMaxLength(30)
-                .IsUnicode(false);
-            entity.Property(e => e.EndDate).HasColumnType("datetime");
-            entity.Property(e => e.StartDate).HasColumnType("datetime");
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.EndDate)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime");
+            entity.Property(e => e.StartDate)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
 
             entity.HasOne(d => d.Class).WithMany(p => p.Attendances)
                 .HasForeignKey(d => d.ClassId)
@@ -64,18 +67,17 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<AttendanceDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("AttendanceDetail_pk");
+            entity.HasKey(e => e.Id).HasName("PK__Attendan__3214EC079162DFE4");
 
             entity.ToTable("AttendanceDetail");
 
-            entity.HasIndex(e => e.AttendanceId, "IX_AttendanceDetail_AttendanceId");
-
-            entity.HasIndex(e => e.StudentClassId, "IX_AttendanceDetail_StudentClassId");
-
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.AttendanceId).HasDefaultValueSql("(NULL)");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.StudentClassId).HasDefaultValueSql("(NULL)");
 
             entity.HasOne(d => d.Attendance).WithMany(p => p.AttendanceDetails)
                 .HasForeignKey(d => d.AttendanceId)
@@ -90,25 +92,32 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Class>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Class__3214EC075D19815A");
+            entity.HasKey(e => e.Id).HasName("PK__Class__3214EC0762E79B13");
 
             entity.ToTable("Class");
 
-            entity.HasIndex(e => e.CreatedBy, "IX_Class_CreatedBy");
-
             entity.Property(e => e.Id).ValueGeneratedNever();
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime");
             entity.Property(e => e.CreatedBy)
                 .HasMaxLength(30)
-                .IsUnicode(false);
-            entity.Property(e => e.EndAt).HasColumnType("datetime");
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.EndAt)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime");
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
-                .IsUnicode(false);
-            entity.Property(e => e.StartAt).HasColumnType("datetime");
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.StartAt)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
 
             entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Classes)
                 .HasForeignKey(d => d.CreatedBy)
@@ -118,24 +127,27 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Otp>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("OTP_pk");
+            entity.HasKey(e => e.Id).HasName("PK__OTP__3214EC078544DE14");
 
             entity.ToTable("OTP");
-
-            entity.HasIndex(e => e.UserId, "IX_OTP_UserId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Code)
                 .HasMaxLength(6)
-                .IsUnicode(false);
-            entity.Property(e => e.ExpiredDate).HasColumnType("datetime");
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.ExpiredDate)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime");
             entity.Property(e => e.IsUsed).HasColumnName("isUsed");
             entity.Property(e => e.Status)
                 .HasMaxLength(30)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.UserId)
                 .HasMaxLength(30)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
 
             entity.HasOne(d => d.User).WithMany(p => p.Otps)
                 .HasForeignKey(d => d.UserId)
@@ -145,27 +157,33 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Score>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Score__3214EC07064E064E");
+            entity.HasKey(e => e.Id).HasName("PK__Score__3214EC072819449D");
 
             entity.ToTable("Score");
 
-            entity.HasIndex(e => e.ClassId, "IX_Score_ClassId");
-
-            entity.HasIndex(e => e.CreateBy, "IX_Score_CreateBy");
-
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.ClassId).HasDefaultValueSql("(NULL)");
             entity.Property(e => e.CreateBy)
                 .HasMaxLength(30)
-                .IsUnicode(false);
-            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
-            entity.Property(e => e.ModifiedAt).HasColumnType("datetime");
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime");
+            entity.Property(e => e.ModifiedAt)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime");
             entity.Property(e => e.Shift)
                 .HasMaxLength(100)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .IsUnicode(false);
-            entity.Property(e => e.TestDateAt).HasColumnType("datetime");
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.TestDateAt)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("datetime");
 
             entity.HasOne(d => d.Class).WithMany(p => p.Scores)
                 .HasForeignKey(d => d.ClassId)
@@ -180,22 +198,24 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<ScoreDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ScoreDet__3214EC076B71B76A");
+            entity.HasKey(e => e.Id).HasName("PK__ScoreDet__3214EC07D24DDF71");
 
             entity.ToTable("ScoreDetail");
-
-            entity.HasIndex(e => e.ScoreId, "IX_ScoreDetail_ScoreId");
-
-            entity.HasIndex(e => e.StudentClassId, "IX_ScoreDetail_StudentClassId");
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Note)
                 .HasMaxLength(500)
-                .IsUnicode(false);
-            entity.Property(e => e.Score).HasColumnType("decimal(4, 2)");
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.Score)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnType("decimal(4, 2)");
+            entity.Property(e => e.ScoreId).HasDefaultValueSql("(NULL)");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.StudentClassId).HasDefaultValueSql("(NULL)");
 
             entity.HasOne(d => d.ScoreNavigation).WithMany(p => p.ScoreDetails)
                 .HasForeignKey(d => d.ScoreId)
@@ -210,21 +230,20 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<StudentClass>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__StudentC__3214EC076DB43B81");
+            entity.HasKey(e => e.Id).HasName("PK__StudentC__3214EC07119F651C");
 
             entity.ToTable("StudentClass");
 
-            entity.HasIndex(e => e.ClassId, "IX_StudentClass_ClassId");
-
-            entity.HasIndex(e => e.StudentId, "IX_StudentClass_StudentId");
-
             entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.ClassId).HasDefaultValueSql("(NULL)");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.StudentId)
                 .HasMaxLength(30)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
 
             entity.HasOne(d => d.Class).WithMany(p => p.StudentClasses)
                 .HasForeignKey(d => d.ClassId)
@@ -239,18 +258,22 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<StudentGuardian>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__StudentG__3214EC07F3369D1D");
+            entity.HasKey(e => e.Id).HasName("PK__StudentG__3214EC07FC1CC142");
 
-            entity.HasIndex(e => new { e.StudentId, e.GuardianId }, "UQ_StudentGuardians_Student_Guardian").IsUnique();
+            entity.HasIndex(e => new { e.GuardianId, e.StudentId }, "UQ_StudentGuardians_Student_Guardian").IsUnique();
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.GuardianId)
                 .HasMaxLength(30)
-                .IsUnicode(false);
-            entity.Property(e => e.Relationship).HasMaxLength(50);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.Relationship)
+                .HasMaxLength(50)
+                .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.StudentId)
                 .HasMaxLength(30)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
 
             entity.HasOne(d => d.Guardian).WithMany(p => p.StudentGuardianGuardians)
                 .HasForeignKey(d => d.GuardianId)
@@ -265,7 +288,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__User__3214EC075BB62C12");
+            entity.HasKey(e => e.Id).HasName("PK__User__3214EC07FFE4B5D4");
 
             entity.ToTable("User");
 
@@ -274,22 +297,36 @@ public partial class PteducationContext : DbContext
                 .IsUnicode(false);
             entity.Property(e => e.Email)
                 .HasMaxLength(200)
-                .IsUnicode(false);
-            entity.Property(e => e.Name).HasMaxLength(300);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)")
+                .HasComment("");
+            entity.Property(e => e.IsNeedResetPassword).HasComment("");
+            entity.Property(e => e.Name)
+                .HasMaxLength(300)
+                .HasDefaultValueSql("(NULL)")
+                .HasComment("");
+            entity.Property(e => e.Password).HasDefaultValueSql("(NULL)");
             entity.Property(e => e.PasswordBcrypt)
                 .HasMaxLength(200)
                 .IsUnicode(false)
-                .HasComment("")
+                .HasDefaultValueSql("(NULL)")
                 .HasColumnName("PasswordBCrypt");
             entity.Property(e => e.Phone)
                 .HasMaxLength(20)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)")
+                .HasComment("");
             entity.Property(e => e.Role)
                 .HasMaxLength(20)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)")
+                .HasComment("");
+            entity.Property(e => e.Salt).HasDefaultValueSql("(NULL)");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)")
+                .HasComment("");
         });
 
         OnModelCreatingPartial(modelBuilder);

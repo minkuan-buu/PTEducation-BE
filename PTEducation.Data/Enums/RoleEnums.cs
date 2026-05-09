@@ -11,6 +11,6 @@ namespace PTEducation.Data.Enums
         Admin,
         Manager,
         Student,
-        Guardan
+        Guardian
     }
 }
