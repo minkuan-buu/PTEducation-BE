@@ -98,5 +98,14 @@ namespace PTEducation.API.Controllers
             var Result = await _userServices.UpdateStudentAccess(userId, reqModel);
             return Ok(Result);
         }
+
+        [HttpDelete("students/{userId}")]
+        [MapToApiVersion("2.0")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> DeleteStudent(string userId)
+        {
+            var Result = await _userServices.DeleteStudent(userId);
+            return Ok(Result);
+        }
     }
 }
