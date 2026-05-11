@@ -803,17 +803,19 @@ namespace PTEducation.Business.Services.UserServices
                     await _userRepositories.DeleteRange(guardians, saveChanges: false);
                 }
                 await _userRepositories.Delete(user, saveChanges: false);
+                await _userRepositories.SaveChangesAsync();
                 await _userRepositories.CommitTransactionAsync();
+                
+                return new MessageResultModel
+                {
+                    Message = "Ok"
+                };
             }
             catch
             {
                 await transaction.RollbackAsync();
                 throw;
             }
-            return new MessageResultModel
-            {
-                Message = "Ok"
-            };
         }
     }
 }
