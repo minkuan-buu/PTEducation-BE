@@ -266,6 +266,19 @@ namespace PTEducation.Business.Services.UserServices
             await _userRepositories.InsertRange(ListAddUser);
             await _studentGuardianRepositories.InsertRange(ListStudentGuardian);
             await _studentClassRepositories.Insert(NewStudentClass);
+            string FilePath = "../PTEducation.Business/TemplateEmail/FirstInformationNew.html";
+            string Html = File.ReadAllText(FilePath);
+            Html = Html.Replace("{{Password}}", GeneratePassword);
+            Html = Html.Replace("{{Email}}", ReqModel.Email);
+            var listEmail = new List<EmailReqModel>
+            {
+                new EmailReqModel
+                {
+                    Email = ReqModel.Email,
+                    HtmlContent = Html
+                }
+            };
+            await _email.SendEmail("[Thông tin đăng nhập]", listEmail);
             return new MessageResultModel
             {
                 Message = "Ok"
