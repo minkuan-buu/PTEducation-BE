@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PTEducation.Data.Entities;
 
 namespace PTEducation.Data.DTO.RequestModel
 {
@@ -17,6 +18,21 @@ namespace PTEducation.Data.DTO.RequestModel
         public DateTime EndAt { get; set; }
         public string? DefaultPassword { get; set; }
         public List<StudentsImportWithClass>? Students { get; set; } = new();
+    }
+
+    public class ClassCreateReqModelV2
+    {
+        public string Name { get; set; } = null!;
+        public List<ClassScheduleReqModel> Schedule { get; set; } = null!;
+        public DateTime StartAt { get; set; }
+        public DateTime EndAt { get; set; }
+    }
+
+    public class ClassScheduleReqModel
+    {
+        public byte DayOfWeek { get; set; }
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
     }
 
     public class ClassUpdateReqModel

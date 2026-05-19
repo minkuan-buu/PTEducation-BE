@@ -28,6 +28,13 @@ namespace PTEducation.Business.MapperProfiles
                     DateTime.Now))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
                     GeneralStatusEnums.Active.ToString()));
+            CreateMap<ClassCreateReqModelV2, Class>()
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
+                    TextConvert.ConvertToUnicodeEscape(src.Name)))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src =>
+                    DateTime.Now))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
+                    GeneralStatusEnums.Active.ToString()));
             CreateMap<StudentsImportWithClass, User>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
                     TextConvert.ConvertToUnicodeEscape(src.Name)))
@@ -128,22 +135,10 @@ namespace PTEducation.Business.MapperProfiles
                     src.StudentClasses.Count == 0 ? null : TextConvert.ConvertFromUnicodeEscape(src.StudentClasses.First().Class.Name)));
             CreateMap<AttendanceCreateReqModel, Attendance>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => GeneralStatusEnums.Active.ToString()));
-            CreateMap<Attendance, AttendanceListResModel>()
-                .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => new AttendanceCreatedByModel()
-                {
-                    Id = src.CreatedByNavigation.Id,
-                    Name = TextConvert.ConvertFromUnicodeEscape(src.CreatedByNavigation.Name),
-                    Email = src.CreatedByNavigation.Email
-                }));
+            CreateMap<Attendance, AttendanceListResModel>();
             CreateMap<Attendance, AttendanceDetailResModel>()
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
                     TextConvert.ConvertFromUnicodeEscape(src.Class.Name)))
-                .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => new AttendanceCreatedByModel()
-                {
-                    Id = src.CreatedByNavigation.Id,
-                    Name = TextConvert.ConvertFromUnicodeEscape(src.CreatedByNavigation.Name),
-                    Email = src.CreatedByNavigation.Email
-                }))
                 .ForMember(dest => dest.AttendanceDetails, opt => opt.MapFrom(src =>
                     src.AttendanceDetails.Select(x => new AttendanceDetailStudentResModel
                     {

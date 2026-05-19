@@ -127,6 +127,23 @@ namespace PTEducation.API.Controllers
             }
         }
 
+        [HttpPost]
+        [MapToApiVersion("2.0")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> CreateClassV2([FromBody] ClassCreateReqModelV2 ClassReq)
+        {
+            try
+            {
+                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
+                var Result = await _classServices.CreateClassV2(ClassReq, token);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPut("{id:guid}")]
         [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]

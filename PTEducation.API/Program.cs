@@ -4,11 +4,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Any;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using PTEducation.API.Middleware;
 using PTEducation.API.Swagger;
+using PTEducation.API.Serialization;
 using PTEducation.Business.MapperProfiles;
 using PTEducation.Business.Services.AttendanceDetailServices;
 using PTEducation.Business.Services.AttendanceServices;
@@ -74,6 +76,13 @@ builder.Services.AddSwaggerGen(c =>
             },
             new string[]{}
         }
+    });
+
+    c.MapType<TimeOnly>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "time",
+        Example = new OpenApiString("08:00:00")
     });
 });
 //========================================== DATABASE =============================================
@@ -142,6 +151,7 @@ builder.Services.AddControllers()
         .AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+            options.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
         });
 
 //========================================== REPOSITORY ===========================================

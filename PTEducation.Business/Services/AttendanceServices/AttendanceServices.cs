@@ -52,7 +52,6 @@ namespace PTEducation.Business.Services.AttendanceServices
             var NewAttendanceId = Guid.NewGuid();
             var NewAttendance = _mapper.Map<Attendance>(attendanceReq);
             NewAttendance.Id = NewAttendanceId;
-            NewAttendance.CreatedBy = UserId;
             var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(attendanceReq.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             List<AttendanceDetail> ListAttendanceDetail = new();
             foreach (var student in attendanceReq.ListIdStudent)

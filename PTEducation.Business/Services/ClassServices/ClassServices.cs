@@ -195,6 +195,38 @@ namespace PTEducation.Business.Services.ClassServices
             }
         }
 
+        public async Task<MessageResultModel> CreateClassV2(ClassCreateReqModelV2 ClassReq, string token)
+        {
+            var userId = Authentication.DecodeToken(token, "userid");
+            var CheckExist = await _classRepositories.GetSingle(x => x.Name.Equals(TextConvert.ConvertToUnicodeEscape(ClassReq.Name)) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            if (CheckExist != null)
+            {
+                throw new CustomException("Class name is existed!");
+            }
+            var ClassId = Guid.NewGuid();
+            var NewClass = _mapper.Map<Class>(ClassReq);
+            NewClass.Id = ClassId;
+            NewClass.CreatedBy = userId;
+            foreach (var schedule in ClassReq.Schedule)
+            {
+                ClassSchedule NewSchedule = new()
+                {
+                    Id = Guid.NewGuid(),
+                    ClassId = ClassId,
+                    DayOfWeek = schedule.DayOfWeek,
+                    StartTime = schedule.StartTime,
+                    EndTime = schedule.EndTime,
+                    Status = GeneralStatusEnums.Active.ToString()
+                };
+                NewClass.ClassSchedules.Add(NewSchedule);
+            }
+            await _classRepositories.Insert(NewClass);
+            return new MessageResultModel()
+            {
+                Message = "Ok"
+            };
+        }
+
         public async Task<MessageResultModel> UpdateClass(ClassUpdateReqModel ClassReq)
         {
             var CheckExist = await _classRepositories.GetSingle(x => x.Id == ClassReq.Id);

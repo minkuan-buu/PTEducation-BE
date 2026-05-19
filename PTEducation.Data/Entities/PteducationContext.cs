@@ -17,6 +17,8 @@ public partial class PteducationContext : DbContext
 
     public virtual DbSet<Class> Classes { get; set; }
 
+    public virtual DbSet<ClassSchedule> ClassSchedules { get; set; }
+
     public virtual DbSet<Otp> Otps { get; set; }
 
     public virtual DbSet<Score> Scores { get; set; }
@@ -39,13 +41,14 @@ public partial class PteducationContext : DbContext
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.ClassId).HasDefaultValueSql("(NULL)");
-            entity.Property(e => e.CreatedBy)
-                .HasMaxLength(30)
-                .IsUnicode(false)
-                .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.EndDate)
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnType("datetime");
+            entity.Property(e => e.Note).HasMaxLength(500);
+            entity.Property(e => e.SessionType)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasDefaultValue("Fixed");
             entity.Property(e => e.StartDate)
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnType("datetime");
@@ -59,10 +62,9 @@ public partial class PteducationContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("Attendance_Class_Id_fk");
 
-            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.Attendances)
-                .HasForeignKey(d => d.CreatedBy)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("Attendance_User_Id_fk");
+            entity.HasOne(d => d.ClassSchedule).WithMany(p => p.Attendances)
+                .HasForeignKey(d => d.ClassScheduleId)
+                .HasConstraintName("FK_Attendance_ClassSchedule");
         });
 
         modelBuilder.Entity<AttendanceDetail>(entity =>
@@ -123,6 +125,24 @@ public partial class PteducationContext : DbContext
                 .HasForeignKey(d => d.CreatedBy)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Class__CreatedBy__46E78A0C");
+        });
+
+        modelBuilder.Entity<ClassSchedule>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__ClassSch__3214EC077CA59604");
+
+            entity.ToTable("ClassSchedule");
+
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Status)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasDefaultValue("Active");
+
+            entity.HasOne(d => d.Class).WithMany(p => p.ClassSchedules)
+                .HasForeignKey(d => d.ClassId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ClassSchedule_Class");
         });
 
         modelBuilder.Entity<Otp>(entity =>

@@ -25,8 +25,6 @@ public partial class User
 
     public string? PasswordBcrypt { get; set; }
 
-    public virtual ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
-
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
 
     public virtual ICollection<Otp> Otps { get; set; } = new List<Otp>();
