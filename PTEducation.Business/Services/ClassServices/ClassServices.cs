@@ -207,7 +207,7 @@ namespace PTEducation.Business.Services.ClassServices
             var NewClass = _mapper.Map<Class>(ClassReq);
             NewClass.Id = ClassId;
             NewClass.CreatedBy = userId;
-            foreach (var schedule in ClassReq.Schedule)
+            foreach (var schedule in ClassReq.Schedules)
             {
                 ClassSchedule NewSchedule = new()
                 {
