@@ -117,8 +117,13 @@ namespace PTEducation.API.Controllers
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _classServices.CreateClass(ClassReq, token);
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+
+                var Result = await _classServices.CreateClass(ClassReq, userId);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -134,8 +139,13 @@ namespace PTEducation.API.Controllers
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _classServices.CreateClassV2(ClassReq, token);
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+
+                var Result = await _classServices.CreateClassV2(ClassReq, userId);
                 return Ok(Result);
             }
             catch (CustomException ex)

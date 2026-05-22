@@ -95,9 +95,8 @@ namespace PTEducation.Business.Services.ClassServices
             };
         }
 
-        public async Task<MessageResultModel> CreateClass(ClassCreateReqModel ClassReq, string token)
+        public async Task<MessageResultModel> CreateClass(ClassCreateReqModel ClassReq, string userId)
         {
-            var userId = Authentication.DecodeToken(token, "userid");
             var CheckExist = await _classRepositories.GetSingle(x => x.Name.Equals(TextConvert.ConvertToUnicodeEscape(ClassReq.Name)) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             if (CheckExist != null)
             {
@@ -195,13 +194,12 @@ namespace PTEducation.Business.Services.ClassServices
             }
         }
 
-        public async Task<MessageResultModel> CreateClassV2(ClassCreateReqModelV2 ClassReq, string token)
+        public async Task<MessageResultModel> CreateClassV2(ClassCreateReqModelV2 ClassReq, string userId)
         {
-            var userId = Authentication.DecodeToken(token, "userid");
             var CheckExist = await _classRepositories.GetSingle(x => x.Name.Equals(TextConvert.ConvertToUnicodeEscape(ClassReq.Name)) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             if (CheckExist != null)
             {
-                throw new CustomException("Class name is existed!");
+                throw new CustomException("Tên lớp đã tồn tại");
             }
             var ClassId = Guid.NewGuid();
             var NewClass = _mapper.Map<Class>(ClassReq);
