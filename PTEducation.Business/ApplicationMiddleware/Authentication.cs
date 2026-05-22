@@ -104,7 +104,7 @@ public class Authentication
             issuer: Issuer,
             audience: Audience,
             claims: Claims,
-            expires: DateTime.Now.AddHours(5),
+            expires: DateTime.UtcNow.AddHours(5),
             signingCredentials: Credential
             );
         var Encodetoken = new JwtSecurityTokenHandler().WriteToken(Token);

@@ -50,6 +50,22 @@ namespace PTEducation.API.Controllers
             }
         }
 
+        [MapToApiVersion("2.0")]
+        [HttpPost("logout")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
+        public async Task<IActionResult> Logout()
+        {
+            try
+            {
+                Response.Cookies.Delete("at");
+                return Ok();
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [MapToApiVersion("1.0")]
         [HttpPost("register")]
         //[Authorize("Admin")]

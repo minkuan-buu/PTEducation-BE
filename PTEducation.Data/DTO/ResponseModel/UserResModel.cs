@@ -24,7 +24,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string PhoneNumber { get; set; } = null!;
         public string Role { get; set; } = null!;
         public bool IsResetPassword = false;
-        public string Token { get; set; } = null!;
+        // public string Token { get; set; } = null!;
         public bool IsNeedChangePassword { get; set; } = false;
     }
 
