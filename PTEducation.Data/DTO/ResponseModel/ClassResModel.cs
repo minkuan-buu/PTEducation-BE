@@ -61,4 +61,15 @@ namespace PTEducation.Data.DTO.ResponseModel
         public DateTime? EndAt { get; set; }
         public bool? OrderCreatedAt { get; set; }
     }
+
+    public class ClassDetailMetaData
+    {
+        public string Name { get; set; } = null!;
+        public int TotalStudent { get; set; }
+        public decimal AverageScore { get; set; }
+        public int TotalSessions { get; set; }
+        public int CompletedSessions { get; set; }
+        public DateTime StartAt { get; set; }
+        public DateTime EndAt { get; set; }
+    }
 }

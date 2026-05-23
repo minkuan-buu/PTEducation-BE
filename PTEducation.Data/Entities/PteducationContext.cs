@@ -111,7 +111,6 @@ public partial class PteducationContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
-                .IsUnicode(false)
                 .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.StartAt)
                 .HasDefaultValueSql("(NULL)")

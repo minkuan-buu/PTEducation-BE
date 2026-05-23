@@ -28,8 +28,6 @@ namespace PTEducation.API.Controllers
             _env = env;
         }
 
-
-
         [HttpGet("{id:guid}")]
         [MapToApiVersion("1.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
@@ -38,6 +36,22 @@ namespace PTEducation.API.Controllers
             try
             {
                 var Result = await _classServices.GetClassDetail(id);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{id:guid}/metadata")]
+        [MapToApiVersion("2.0")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetClassMetadata(Guid id)
+        {
+            try
+            {
+                var Result = await _classServices.GetClassMetadata(id);
                 return Ok(Result);
             }
             catch (CustomException ex)

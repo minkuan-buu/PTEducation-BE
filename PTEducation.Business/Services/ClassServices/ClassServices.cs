@@ -67,12 +67,12 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<PagedListDataResultModel<ListClassResModel>> GetClassList(int? pageIndex, ClassFilter searchModel)
         {
-            var ListClass = await ViewAllClasses(pageIndex, 10, searchModel);
+            var ListClass = await ViewAllClasses(pageIndex, 5, searchModel);
             return new PagedListDataResultModel<ListClassResModel>()
             {
                 Data = _mapper.Map<List<ListClassResModel>>(ListClass.Data),
                 PageNumber = pageIndex ?? 1,
-                PageSize = 10,
+                PageSize = 5,
                 TotalPages = ListClass.TotalPages
             };
         }
@@ -540,7 +540,7 @@ namespace PTEducation.Business.Services.ClassServices
 
                 if (!string.IsNullOrEmpty(searchModel.Keyword))
                 {
-                    filter = filter.And(p => p.Name.ToLower().Contains(TextConvert.ConvertToUnicodeEscape(searchModel.Keyword).ToLower()));
+                    filter = filter.And(p => p.Name.ToLower().Contains(searchModel.Keyword.ToLower()));
                 }
             }
 
@@ -559,6 +559,32 @@ namespace PTEducation.Business.Services.ClassServices
             return new DataResultModel<Guid>()
             {
                 Data = Class.Id
+            };
+        }
+
+        public async Task<DataResultModel<ClassDetailMetaData>> GetClassMetadata(Guid ClassId)
+        {
+            var Class = await _classRepositories.GetSingle(x => x.Id == ClassId, includeProperties: "StudentClasses.Student");
+            if (Class == null)
+            {
+                throw new CustomException("Class not found!");
+            }
+            var TotalStudent = Class.StudentClasses.Count(sc => sc.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var TotalScore = Class.Scores.Count(s => s.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var TotalAttendance = Class.Attendances.Count(a => a.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var Metadata = new ClassDetailMetaData()
+            {
+                TotalStudent = TotalStudent,
+                AverageScore = TotalScore > 0 ? (decimal)TotalScore / TotalStudent : 0,
+                Name = Class.Name,
+                CompletedSessions = TotalAttendance,
+                TotalSessions = TotalAttendance + (Class.ClassSchedules.Count * (Class.EndAt - Class.StartAt).Days / 7), // Giả sử mỗi lịch học diễn ra hàng tuần, và tính số buổi đã qua dựa trên số tuần kể từ ngày bắt đầu lớp học
+                StartAt = Class.StartAt,
+                EndAt = Class.EndAt,
+            };
+            return new DataResultModel<ClassDetailMetaData>()
+            {
+                Data = Metadata
             };
         }
 
