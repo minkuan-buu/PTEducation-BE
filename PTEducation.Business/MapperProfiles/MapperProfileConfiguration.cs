@@ -160,6 +160,22 @@ namespace PTEducation.Business.MapperProfiles
                         Relationship = x.Relationship,
                         IsPrimary = x.IsPrimary
                     }).ToList()));
+            CreateMap<StudentClass, StudentInClassResModel>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Student.Id))
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
+                    TextConvert.ConvertFromUnicodeEscape(src.Student.Name)))
+                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Student.Email))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.Student.Phone))
+                .ForMember(dest => dest.Guardians, opt => opt.MapFrom(src =>
+                    src.Student.StudentGuardianStudents.Select(x => new UserGuardianListResModel
+                    {
+                        Id = x.Guardian.Id,
+                        Name = x.Guardian.Name,
+                        Email = x.Guardian.Email,
+                        Phone = x.Guardian.Phone,
+                        Relationship = x.Relationship,
+                        IsPrimary = x.IsPrimary
+                    }).ToList()));
         }
     }
 }

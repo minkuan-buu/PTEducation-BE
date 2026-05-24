@@ -605,8 +605,8 @@ namespace PTEducation.Business.Services.ClassServices
                 filter: s => s.ClassId == ClassId &&
                                 s.TestDateAt >= filterFrom &&  // Dùng biến đã xử lý
                                 s.TestDateAt <= filterTo,      // Dùng biến đã xử lý
-                // Include thêm Class để lấy tên lớp
-                includeProperties: "ScoreDetails.StudentClass.Student,Class" 
+                                                               // Include thêm Class để lấy tên lớp
+                includeProperties: "ScoreDetails.StudentClass.Student,Class"
             );
 
             // --- 2. Xử lý danh sách học sinh (Giữ nguyên) ---
@@ -644,6 +644,30 @@ namespace PTEducation.Business.Services.ClassServices
             {
                 Name = className,
                 StudentData = studentData
+            };
+        }
+        
+        public async Task<PagedListDataResultModel<StudentInClassResModel>> GetStudentByClassId(Guid ClassId, int? pageIndex, UserFilter searchModel)
+        {
+            Func<IQueryable<StudentClass>, IOrderedQueryable<StudentClass>> orderBy = o => o.OrderBy(p => p.Student.Name);
+            Expression<Func<StudentClass, bool>> filter = sc => sc.ClassId == ClassId && sc.Status.Equals(GeneralStatusEnums.Active.ToString());
+
+            if (searchModel != null)
+            {
+                if (!string.IsNullOrEmpty(searchModel.Keyword))
+                {
+                    filter = filter.And(sc => sc.Student.Name.ToLower().Contains(searchModel.Keyword.ToLower()) || sc.Student.Email.ToLower().Contains(searchModel.Keyword.ToLower()) || sc.Student.Phone.ToLower().Contains(searchModel.Keyword.ToLower()) || sc.Student.StudentGuardianStudents.Any(sgs => sgs.Guardian.Name.ToLower().Contains(searchModel.Keyword.ToLower()) || sgs.Guardian.Email.ToLower().Contains(searchModel.Keyword.ToLower()) || sgs.Guardian.Phone.ToLower().Contains(searchModel.Keyword.ToLower())));
+                }
+            }
+
+            var studentInClass = await _studentClassRepositories.GetPagedList(filter, orderBy, includeProperties: "Student.StudentGuardianStudents.Guardian", pageIndex ?? 1, 10);
+
+            return new PagedListDataResultModel<StudentInClassResModel>()
+            {
+                Data = _mapper.Map<List<StudentInClassResModel>>(studentInClass.Data),
+                PageNumber = pageIndex ?? 1,
+                PageSize = 10,
+                TotalPages = studentInClass.TotalPages
             };
         }
     }

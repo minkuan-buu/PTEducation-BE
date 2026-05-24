@@ -230,13 +230,15 @@ namespace PTEducation.Business.Services.UserServices
             NewStudent.Status = AccountStatusEnums.PendingApproved.ToString();
             ListAddUser.Add(NewStudent);
             List<StudentGuardian> ListStudentGuardian = new List<StudentGuardian>();
-
+            var listEmail = new List<EmailReqModel>();
+            string FileGuardianPath = "../PTEducation.Business/TemplateEmail/FirstInformationNewGuardian.html";
             foreach (var guardian in ReqModel.Guardians)
             {
                 if (nextGuardianSequence > 9999)
                 {
                     throw new CustomException($"Đã vượt quá giới hạn mã giám hộ cho khối {classBlockCode}.");
                 }
+                var NewGeneratePassword = Authentication.GenerateRandomPassword();
 
                 var NewGuardian = new User
                 {
@@ -247,10 +249,22 @@ namespace PTEducation.Business.Services.UserServices
                     Role = RoleEnums.Guardian.ToString(),
                     Status = AccountStatusEnums.PendingApproved.ToString(),
                     IsNeedResetPassword = true,
-                    PasswordBcrypt = Authentication.CreateHashPasswordBCrypt(Authentication.GenerateRandomPassword())
+                    PasswordBcrypt = Authentication.CreateHashPasswordBCrypt(NewGeneratePassword)
                 };
                 ListAddUser.Add(NewGuardian);
                 nextGuardianSequence++;
+                string GuardHtml = File.ReadAllText(FileGuardianPath);
+                GuardHtml = GuardHtml.Replace("{{PASSWORD}}", NewGeneratePassword);
+                GuardHtml = GuardHtml.Replace("{{STUDENTNAME}}", ReqModel.Name);
+                GuardHtml = GuardHtml.Replace("{{GUARDIANNAME}}", guardian.Name);
+                GuardHtml = GuardHtml.Replace("{{USERNAME}}", guardian.Email);
+                listEmail.Add(
+                    new EmailReqModel
+                    {
+                        Email = guardian.Email,
+                        HtmlContent = GuardHtml
+                    }
+                );
 
                 var NewStudentGuardian = new StudentGuardian
                 {
@@ -268,16 +282,16 @@ namespace PTEducation.Business.Services.UserServices
             await _studentClassRepositories.Insert(NewStudentClass);
             string FilePath = "../PTEducation.Business/TemplateEmail/FirstInformationNew.html";
             string Html = File.ReadAllText(FilePath);
-            Html = Html.Replace("{{Password}}", GeneratePassword);
-            Html = Html.Replace("{{Email}}", ReqModel.Email);
-            var listEmail = new List<EmailReqModel>
-            {
+            Html = Html.Replace("{{PASSWORD}}", GeneratePassword);
+            Html = Html.Replace("{{STUDENTNAME}}", ReqModel.Name);
+            Html = Html.Replace("{{USERNAME}}", ReqModel.Email);
+            listEmail.Add(
                 new EmailReqModel
                 {
                     Email = ReqModel.Email,
                     HtmlContent = Html
                 }
-            };
+            );
             await _email.SendEmail("[Thông tin đăng nhập]", listEmail);
             return new MessageResultModel
             {

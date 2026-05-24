@@ -44,14 +44,30 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpGet("{id:guid}/metadata")]
+        [HttpGet("{id:guid}")]
         [MapToApiVersion("2.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> GetClassMetadata(Guid id)
+        public async Task<IActionResult> GetClassDetailV2(Guid id)
         {
             try
             {
                 var Result = await _classServices.GetClassMetadata(id);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{id:guid}/students")]
+        [MapToApiVersion("2.0")]
+        // [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetStudentByClassId(Guid id, int? pageIndex, [FromQuery] UserFilter searchModel)
+        {
+            try
+            {
+                var Result = await _classServices.GetStudentByClassId(id, pageIndex, searchModel);
                 return Ok(Result);
             }
             catch (CustomException ex)

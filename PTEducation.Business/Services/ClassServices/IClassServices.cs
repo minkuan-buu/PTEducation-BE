@@ -25,6 +25,7 @@ namespace PTEducation.Business.Services.ClassServices
         Task<ListDataResultModel<ClassListSelectResModel>> GetClassSelectList();
         Task<DataResultModel<Guid>> GetClassIdByName(string ClassName);
         Task<DataResultModel<ClassDetailMetaData>> GetClassMetadata(Guid ClassId);
+        Task<PagedListDataResultModel<StudentInClassResModel>> GetStudentByClassId(Guid ClassId, int? pageIndex, UserFilter searchModel);
         Task<ClassScoreStudentExport> GetStudentScoreByClassIdAndRangeDate(Guid ClassId, DateTime? FromDate, DateTime? ToDate);
     }
 }
