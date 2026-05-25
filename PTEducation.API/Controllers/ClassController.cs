@@ -63,11 +63,11 @@ namespace PTEducation.API.Controllers
         [HttpGet("{id:guid}/students")]
         [MapToApiVersion("2.0")]
         // [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> GetStudentByClassId(Guid id, int? pageIndex, [FromQuery] UserFilter searchModel)
+        public async Task<IActionResult> GetStudentByClassId(Guid id, int? pageIndex, [FromQuery] UserFilter searchModel, [FromQuery] bool isPending = false)
         {
             try
             {
-                var Result = await _classServices.GetStudentByClassId(id, pageIndex, searchModel);
+                var Result = await _classServices.GetStudentByClassId(id, pageIndex, searchModel, isPending);
                 return Ok(Result);
             }
             catch (CustomException ex)

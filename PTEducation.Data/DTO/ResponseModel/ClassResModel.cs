@@ -66,6 +66,7 @@ namespace PTEducation.Data.DTO.ResponseModel
     {
         public string Name { get; set; } = null!;
         public int TotalStudent { get; set; }
+        public int TotalPendingStudent { get; set; }
         public decimal AverageScore { get; set; }
         public int TotalSessions { get; set; }
         public int CompletedSessions { get; set; }

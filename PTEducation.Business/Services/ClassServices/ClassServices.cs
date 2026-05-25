@@ -569,12 +569,14 @@ namespace PTEducation.Business.Services.ClassServices
             {
                 throw new CustomException("Class not found!");
             }
-            var TotalStudent = Class.StudentClasses.Count(sc => sc.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var TotalStudent = Class.StudentClasses.Count(sc => sc.Status.Equals(GeneralStatusEnums.Active.ToString()) && sc.Student.Status.Equals(AccountStatusEnums.Active.ToString()));
+            var TotalPendingStudent = Class.StudentClasses.Count(sc => sc.Student.Status.Equals(AccountStatusEnums.PendingApproved.ToString()));
             var TotalScore = Class.Scores.Count(s => s.Status.Equals(GeneralStatusEnums.Active.ToString()));
             var TotalAttendance = Class.Attendances.Count(a => a.Status.Equals(GeneralStatusEnums.Active.ToString()));
             var Metadata = new ClassDetailMetaData()
             {
                 TotalStudent = TotalStudent,
+                TotalPendingStudent = TotalPendingStudent,
                 AverageScore = TotalScore > 0 ? (decimal)TotalScore / TotalStudent : 0,
                 Name = Class.Name,
                 CompletedSessions = TotalAttendance,
@@ -647,10 +649,10 @@ namespace PTEducation.Business.Services.ClassServices
             };
         }
         
-        public async Task<PagedListDataResultModel<StudentInClassResModel>> GetStudentByClassId(Guid ClassId, int? pageIndex, UserFilter searchModel)
+        public async Task<PagedListDataResultModel<StudentInClassResModel>> GetStudentByClassId(Guid ClassId, int? pageIndex, UserFilter searchModel, bool isPending)
         {
             Func<IQueryable<StudentClass>, IOrderedQueryable<StudentClass>> orderBy = o => o.OrderBy(p => p.Student.Name);
-            Expression<Func<StudentClass, bool>> filter = sc => sc.ClassId == ClassId && sc.Status.Equals(GeneralStatusEnums.Active.ToString());
+            Expression<Func<StudentClass, bool>> filter = sc => sc.ClassId == ClassId;
 
             if (searchModel != null)
             {
@@ -658,6 +660,14 @@ namespace PTEducation.Business.Services.ClassServices
                 {
                     filter = filter.And(sc => sc.Student.Name.ToLower().Contains(searchModel.Keyword.ToLower()) || sc.Student.Email.ToLower().Contains(searchModel.Keyword.ToLower()) || sc.Student.Phone.ToLower().Contains(searchModel.Keyword.ToLower()) || sc.Student.StudentGuardianStudents.Any(sgs => sgs.Guardian.Name.ToLower().Contains(searchModel.Keyword.ToLower()) || sgs.Guardian.Email.ToLower().Contains(searchModel.Keyword.ToLower()) || sgs.Guardian.Phone.ToLower().Contains(searchModel.Keyword.ToLower())));
                 }
+            }
+
+            if (isPending)
+            {
+                filter = filter.And(sc => sc.Student.Status.Equals(AccountStatusEnums.PendingApproved.ToString()));
+            } else
+            {
+                filter = filter.And(sc => sc.Student.Status.Equals(GeneralStatusEnums.Active.ToString()));
             }
 
             var studentInClass = await _studentClassRepositories.GetPagedList(filter, orderBy, includeProperties: "Student.StudentGuardianStudents.Guardian", pageIndex ?? 1, 10);
