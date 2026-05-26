@@ -70,7 +70,15 @@ namespace PTEducation.Data.DTO.ResponseModel
         public decimal AverageScore { get; set; }
         public int TotalSessions { get; set; }
         public int CompletedSessions { get; set; }
+        public List<ClassScheduleResModel> WeeklySchedules { get; set; } = new();
         public DateTime StartAt { get; set; }
         public DateTime EndAt { get; set; }
+    }
+
+    public class ClassScheduleResModel
+    {
+        public byte DayOfWeek { get; set; }
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
     }
 }

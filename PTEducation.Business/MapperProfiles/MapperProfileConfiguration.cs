@@ -88,6 +88,9 @@ namespace PTEducation.Business.MapperProfiles
             CreateMap<Class, ClassListSelectResModel>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
                     TextConvert.ConvertFromUnicodeEscape(src.Name)));
+            CreateMap<ClassSchedule, ClassScheduleResModel>()
+                .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => src.StartTime))
+                .ForMember(dest => dest.EndTime, opt => opt.MapFrom(src => src.EndTime));
             CreateMap<ScoreCreateReqModel, Score>()
                 .ForMember(dest => dest.Shift, opt => opt.MapFrom(src =>
                     TextConvert.ConvertToUnicodeEscape(src.Shift)))

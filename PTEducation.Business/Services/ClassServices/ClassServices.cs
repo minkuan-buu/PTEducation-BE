@@ -564,7 +564,7 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<DataResultModel<ClassDetailMetaData>> GetClassMetadata(Guid ClassId)
         {
-            var Class = await _classRepositories.GetSingle(x => x.Id == ClassId, includeProperties: "StudentClasses.Student");
+            var Class = await _classRepositories.GetSingle(x => x.Id == ClassId, includeProperties: "StudentClasses.Student,ClassSchedules");
             if (Class == null)
             {
                 throw new CustomException("Class not found!");
@@ -575,6 +575,7 @@ namespace PTEducation.Business.Services.ClassServices
             var TotalAttendance = Class.Attendances.Count(a => a.Status.Equals(GeneralStatusEnums.Active.ToString()));
             var Metadata = new ClassDetailMetaData()
             {
+                WeeklySchedules = _mapper.Map<List<ClassScheduleResModel>>(Class.ClassSchedules.Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList()),
                 TotalStudent = TotalStudent,
                 TotalPendingStudent = TotalPendingStudent,
                 AverageScore = TotalScore > 0 ? (decimal)TotalScore / TotalStudent : 0,
