@@ -7,11 +7,13 @@ using ClosedXML.Excel;
 using PTEducation.Business.Services.ClassServices;
 using PTEducation.Data.DTO.ResponseModel;
 using PTEducation.Business.Services.AttendanceServices;
+using Asp.Versioning;
 
 namespace PTEducation.API.Controllers
 {
     [ApiController]
-    [Route("api/attendance")]
+    [ApiVersion("2.0")]
+    [Route("api/v{version:apiVersion}/attendance")]
     public class AttendanceController : ControllerBase
     {
         private readonly IAttendanceServices _attendanceServices;

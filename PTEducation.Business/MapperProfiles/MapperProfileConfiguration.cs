@@ -93,7 +93,7 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.EndTime, opt => opt.MapFrom(src => src.EndTime));
             CreateMap<ScoreCreateReqModel, Score>()
                 .ForMember(dest => dest.Shift, opt => opt.MapFrom(src =>
-                    TextConvert.ConvertToUnicodeEscape(src.Shift)))
+                    src.Shift != null ? TextConvert.ConvertToUnicodeEscape(src.Shift) : null))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src =>
                     DateTime.Now))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
@@ -103,7 +103,8 @@ namespace PTEducation.Business.MapperProfiles
                     Guid.NewGuid()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
                     GeneralStatusEnums.Active.ToString()))
-                .ForMember(dest => dest.Note, opt => opt.MapFrom(src => TextConvert.ConvertToUnicodeEscape(src.Note)));
+                .ForMember(dest => dest.Note, opt => opt.MapFrom(src =>
+                    src.Note != null ? TextConvert.ConvertToUnicodeEscape(src.Note) : null));
             CreateMap<Score, ScoreDetailResModel>()
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
                     TextConvert.ConvertFromUnicodeEscape(src.Class.Name)))

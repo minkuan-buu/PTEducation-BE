@@ -39,7 +39,16 @@ namespace PTEducation.Business.Services.AttendanceServices
         public async Task<MessageResultModel> CreateAttendance(AttendanceCreateReqModel attendanceReq, string token)
         {
             var UserId = Authentication.DecodeToken(token, "userid");
-            var CheckExistAttendance = await _attendanceRepositories.GetSingle(x => x.StartDate.Equals(attendanceReq.StartDate) && x.EndDate.Equals(attendanceReq.EndDate) && x.ClassId.Equals(attendanceReq.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var attendanceDate = DateOnly.FromDateTime(attendanceReq.Date);
+            TimeOnly? startTime = attendanceReq.StartTime;
+            TimeOnly? endTime = attendanceReq.EndTime;
+            var CheckExistAttendance = await _attendanceRepositories.GetSingle(x =>
+                x.Date.Equals(attendanceDate) &&
+                x.ClassId.Equals(attendanceReq.ClassId) &&
+                x.ClassScheduleId == attendanceReq.ClassScheduleId &&
+                x.StartTime == startTime &&
+                x.EndTime == endTime &&
+                x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             if (CheckExistAttendance != null)
             {
                 throw new CustomException("Attendance already exists");
@@ -51,6 +60,9 @@ namespace PTEducation.Business.Services.AttendanceServices
             }
             var NewAttendanceId = Guid.NewGuid();
             var NewAttendance = _mapper.Map<Attendance>(attendanceReq);
+            NewAttendance.Date = attendanceDate;
+            NewAttendance.StartTime = startTime;
+            NewAttendance.EndTime = endTime;
             NewAttendance.Id = NewAttendanceId;
             var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(attendanceReq.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             List<AttendanceDetail> ListAttendanceDetail = new();
@@ -61,6 +73,10 @@ namespace PTEducation.Business.Services.AttendanceServices
                     throw new CustomException($"Student {student} not found in this class");
                 }
                 var StudentClassId = StudentInClass.FirstOrDefault(x => x.StudentId.Equals(student));
+                if (StudentClassId == null)
+                {
+                    throw new CustomException($"Student {student} not found in this class");
+                }
                 AttendanceDetail NewAttendanceDetail = new()
                 {
                     Id = Guid.NewGuid(),
@@ -103,7 +119,7 @@ namespace PTEducation.Business.Services.AttendanceServices
 
         public async Task<DataResultModel<AttendanceDetailResModel>> GetAttendanceDetail(Guid Id)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails.StudentClass.Student,Class,CreatedByNavigation");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails.StudentClass.Student,Class,ClassSchedule");
             if (CheckExist == null)
             {
                 throw new CustomException("Attendance not found");
@@ -115,6 +131,10 @@ namespace PTEducation.Business.Services.AttendanceServices
             foreach (var item in ListStudentNotHaveAttend)
             {
                 var Student = StudentInClass.FirstOrDefault(x => x.Id.Equals(item));
+                if (Student == null)
+                {
+                    continue;
+                }
                 AttendanceDetailStudentResModel attendanceDetailStudent = new()
                 {
                     StudentClassId = item,
@@ -141,6 +161,10 @@ namespace PTEducation.Business.Services.AttendanceServices
             foreach (var Attendance in Result)
             {
                 var AttendanceRaw = allAttendance.FirstOrDefault(x => x.Id.Equals(Attendance.Id));
+                if (AttendanceRaw == null)
+                {
+                    continue;
+                }
                 var ListStudentNotHaveAttend = ListStudentInClassId.Except(AttendanceRaw.AttendanceDetails.Select(x => x.StudentClassId)).ToList();
                 Attendance.TotalPresent = AttendanceRaw.AttendanceDetails.Count();
                 Attendance.TotalAbsent = ListStudentNotHaveAttend.Count;
@@ -158,8 +182,12 @@ namespace PTEducation.Business.Services.AttendanceServices
             {
                 throw new CustomException("Attendance not found");
             }
-            CheckExist.StartDate = attendanceReq.StartDate;
-            CheckExist.EndDate = attendanceReq.EndDate;
+            CheckExist.Date = DateOnly.FromDateTime(attendanceReq.Date);
+            CheckExist.StartTime = attendanceReq.StartTime;
+            CheckExist.EndTime = attendanceReq.EndTime;
+            CheckExist.ClassScheduleId = attendanceReq.ClassScheduleId;
+            CheckExist.SessionType = attendanceReq.SessionType;
+            CheckExist.Note = attendanceReq.Note;
             await _attendanceRepositories.Update(CheckExist);
             return new MessageResultModel()
             {
@@ -169,22 +197,22 @@ namespace PTEducation.Business.Services.AttendanceServices
 
         private async Task<List<Attendance>> ViewAllAttendance(int? pageIndex, AttendanceFilter searchModel)
         {
-            Func<IQueryable<Attendance>, IOrderedQueryable<Attendance>> orderBy = o => o.OrderBy(p => p);
+            Func<IQueryable<Attendance>, IOrderedQueryable<Attendance>> orderBy = o => o.OrderByDescending(p => p.Date).ThenByDescending(p => p.StartTime);
             Expression<Func<Attendance, bool>> filter = p => p.ClassId.Equals(searchModel.ClassId);
 
             if (searchModel != null)
             {
                 if (searchModel.FromDate.HasValue)
                 {
-                    filter = filter.And(t => t.StartDate.Equals(searchModel.FromDate));
+                    filter = filter.And(t => t.Date >= DateOnly.FromDateTime(searchModel.FromDate.Value));
                 }
                 if (searchModel.ToDate.HasValue)
                 {
-                    filter = filter.And(t => t.EndDate.Equals(searchModel.ToDate));
+                    filter = filter.And(t => t.Date <= DateOnly.FromDateTime(searchModel.ToDate.Value));
                 }
             }
 
-            var allAttendance = await _attendanceRepositories.GetList(filter, orderBy, includeProperties: "CreatedByNavigation,AttendanceDetails", pageIndex ?? 1);
+            var allAttendance = await _attendanceRepositories.GetList(filter, orderBy, includeProperties: "Class,ClassSchedule,AttendanceDetails.StudentClass.Student", pageIndex ?? 1);
 
             return allAttendance.ToList();
         }

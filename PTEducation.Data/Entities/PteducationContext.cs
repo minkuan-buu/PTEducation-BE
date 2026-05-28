@@ -41,17 +41,11 @@ public partial class PteducationContext : DbContext
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.ClassId).HasDefaultValueSql("(NULL)");
-            entity.Property(e => e.EndDate)
-                .HasDefaultValueSql("(NULL)")
-                .HasColumnType("datetime");
             entity.Property(e => e.Note).HasMaxLength(500);
             entity.Property(e => e.SessionType)
                 .HasMaxLength(50)
                 .IsUnicode(false)
                 .HasDefaultValue("Fixed");
-            entity.Property(e => e.StartDate)
-                .HasDefaultValueSql("(NULL)")
-                .HasColumnType("datetime");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .IsUnicode(false)

@@ -69,7 +69,7 @@ namespace PTEducation.Business.Services.StudentServices
         {
             var userId = Authentication.DecodeToken(Token, "userid");
             var User = await _userRepositories.GetSingle(x => x.Id.Equals(userId), includeProperties: "StudentClasses");
-            var Attandance = await _attendanceRepositories.GetList(x => x.EndDate.Month == Month && x.EndDate.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "AttendanceDetails.StudentClass");
+            var Attandance = await _attendanceRepositories.GetList(x => x.Date.Month == Month && x.Date.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "AttendanceDetails.StudentClass");
             var UserClass = User.StudentClasses.FirstOrDefault();
             var ListAttandance = Attandance.ToList();
             var AttandanceDetails = ListAttandance
@@ -81,8 +81,9 @@ namespace PTEducation.Business.Services.StudentServices
                 var getStudentAttandance = attendance.AttendanceDetails.FirstOrDefault(x => x.StudentClass.StudentId.Equals(userId));
                 AttendanceStudentDetailResModel AttendanceDetail = new()
                 {
-                    StartDate = attendance.StartDate,
-                    EndDate = attendance.EndDate,
+                    Date = attendance.Date,
+                    StartTime = attendance.StartTime,
+                    EndTime = attendance.EndTime,
                     isPresent = getStudentAttandance != null,
                 };
                 ListAttendanceDetails.Add(AttendanceDetail);
@@ -131,7 +132,7 @@ namespace PTEducation.Business.Services.StudentServices
             var Class = await _studentClassRepositories.GetSingle(x => x.StudentId.Equals(userId));
             var Score = await _attendanceRepositories.GetList(x => x.ClassId.Equals(Class.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             var distinctMonths = Score
-                .Select(attendance => new { attendance.EndDate.Year, attendance.EndDate.Month })  // Lấy ra năm và tháng của từng bài kiểm tra
+                .Select(attendance => new { attendance.Date.Year, attendance.Date.Month })  // Lấy ra năm và tháng của từng bài kiểm tra
                 .Distinct()  // Lấy ra các tháng khác nhau
                 .ToList();
             List<AttendanceMonthResModel> ListRes = new();
