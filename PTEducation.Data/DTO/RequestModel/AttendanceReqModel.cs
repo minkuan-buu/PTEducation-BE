@@ -13,8 +13,8 @@ namespace PTEducation.Data.DTO.RequestModel
     public class AttendanceCreateReqModel
     {
         public DateTime Date { get; set; }
-        public TimeOnly? StartTime { get; set; }
-        public TimeOnly? EndTime { get; set; }
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
         public Guid ClassId { get; set; }
         public Guid? ClassScheduleId { get; set; }
         public string SessionType { get; set; } = "Fixed";
@@ -26,8 +26,8 @@ namespace PTEducation.Data.DTO.RequestModel
     {
         public Guid Id { get; set; }
         public DateTime Date { get; set; }
-        public TimeOnly? StartTime { get; set; }
-        public TimeOnly? EndTime { get; set; }
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
         public Guid? ClassScheduleId { get; set; }
         public string SessionType { get; set; } = "Fixed";
         public string? Note { get; set; }
@@ -37,7 +37,6 @@ namespace PTEducation.Data.DTO.RequestModel
     {
         public DateTime? FromDate { get; set; }
         public DateTime? ToDate { get; set; }
-        public Guid ClassId { get; set; }
     }
 
     public class AttendanceDetailUpdateReqModel

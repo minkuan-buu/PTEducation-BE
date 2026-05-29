@@ -17,6 +17,7 @@ using PTEducation.Data.Repositories.AttendanceDetailRepositories;
 using PTEducation.Business.Ultilities.FilterCombine;
 using System.Linq.Expressions;
 using System.Net.WebSockets;
+using System.Globalization;
 
 namespace PTEducation.Business.Services.AttendanceServices
 {
@@ -40,8 +41,8 @@ namespace PTEducation.Business.Services.AttendanceServices
         {
             var UserId = Authentication.DecodeToken(token, "userid");
             var attendanceDate = DateOnly.FromDateTime(attendanceReq.Date);
-            TimeOnly? startTime = attendanceReq.StartTime;
-            TimeOnly? endTime = attendanceReq.EndTime;
+            TimeOnly startTime = attendanceReq.StartTime;
+            TimeOnly endTime = attendanceReq.EndTime;
             var CheckExistAttendance = await _attendanceRepositories.GetSingle(x =>
                 x.Date.Equals(attendanceDate) &&
                 x.ClassId.Equals(attendanceReq.ClassId) &&
@@ -152,28 +153,28 @@ namespace PTEducation.Business.Services.AttendanceServices
             };
         }
 
-        public async Task<ListDataResultModel<AttendanceListResModel>> GetListAttendance(int? pageIndex, AttendanceFilter filter)
-        {
-            var allAttendance = await ViewAllAttendance(pageIndex, filter);
-            var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(filter.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
-            var ListStudentInClassId = StudentInClass.Select(x => x.Id).ToList();
-            var Result = _mapper.Map<List<AttendanceListResModel>>(allAttendance);
-            foreach (var Attendance in Result)
-            {
-                var AttendanceRaw = allAttendance.FirstOrDefault(x => x.Id.Equals(Attendance.Id));
-                if (AttendanceRaw == null)
-                {
-                    continue;
-                }
-                var ListStudentNotHaveAttend = ListStudentInClassId.Except(AttendanceRaw.AttendanceDetails.Select(x => x.StudentClassId)).ToList();
-                Attendance.TotalPresent = AttendanceRaw.AttendanceDetails.Count();
-                Attendance.TotalAbsent = ListStudentNotHaveAttend.Count;
-            }
-            return new ListDataResultModel<AttendanceListResModel>()
-            {
-                Data = Result
-            };
-        }
+        // public async Task<ListDataResultModel<AttendanceListResModel>> GetListAttendance(int? pageIndex, AttendanceFilter filter)
+        // {
+        //     var allAttendance = await ViewAllAttendance(pageIndex, filter);
+        //     var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(filter.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+        //     var ListStudentInClassId = StudentInClass.Select(x => x.Id).ToList();
+        //     var Result = _mapper.Map<List<AttendanceListResModel>>(allAttendance);
+        //     foreach (var Attendance in Result)
+        //     {
+        //         var AttendanceRaw = allAttendance.FirstOrDefault(x => x.Id.Equals(Attendance.Id));
+        //         if (AttendanceRaw == null)
+        //         {
+        //             continue;
+        //         }
+        //         var ListStudentNotHaveAttend = ListStudentInClassId.Except(AttendanceRaw.AttendanceDetails.Select(x => x.StudentClassId)).ToList();
+        //         Attendance.TotalPresent = AttendanceRaw.AttendanceDetails.Count();
+        //         Attendance.TotalAbsent = ListStudentNotHaveAttend.Count;
+        //     }
+        //     return new ListDataResultModel<AttendanceListResModel>()
+        //     {
+        //         Data = Result
+        //     };
+        // }
 
         public async Task<MessageResultModel> UpdateAttendance(AttendanceUpdateReqModel attendanceReq)
         {
@@ -195,27 +196,27 @@ namespace PTEducation.Business.Services.AttendanceServices
             };
         }
 
-        private async Task<List<Attendance>> ViewAllAttendance(int? pageIndex, AttendanceFilter searchModel)
-        {
-            Func<IQueryable<Attendance>, IOrderedQueryable<Attendance>> orderBy = o => o.OrderByDescending(p => p.Date).ThenByDescending(p => p.StartTime);
-            Expression<Func<Attendance, bool>> filter = p => p.ClassId.Equals(searchModel.ClassId);
+        // private async Task<List<Attendance>> ViewAllAttendance(int? pageIndex, AttendanceFilter searchModel)
+        // {
+        //     Func<IQueryable<Attendance>, IOrderedQueryable<Attendance>> orderBy = o => o.OrderByDescending(p => p.Date).ThenByDescending(p => p.StartTime);
+        //     Expression<Func<Attendance, bool>> filter = p => p.ClassId.Equals(searchModel.ClassId);
 
-            if (searchModel != null)
-            {
-                if (searchModel.FromDate.HasValue)
-                {
-                    filter = filter.And(t => t.Date >= DateOnly.FromDateTime(searchModel.FromDate.Value));
-                }
-                if (searchModel.ToDate.HasValue)
-                {
-                    filter = filter.And(t => t.Date <= DateOnly.FromDateTime(searchModel.ToDate.Value));
-                }
-            }
+        //     if (searchModel != null)
+        //     {
+        //         if (searchModel.FromDate.HasValue)
+        //         {
+        //             filter = filter.And(t => t.Date >= DateOnly.FromDateTime(searchModel.FromDate.Value));
+        //         }
+        //         if (searchModel.ToDate.HasValue)
+        //         {
+        //             filter = filter.And(t => t.Date <= DateOnly.FromDateTime(searchModel.ToDate.Value));
+        //         }
+        //     }
 
-            var allAttendance = await _attendanceRepositories.GetList(filter, orderBy, includeProperties: "Class,ClassSchedule,AttendanceDetails.StudentClass.Student", pageIndex ?? 1);
+        //     var allAttendance = await _attendanceRepositories.GetList(filter, orderBy, includeProperties: "Class,ClassSchedule,AttendanceDetails.StudentClass.Student", pageIndex ?? 1);
 
-            return allAttendance.ToList();
-        }
+        //     return allAttendance.ToList();
+        // }
 
         public async Task<MessageResultModel> RestoreAttendance(Guid Id)
         {

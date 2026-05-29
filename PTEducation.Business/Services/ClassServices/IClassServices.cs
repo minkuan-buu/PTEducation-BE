@@ -27,5 +27,6 @@ namespace PTEducation.Business.Services.ClassServices
         Task<DataResultModel<ClassDetailMetaData>> GetClassMetadata(Guid ClassId);
         Task<PagedListDataResultModel<StudentInClassResModel>> GetStudentByClassId(Guid ClassId, int? pageIndex, UserFilter searchModel, bool isPending);
         Task<ClassScoreStudentExport> GetStudentScoreByClassIdAndRangeDate(Guid ClassId, DateTime? FromDate, DateTime? ToDate);
+        Task<List<string>> GetCalendarIndicators(Guid classId, AttendanceFilter filter);
     }
 }

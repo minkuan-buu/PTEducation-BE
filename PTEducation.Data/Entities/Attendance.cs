@@ -7,10 +7,6 @@ public partial class Attendance
 {
     public Guid Id { get; set; }
 
-    public TimeOnly? StartTime { get; set; }
-
-    public TimeOnly? EndTime { get; set; }
-
     public Guid ClassId { get; set; }
 
     public string Status { get; set; } = null!;
@@ -20,6 +16,10 @@ public partial class Attendance
     public string SessionType { get; set; } = null!;
 
     public string? Note { get; set; }
+
+    public TimeOnly StartTime { get; set; }
+
+    public TimeOnly EndTime { get; set; }
 
     public DateOnly Date { get; set; }
 

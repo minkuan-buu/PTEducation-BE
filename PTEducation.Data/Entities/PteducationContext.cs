@@ -41,6 +41,7 @@ public partial class PteducationContext : DbContext
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.ClassId).HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.Date).HasDefaultValueSql("(CONVERT([date],getdate()))");
             entity.Property(e => e.Note).HasMaxLength(500);
             entity.Property(e => e.SessionType)
                 .HasMaxLength(50)
@@ -105,6 +106,7 @@ public partial class PteducationContext : DbContext
                 .HasColumnType("datetime");
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
+                .IsUnicode(false)
                 .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.StartAt)
                 .HasDefaultValueSql("(NULL)")
@@ -122,7 +124,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<ClassSchedule>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ClassSch__3214EC077CA59604");
+            entity.HasKey(e => e.Id).HasName("PK__ClassSch__3214EC07C7AAA2EF");
 
             entity.ToTable("ClassSchedule");
 
