@@ -9,7 +9,9 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using PTEducation.API.Middleware;
+using PTEducation.API.Hubs;
 using PTEducation.API.Swagger;
+using PTEducation.API.Realtime;
 using PTEducation.API.Serialization;
 using PTEducation.Business.MapperProfiles;
 using PTEducation.Business.Services.AttendanceDetailServices;
@@ -45,6 +47,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
@@ -180,6 +183,7 @@ builder.Services.AddScoped<IEmail, Email>();
 builder.Services.AddScoped<IAttendanceServices, AttendanceServices>();
 builder.Services.AddScoped<IAttendanceDetailServices, AttendanceDetailServices>();
 builder.Services.AddScoped<IOTPServices, OTPServices>();
+builder.Services.AddScoped<IAttendanceRealtimeNotifier, AttendanceRealtimeNotifier>();
 
 builder.Services.AddHostedService<AdminInitializerHostedService>();
 builder.Services.AddHostedService<DatabaseMigrationHostedService>();
@@ -253,5 +257,6 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<AttendanceHub>("/hubs/attendance");
 
 app.Run();

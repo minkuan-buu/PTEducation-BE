@@ -8,6 +8,7 @@ using PTEducation.Business.Services.ClassServices;
 using PTEducation.Data.DTO.ResponseModel;
 using PTEducation.Business.Services.AttendanceServices;
 using Asp.Versioning;
+using PTEducation.API.Realtime;
 
 namespace PTEducation.API.Controllers
 {
@@ -17,9 +18,22 @@ namespace PTEducation.API.Controllers
     public class AttendanceController : ControllerBase
     {
         private readonly IAttendanceServices _attendanceServices;
-        public AttendanceController(IAttendanceServices attendanceServices)
+        private readonly IAttendanceRealtimeNotifier _attendanceRealtimeNotifier;
+
+        public AttendanceController(IAttendanceServices attendanceServices, IAttendanceRealtimeNotifier attendanceRealtimeNotifier)
         {
             _attendanceServices = attendanceServices;
+            _attendanceRealtimeNotifier = attendanceRealtimeNotifier;
+        }
+
+        private static DateTime? CombineDateAndTime(DateTime date, TimeOnly? time)
+        {
+            if (!time.HasValue)
+            {
+                return null;
+            }
+
+            return date.Date.Add(time.Value.ToTimeSpan());
         }
 
         [HttpGet("get")]
@@ -60,6 +74,22 @@ namespace PTEducation.API.Controllers
             {
                 string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
                 var Result = await _attendanceServices.CreateAttendance(AttendanceReq, token);
+
+                var opensAt = CombineDateAndTime(AttendanceReq.Date, AttendanceReq.StartTime);
+                var closesAt = CombineDateAndTime(AttendanceReq.Date, AttendanceReq.EndTime);
+                var serverTime = DateTime.UtcNow;
+                var isOpen = opensAt.HasValue && serverTime >= opensAt.Value && (!closesAt.HasValue || serverTime <= closesAt.Value);
+
+                await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(new AttendanceWindowStateDto
+                {
+                    ClassId = AttendanceReq.ClassId,
+                    IsOpen = isOpen,
+                    OpensAt = opensAt,
+                    ClosesAt = closesAt,
+                    ServerTime = serverTime,
+                    Reason = isOpen ? "Attendance window opened" : "Attendance window scheduled"
+                });
+
                 return Ok(Result);
             }
             catch (CustomException ex)
