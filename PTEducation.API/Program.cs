@@ -182,6 +182,7 @@ builder.Services.AddScoped<IAttendanceDetailServices, AttendanceDetailServices>(
 builder.Services.AddScoped<IOTPServices, OTPServices>();
 
 builder.Services.AddHostedService<AdminInitializerHostedService>();
+builder.Services.AddHostedService<DatabaseMigrationHostedService>();
 
 //=========================================== CORS ================================================
 

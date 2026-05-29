@@ -364,3 +364,5 @@ FodyWeavers.xsd
 /.idea/.idea.PTEducation/.idea
 PTEducation.API/.env
 *.lscache
+
+scripts/

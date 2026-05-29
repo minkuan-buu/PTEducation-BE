@@ -581,14 +581,60 @@ namespace PTEducation.Business.Services.ClassServices
                 AverageScore = TotalScore > 0 ? (decimal)TotalScore / TotalStudent : 0,
                 Name = Class.Name,
                 CompletedSessions = TotalAttendance,
-                TotalSessions = TotalAttendance + (Class.ClassSchedules.Count * (Class.EndAt - Class.StartAt).Days / 7), // Giả sử mỗi lịch học diễn ra hàng tuần, và tính số buổi đã qua dựa trên số tuần kể từ ngày bắt đầu lớp học
+                // TotalSessions = tổng số buổi theo từng lịch trong khoảng StartAt..EndAt (đếm theo ngày trong tuần)
+                // Không cộng TotalAttendance ở đây vì đó là số buổi đã điểm danh (CompletedSessions)
+                TotalSessions = Class.ClassSchedules
+                    .Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString()))
+                    .Sum(cs => CountWeekdayOccurrences(Class.StartAt.Date, Class.EndAt.Date, (DayOfWeek)cs.DayOfWeek)),
                 StartAt = Class.StartAt,
                 EndAt = Class.EndAt,
+                NextSession = Class.ClassSchedules
+                    .Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString()))
+                    .Select(cs => GetNextSessionDate(Class.StartAt, Class.EndAt, cs.DayOfWeek, cs.StartTime))
+                    .Where(date => date >= DateTime.Now)
+                    .OrderBy(date => date)
+                    .FirstOrDefault()
             };
             return new DataResultModel<ClassDetailMetaData>()
             {
                 Data = Metadata
             };
+        }
+        private DateTime GetNextSessionDate(DateTime StartAt, DateTime EndAt, byte DayOfWeek, TimeOnly StartTime)
+        {
+            // Bắt đầu từ ngày hôm nay
+            DateTime nextSession = DateTime.Now;
+
+            // Tìm ngày tiếp theo có DayOfWeek tương ứng
+            while (nextSession.DayOfWeek != (DayOfWeek)DayOfWeek)
+            {
+                nextSession = nextSession.AddDays(1);
+            }
+
+            // Kết hợp với StartTime để có DateTime chính xác của buổi học tiếp theo
+            nextSession = new DateTime(nextSession.Year, nextSession.Month, nextSession.Day, StartTime.Hour, StartTime.Minute, 0);
+
+            // Nếu ngày buổi học tiếp theo đã qua EndAt, trả về DateTime.MaxValue để biểu thị không còn buổi học nào trong tương lai
+            if (nextSession > EndAt)
+            {
+                return DateTime.MaxValue;
+            }
+
+            return nextSession;
+        }
+
+        private int CountWeekdayOccurrences(DateTime startDate, DateTime endDate, DayOfWeek targetDay)
+        {
+            if (startDate > endDate) return 0;
+
+            // Tìm ngày đầu tiên >= startDate có DayOfWeek == targetDay
+            int daysToAdd = ((int)targetDay - (int)startDate.DayOfWeek + 7) % 7;
+            DateTime first = startDate.AddDays(daysToAdd);
+
+            if (first > endDate) return 0;
+
+            // Số buổi = 1 + số tuần chẵn giữa first và endDate
+            return 1 + (int)((endDate.Date - first.Date).TotalDays / 7);
         }
 
         public async Task<ClassScoreStudentExport> GetStudentScoreByClassIdAndRangeDate(Guid ClassId, DateTime? FromDate, DateTime? ToDate)
