@@ -11,4 +11,11 @@ namespace PTEducation.Data.Enums
         Có_mặt,
         Vắng_mặt,
     }
+
+    public enum AttendanceStatusEnums
+    {
+        Pending,
+        Opening,
+        Closed,
+    }
 }

@@ -15,11 +15,8 @@ namespace PTEducation.Data.DTO.RequestModel
         public DateTime Date { get; set; }
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
-        public Guid ClassId { get; set; }
-        public Guid? ClassScheduleId { get; set; }
-        public string SessionType { get; set; } = "Fixed";
+        public string SessionType { get; set; } = "Adhoc";
         public string? Note { get; set; }
-        public List<string> ListIdStudent { get; set; } = new();
     }
 
     public class AttendanceUpdateReqModel

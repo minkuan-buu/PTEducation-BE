@@ -37,58 +37,34 @@ namespace PTEducation.Business.Services.AttendanceServices
             _mapper = mapper;
         }
 
-        public async Task<MessageResultModel> CreateAttendance(AttendanceCreateReqModel attendanceReq, string token)
+        public async Task<MessageResultModel> CreateAttendance(AttendanceCreateReqModel attendanceReq, Guid classId)
         {
-            var UserId = Authentication.DecodeToken(token, "userid");
             var attendanceDate = DateOnly.FromDateTime(attendanceReq.Date);
             TimeOnly startTime = attendanceReq.StartTime;
             TimeOnly endTime = attendanceReq.EndTime;
             var CheckExistAttendance = await _attendanceRepositories.GetSingle(x =>
                 x.Date.Equals(attendanceDate) &&
-                x.ClassId.Equals(attendanceReq.ClassId) &&
-                x.ClassScheduleId == attendanceReq.ClassScheduleId &&
+                x.ClassId.Equals(classId) &&
                 x.StartTime == startTime &&
-                x.EndTime == endTime &&
-                x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+                x.EndTime == endTime);
             if (CheckExistAttendance != null)
             {
                 throw new CustomException("Attendance already exists");
             }
-            var CheckExistClass = await _classRepositories.GetSingle(x => x.Id.Equals(attendanceReq.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var CheckExistClass = await _classRepositories.GetSingle(x => x.Id.Equals(classId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             if (CheckExistClass == null)
             {
                 throw new CustomException("Class not found or not active");
             }
             var NewAttendanceId = Guid.NewGuid();
             var NewAttendance = _mapper.Map<Attendance>(attendanceReq);
+            NewAttendance.SessionType = "Adhoc";
+            NewAttendance.ClassId = classId;
             NewAttendance.Date = attendanceDate;
             NewAttendance.StartTime = startTime;
             NewAttendance.EndTime = endTime;
             NewAttendance.Id = NewAttendanceId;
-            var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(attendanceReq.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
-            List<AttendanceDetail> ListAttendanceDetail = new();
-            foreach (var student in attendanceReq.ListIdStudent)
-            {
-                if (!StudentInClass.Any(x => x.StudentId.Equals(student)))
-                {
-                    throw new CustomException($"Student {student} not found in this class");
-                }
-                var StudentClassId = StudentInClass.FirstOrDefault(x => x.StudentId.Equals(student));
-                if (StudentClassId == null)
-                {
-                    throw new CustomException($"Student {student} not found in this class");
-                }
-                AttendanceDetail NewAttendanceDetail = new()
-                {
-                    Id = Guid.NewGuid(),
-                    AttendanceId = NewAttendanceId,
-                    StudentClassId = StudentClassId.Id,
-                    Status = GeneralStatusEnums.Active.ToString()
-                };
-                ListAttendanceDetail.Add(NewAttendanceDetail);
-            }
             await _attendanceRepositories.Insert(NewAttendance);
-            await _attendanceDetailRepositories.InsertRange(ListAttendanceDetail);
             return new MessageResultModel()
             {
                 Message = "Ok"
@@ -118,38 +94,13 @@ namespace PTEducation.Business.Services.AttendanceServices
             };
         }
 
-        public async Task<DataResultModel<AttendanceDetailResModel>> GetAttendanceDetail(Guid Id)
+        public async Task<ListDataResultModel<AttendanceSessionResModel>> GetAttendanceSessions(Guid classId, DateOnly date)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails.StudentClass.Student,Class,ClassSchedule");
-            if (CheckExist == null)
+            var attendances = await _attendanceRepositories.GetList(x => x.ClassId.Equals(classId) && x.Date.Equals(date));
+            var result = _mapper.Map<List<AttendanceSessionResModel>>(attendances);
+            return new ListDataResultModel<AttendanceSessionResModel>()
             {
-                throw new CustomException("Attendance not found");
-            }
-            var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(CheckExist.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "Student");
-            var ListStudentInClassId = StudentInClass.Select(x => x.Id).ToList();
-            var ListStudentNotHaveAttend = ListStudentInClassId.Except(CheckExist.AttendanceDetails.Select(x => x.StudentClassId)).ToList();
-            var Result = _mapper.Map<AttendanceDetailResModel>(CheckExist);
-            foreach (var item in ListStudentNotHaveAttend)
-            {
-                var Student = StudentInClass.FirstOrDefault(x => x.Id.Equals(item));
-                if (Student == null)
-                {
-                    continue;
-                }
-                AttendanceDetailStudentResModel attendanceDetailStudent = new()
-                {
-                    StudentClassId = item,
-                    Id = Student.StudentId,
-                    Name = TextConvert.ConvertFromUnicodeEscape(Student.Student.Name),
-                    AttendanceStatus = AttendanceEnums.Vắng_mặt.ToString()
-                };
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
-                Result.AttendanceDetails.Add(attendanceDetailStudent);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
-            }
-            return new DataResultModel<AttendanceDetailResModel>()
-            {
-                Data = Result
+                Data = result
             };
         }
 

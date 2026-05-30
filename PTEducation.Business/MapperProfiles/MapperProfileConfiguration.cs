@@ -138,7 +138,8 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
                     src.StudentClasses.Count == 0 ? null : TextConvert.ConvertFromUnicodeEscape(src.StudentClasses.First().Class.Name)));
             CreateMap<AttendanceCreateReqModel, Attendance>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => GeneralStatusEnums.Active.ToString()));
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => AttendanceStatusEnums.Pending.ToString()))
+                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.Date)));
             CreateMap<Attendance, AttendanceListResModel>();
             CreateMap<Attendance, AttendanceDetailResModel>()
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
@@ -180,6 +181,8 @@ namespace PTEducation.Business.MapperProfiles
                         Relationship = x.Relationship,
                         IsPrimary = x.IsPrimary
                     }).ToList()));
+
+            CreateMap<Attendance, AttendanceSessionResModel>();
         }
     }
 }

@@ -14,7 +14,7 @@ namespace PTEducation.API.Controllers
 {
     [ApiController]
     [ApiVersion("2.0")]
-    [Route("api/v{version:apiVersion}/attendance")]
+    [Route("api/v{version:apiVersion}/attendances")]
     public class AttendanceController : ControllerBase
     {
         private readonly IAttendanceServices _attendanceServices;
@@ -36,13 +36,13 @@ namespace PTEducation.API.Controllers
             return date.Date.Add(time.Value.ToTimeSpan());
         }
 
-        [HttpGet("get")]
+        [HttpGet("classes/{classId:guid}")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> GetAttendanceDetail(Guid Id)
+        public async Task<IActionResult> GetAttendanceSessions(Guid classId, [FromQuery] DateTime date)
         {
             try
             {
-                var Result = await _attendanceServices.GetAttendanceDetail(Id);
+                var Result = await _attendanceServices.GetAttendanceSessions(classId, DateOnly.FromDateTime(date));
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -66,14 +66,13 @@ namespace PTEducation.API.Controllers
         //     }
         // }
 
-        [HttpPost("create")]
+        [HttpPost("classes/{classId:guid}")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> CreateAttendance([FromBody] AttendanceCreateReqModel AttendanceReq)
+        public async Task<IActionResult> CreateAttendance(Guid classId, [FromBody] AttendanceCreateReqModel AttendanceReq)
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _attendanceServices.CreateAttendance(AttendanceReq, token);
+                var Result = await _attendanceServices.CreateAttendance(AttendanceReq, classId);
 
                 var opensAt = CombineDateAndTime(AttendanceReq.Date, AttendanceReq.StartTime);
                 var closesAt = CombineDateAndTime(AttendanceReq.Date, AttendanceReq.EndTime);
@@ -82,7 +81,7 @@ namespace PTEducation.API.Controllers
 
                 await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(new AttendanceWindowStateDto
                 {
-                    ClassId = AttendanceReq.ClassId,
+                    ClassId = classId,
                     IsOpen = isOpen,
                     OpensAt = opensAt,
                     ClosesAt = closesAt,

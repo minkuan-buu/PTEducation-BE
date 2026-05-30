@@ -574,6 +574,26 @@ namespace PTEducation.Business.Services.ClassServices
             var TotalPendingStudent = Class.StudentClasses.Count(sc => sc.Student.Status.Equals(AccountStatusEnums.PendingApproved.ToString()));
             var TotalScore = Class.Scores.Count(s => s.Status.Equals(GeneralStatusEnums.Active.ToString()));
             var TotalAttendance = Class.Attendances.Count(a => a.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var now = DateTime.Now;
+
+            var nextScheduledSession = Class.ClassSchedules
+                .Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString()))
+                .Select(cs => GetNextSessionDate(Class.StartAt, Class.EndAt, cs.DayOfWeek, cs.StartTime))
+                .Where(date => date >= now && date != DateTime.MaxValue)
+                .OrderBy(date => date)
+                .FirstOrDefault();
+
+            var nextAdditionalSession = Class.Attendances
+                .Where(att => !att.Status.Equals(AttendanceStatusEnums.Closed.ToString()) && IsAdditionalSessionType(att.SessionType))
+                .Select(att => att.Date.ToDateTime(att.StartTime))
+                .Where(date => date >= now)
+                .OrderBy(date => date)
+                .FirstOrDefault();
+
+            var nextSession = new[] { nextScheduledSession, nextAdditionalSession }
+                .Where(date => date != default)
+                .OrderBy(date => date)
+                .FirstOrDefault();
             var Metadata = new ClassDetailMetaData()
             {
                 WeeklySchedules = _mapper.Map<List<ClassScheduleResModel>>(Class.ClassSchedules.Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList()),
@@ -590,12 +610,7 @@ namespace PTEducation.Business.Services.ClassServices
                     + Class.Attendances.Count(att => att.Status.Equals(GeneralStatusEnums.Active.ToString()) && IsAdditionalSessionType(att.SessionType)),
                 StartAt = Class.StartAt,
                 EndAt = Class.EndAt,
-                NextSession = Class.ClassSchedules
-                    .Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString()))
-                    .Select(cs => GetNextSessionDate(Class.StartAt, Class.EndAt, cs.DayOfWeek, cs.StartTime))
-                    .Where(date => date >= DateTime.Now)
-                    .OrderBy(date => date)
-                    .FirstOrDefault()
+                NextSession = nextSession
             };
             return new DataResultModel<ClassDetailMetaData>()
             {
@@ -642,7 +657,7 @@ namespace PTEducation.Business.Services.ClassServices
         private bool IsAdditionalSessionType(string sessionType)
         {
             var normalizedSessionType = sessionType?.Replace(" ", string.Empty).Trim();
-            return string.Equals(normalizedSessionType, "Adhoc", StringComparison.OrdinalIgnoreCase);
+            return string.Equals(normalizedSessionType, "Adhoc", StringComparison.OrdinalIgnoreCase) || string.Equals(normalizedSessionType, "Makeup", StringComparison.OrdinalIgnoreCase);
         }
 
         public async Task<ClassScoreStudentExport> GetStudentScoreByClassIdAndRangeDate(Guid ClassId, DateTime? FromDate, DateTime? ToDate)
@@ -774,7 +789,7 @@ namespace PTEducation.Business.Services.ClassServices
 
             Expression<Func<Attendance, bool>> dateFilter = p =>
                 p.ClassId.Equals(classId) &&
-                p.Status.Equals(GeneralStatusEnums.Active.ToString());
+                p.ClassScheduleId == null;
 
             if (filter.FromDate.HasValue)
             {
@@ -787,9 +802,11 @@ namespace PTEducation.Business.Services.ClassServices
             }
 
             var attendanceList = await _attendanceRepositories.GetList(dateFilter, o => o.OrderBy(p => p.Date));
+            var additionalAttendances = attendanceList
+                .Where(att => IsAdditionalSessionType(att.SessionType));
             var calendarDates = new HashSet<DateOnly>();
 
-            foreach (var attendance in attendanceList)
+            foreach (var attendance in additionalAttendances)
             {
                 calendarDates.Add(attendance.Date);
             }

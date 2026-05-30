@@ -38,6 +38,16 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Status { get; set; } = null!;
     }
 
+    public class AttendanceSessionResModel
+    {
+        public Guid Id { get; set; }
+        public DateOnly Date { get; set; }
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
+        public string SessionType { get; set; } = null!;
+        public string Status { get; set; } = null!;
+    }
+
     public class AttendanceDetailStudentResModel
     {
         public Guid StudentClassId { get; set; }
