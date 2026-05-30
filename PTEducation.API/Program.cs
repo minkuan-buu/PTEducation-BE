@@ -27,6 +27,7 @@ using PTEducation.Business.Services.UserServices;
 using PTEducation.Business.Ultilities.Email;
 using PTEducation.API.HostedServices;
 using PTEducation.Data.Entities;
+using Quartz;
 using PTEducation.Data.Repositories.AttendanceDetailRepositories;
 using PTEducation.Data.Repositories.AttendanceRepositories;
 using PTEducation.Data.Repositories.ClassRepositories;
@@ -184,6 +185,17 @@ builder.Services.AddScoped<IAttendanceServices, AttendanceServices>();
 builder.Services.AddScoped<IAttendanceDetailServices, AttendanceDetailServices>();
 builder.Services.AddScoped<IOTPServices, OTPServices>();
 builder.Services.AddScoped<IAttendanceRealtimeNotifier, AttendanceRealtimeNotifier>();
+builder.Services.AddScoped<PTEducation.Business.Services.AttendanceServices.IAttendanceScheduler, PTEducation.API.Scheduling.AttendanceScheduler>();
+
+// Quartz scheduler
+builder.Services.AddQuartz(q =>
+{
+    q.UseMicrosoftDependencyInjectionScopedJobFactory();
+    // jobs will be scheduled dynamically when attendances are created/updated
+});
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+
+builder.Services.AddScoped<PTEducation.API.Jobs.AttendanceWindowJob>();
 
 builder.Services.AddHostedService<AdminInitializerHostedService>();
 builder.Services.AddHostedService<DatabaseMigrationHostedService>();

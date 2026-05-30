@@ -89,6 +89,8 @@ namespace PTEducation.API.Controllers
                     Reason = isOpen ? "Attendance window opened" : "Attendance window scheduled"
                 });
 
+                // scheduling handled in service layer
+
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -104,6 +106,9 @@ namespace PTEducation.API.Controllers
             try
             {
                 var Result = await _attendanceServices.UpdateAttendance(AttendanceReq);
+
+                // scheduling handled in service layer
+
                 return Ok(Result);
             }
             catch (CustomException ex)

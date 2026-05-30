@@ -28,13 +28,15 @@ namespace PTEducation.Business.Services.AttendanceServices
         private readonly IClassRepositories _classRepositories;
         private readonly IStudentClassRepositories _studentClassRepositories;
         private readonly IMapper _mapper;
-        public AttendanceServices(IAttendanceRepositories attendanceRepositories, IStudentClassRepositories studentClassRepositories, IClassRepositories classRepositories, IMapper mapper, IAttendanceDetailRepositories attendanceDetailRepositories)
+        private readonly IAttendanceScheduler _attendanceScheduler;
+        public AttendanceServices(IAttendanceRepositories attendanceRepositories, IStudentClassRepositories studentClassRepositories, IClassRepositories classRepositories, IMapper mapper, IAttendanceDetailRepositories attendanceDetailRepositories, IAttendanceScheduler attendanceScheduler)
         {
             _attendanceDetailRepositories = attendanceDetailRepositories;
             _classRepositories = classRepositories;
             _attendanceRepositories = attendanceRepositories;
             _studentClassRepositories = studentClassRepositories;
             _mapper = mapper;
+            _attendanceScheduler = attendanceScheduler;
         }
 
         public async Task<MessageResultModel> CreateAttendance(AttendanceCreateReqModel attendanceReq, Guid classId)
@@ -65,6 +67,15 @@ namespace PTEducation.Business.Services.AttendanceServices
             NewAttendance.EndTime = endTime;
             NewAttendance.Id = NewAttendanceId;
             await _attendanceRepositories.Insert(NewAttendance);
+            // schedule open/close jobs if scheduler available
+            try
+            {
+                if (_attendanceScheduler != null)
+                {
+                    await _attendanceScheduler.ScheduleAttendanceJobsAsync(NewAttendance);
+                }
+            }
+            catch { }
             return new MessageResultModel()
             {
                 Message = "Ok"
@@ -141,6 +152,17 @@ namespace PTEducation.Business.Services.AttendanceServices
             CheckExist.SessionType = attendanceReq.SessionType;
             CheckExist.Note = attendanceReq.Note;
             await _attendanceRepositories.Update(CheckExist);
+
+            // reschedule jobs if scheduler available
+            try
+            {
+                if (_attendanceScheduler != null)
+                {
+                    await _attendanceScheduler.RemoveAttendanceJobsAsync(CheckExist.Id);
+                    await _attendanceScheduler.ScheduleAttendanceJobsAsync(CheckExist);
+                }
+            }
+            catch { }
             return new MessageResultModel()
             {
                 Message = "Ok"
