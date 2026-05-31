@@ -12,9 +12,9 @@ namespace PTEducation.Business.Services.AttendanceServices
     {
         Task<ListDataResultModel<AttendanceSessionResModel>> GetAttendanceSessions(Guid classId, DateOnly date);
         // Task<ListDataResultModel<AttendanceListResModel>> GetListAttendance(int? pageIndex, AttendanceFilter filter);
-        Task<MessageResultModel> CreateAttendance(AttendanceCreateReqModel attendanceReq, Guid classId);
-        Task<MessageResultModel> UpdateAttendance(AttendanceUpdateReqModel attendanceReq);
-        Task<MessageResultModel> SoftDeleteAttendance(Guid Id);
-        Task<MessageResultModel> RestoreAttendance(Guid Id);
+        Task<AttendanceMutationResModel> CreateAttendance(AttendanceCreateReqModel attendanceReq, Guid classId);
+        Task<AttendanceMutationResModel> UpdateAttendance(AttendanceUpdateReqModel attendanceReq);
+        Task<AttendanceMutationResModel> SoftDeleteAttendance(Guid Id);
+        Task<AttendanceMutationResModel> RestoreAttendance(Guid Id);
     }
 }

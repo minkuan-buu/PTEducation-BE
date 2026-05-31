@@ -3,6 +3,7 @@ using PTEducation.Data.Repositories.AttendanceRepositories;
 using PTEducation.API.Realtime;
 using PTEducation.Data.Enums;
 using PTEducation.API.Realtime;
+using PTEducation.Business.Services.ClassServices;
 
 namespace PTEducation.API.Jobs
 {
@@ -10,11 +11,13 @@ namespace PTEducation.API.Jobs
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IAttendanceRealtimeNotifier _notifier;
+        private readonly IClassServices _classServices;
 
-        public AttendanceWindowJob(IServiceScopeFactory scopeFactory, IAttendanceRealtimeNotifier notifier)
+        public AttendanceWindowJob(IServiceScopeFactory scopeFactory, IAttendanceRealtimeNotifier notifier, IClassServices classServices)
         {
             _scopeFactory = scopeFactory;
             _notifier = notifier;
+            _classServices = classServices;
         }
 
         public async Task Execute(IJobExecutionContext context)
@@ -29,6 +32,9 @@ namespace PTEducation.API.Jobs
             var attendanceRepo = scope.ServiceProvider.GetRequiredService<IAttendanceRepositories>();
             var attendance = await attendanceRepo.GetSingle(x => x.Id == attendanceId);
             if (attendance == null) return;
+
+            var opensAt = attendance.Date.ToDateTime(attendance.StartTime);
+            var closesAt = attendance.Date.ToDateTime(attendance.EndTime);
 
             if (action.Equals("open", StringComparison.OrdinalIgnoreCase))
             {
@@ -45,10 +51,36 @@ namespace PTEducation.API.Jobs
                     attendance.Status = AttendanceStatusEnums.Closed.ToString();
                     await attendanceRepo.Update(attendance);
                 }
-            }
 
-            var opensAt = attendance.Date.ToDateTime(attendance.StartTime);
-            var closesAt = attendance.Date.ToDateTime(attendance.EndTime);
+                var metadata = await _classServices.GetClassMetadata(attendance.ClassId);
+                var nextSession = metadata.Data?.NextSession;
+
+                if (!nextSession.HasValue || nextSession.Value == default)
+                {
+                    await _notifier.BroadcastAttendanceWindowAsync(new AttendanceWindowStateDto
+                    {
+                        ClassId = attendance.ClassId,
+                        IsOpen = false,
+                        OpensAt = null,
+                        ClosesAt = closesAt,
+                        ServerTime = DateTime.UtcNow,
+                        Reason = "No upcoming attendance"
+                    });
+                    return;
+                }
+
+                await _notifier.BroadcastAttendanceWindowAsync(new AttendanceWindowStateDto
+                {
+                    ClassId = attendance.ClassId,
+                    IsOpen = false,
+                    OpensAt = nextSession,
+                    ClosesAt = null,
+                    ServerTime = DateTime.UtcNow,
+                    Reason = "Next session refreshed"
+                });
+
+                return;
+            }
 
             await _notifier.BroadcastAttendanceWindowAsync(new AttendanceWindowStateDto
             {

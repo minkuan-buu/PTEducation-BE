@@ -26,14 +26,25 @@ namespace PTEducation.API.Controllers
             _attendanceRealtimeNotifier = attendanceRealtimeNotifier;
         }
 
-        private static DateTime? CombineDateAndTime(DateTime date, TimeOnly? time)
+        private static AttendanceWindowStateDto BuildWindowState(
+            AttendanceMutationResModel attendance,
+            string? reason = null,
+            bool? isOpenOverride = null)
         {
-            if (!time.HasValue)
-            {
-                return null;
-            }
+            var opensAt = attendance.Date.ToDateTime(attendance.StartTime);
+            var closesAt = attendance.Date.ToDateTime(attendance.EndTime);
+            var serverTime = DateTime.UtcNow;
+            var isOpen = isOpenOverride ?? (serverTime >= opensAt && serverTime <= closesAt);
 
-            return date.Date.Add(time.Value.ToTimeSpan());
+            return new AttendanceWindowStateDto
+            {
+                ClassId = attendance.ClassId,
+                IsOpen = isOpen,
+                OpensAt = opensAt,
+                ClosesAt = closesAt,
+                ServerTime = serverTime,
+                Reason = reason
+            };
         }
 
         [HttpGet("classes/{classId:guid}")]
@@ -74,24 +85,12 @@ namespace PTEducation.API.Controllers
             {
                 var Result = await _attendanceServices.CreateAttendance(AttendanceReq, classId);
 
-                var opensAt = CombineDateAndTime(AttendanceReq.Date, AttendanceReq.StartTime);
-                var closesAt = CombineDateAndTime(AttendanceReq.Date, AttendanceReq.EndTime);
-                var serverTime = DateTime.UtcNow;
-                var isOpen = opensAt.HasValue && serverTime >= opensAt.Value && (!closesAt.HasValue || serverTime <= closesAt.Value);
-
-                await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(new AttendanceWindowStateDto
-                {
-                    ClassId = classId,
-                    IsOpen = isOpen,
-                    OpensAt = opensAt,
-                    ClosesAt = closesAt,
-                    ServerTime = serverTime,
-                    Reason = isOpen ? "Attendance window opened" : "Attendance window scheduled"
-                });
+                await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
+                    BuildWindowState(Result, "Attendance window scheduled"));
 
                 // scheduling handled in service layer
 
-                return Ok(Result);
+                return Ok(new MessageResultModel { Message = "Ok" });
             }
             catch (CustomException ex)
             {
@@ -107,9 +106,12 @@ namespace PTEducation.API.Controllers
             {
                 var Result = await _attendanceServices.UpdateAttendance(AttendanceReq);
 
+                await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
+                    BuildWindowState(Result, "Attendance window updated"));
+
                 // scheduling handled in service layer
 
-                return Ok(Result);
+                return Ok(new MessageResultModel { Message = "Ok" });
             }
             catch (CustomException ex)
             {
@@ -124,7 +126,11 @@ namespace PTEducation.API.Controllers
             try
             {
                 var Result = await _attendanceServices.SoftDeleteAttendance(Id);
-                return Ok(Result);
+
+                await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
+                    BuildWindowState(Result, "Attendance window deleted", false));
+
+                return Ok(new MessageResultModel { Message = "Ok" });
             }
             catch (CustomException ex)
             {
@@ -139,7 +145,11 @@ namespace PTEducation.API.Controllers
             try
             {
                 var Result = await _attendanceServices.RestoreAttendance(Id);
-                return Ok(Result);
+
+                await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
+                    BuildWindowState(Result, "Attendance window restored"));
+
+                return Ok(new MessageResultModel { Message = "Ok" });
             }
             catch (CustomException ex)
             {

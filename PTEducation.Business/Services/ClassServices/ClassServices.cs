@@ -619,20 +619,22 @@ namespace PTEducation.Business.Services.ClassServices
         }
         private DateTime GetNextSessionDate(DateTime StartAt, DateTime EndAt, byte DayOfWeek, TimeOnly StartTime)
         {
-            // Bắt đầu từ ngày hôm nay
-            DateTime nextSession = DateTime.Now;
+            var now = DateTime.Now;
+            var nextSession = now.Date;
 
-            // Tìm ngày tiếp theo có DayOfWeek tương ứng
             while (nextSession.DayOfWeek != (DayOfWeek)DayOfWeek)
             {
                 nextSession = nextSession.AddDays(1);
             }
 
-            // Kết hợp với StartTime để có DateTime chính xác của buổi học tiếp theo
             nextSession = new DateTime(nextSession.Year, nextSession.Month, nextSession.Day, StartTime.Hour, StartTime.Minute, 0);
 
-            // Nếu ngày buổi học tiếp theo đã qua EndAt, trả về DateTime.MaxValue để biểu thị không còn buổi học nào trong tương lai
-            if (nextSession > EndAt)
+            if (nextSession <= now)
+            {
+                nextSession = nextSession.AddDays(7);
+            }
+
+            if (nextSession < StartAt || nextSession > EndAt)
             {
                 return DateTime.MaxValue;
             }

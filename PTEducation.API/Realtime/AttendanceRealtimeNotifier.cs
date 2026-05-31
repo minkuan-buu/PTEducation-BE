@@ -14,7 +14,8 @@ namespace PTEducation.API.Realtime
 
         public Task BroadcastAttendanceWindowAsync(AttendanceWindowStateDto payload, CancellationToken cancellationToken = default)
         {
-            return _hubContext.Clients.All.SendAsync(AttendanceRealtimeEvents.AttendanceWindowStateChanged, payload, cancellationToken);
+            return _hubContext.Clients.Group(AttendanceHub.GetClassGroupName(payload.ClassId))
+                .SendAsync(AttendanceRealtimeEvents.AttendanceWindowStateChanged, payload, cancellationToken);
         }
 
         public Task BroadcastServerTimeAsync(DateTime serverTime, CancellationToken cancellationToken = default)

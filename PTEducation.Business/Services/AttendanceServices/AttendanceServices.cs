@@ -39,7 +39,7 @@ namespace PTEducation.Business.Services.AttendanceServices
             _attendanceScheduler = attendanceScheduler;
         }
 
-        public async Task<MessageResultModel> CreateAttendance(AttendanceCreateReqModel attendanceReq, Guid classId)
+        public async Task<AttendanceMutationResModel> CreateAttendance(AttendanceCreateReqModel attendanceReq, Guid classId)
         {
             var attendanceDate = DateOnly.FromDateTime(attendanceReq.Date);
             TimeOnly startTime = attendanceReq.StartTime;
@@ -76,13 +76,19 @@ namespace PTEducation.Business.Services.AttendanceServices
                 }
             }
             catch { }
-            return new MessageResultModel()
+            return new AttendanceMutationResModel
             {
-                Message = "Ok"
+                AttendanceId = NewAttendanceId,
+                ClassId = classId,
+                Date = NewAttendance.Date,
+                StartTime = NewAttendance.StartTime,
+                EndTime = NewAttendance.EndTime,
+                SessionType = NewAttendance.SessionType,
+                Status = NewAttendance.Status
             };
         }
 
-        public async Task<MessageResultModel> SoftDeleteAttendance(Guid Id)
+        public async Task<AttendanceMutationResModel> SoftDeleteAttendance(Guid Id)
         {
             var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails");
             if (CheckExist == null)
@@ -99,9 +105,15 @@ namespace PTEducation.Business.Services.AttendanceServices
                 item.Status = GeneralStatusEnums.Inactive.ToString();
             }
             await _attendanceRepositories.Update(CheckExist);
-            return new MessageResultModel()
+            return new AttendanceMutationResModel
             {
-                Message = "Ok"
+                AttendanceId = CheckExist.Id,
+                ClassId = CheckExist.ClassId,
+                Date = CheckExist.Date,
+                StartTime = CheckExist.StartTime,
+                EndTime = CheckExist.EndTime,
+                SessionType = CheckExist.SessionType,
+                Status = CheckExist.Status
             };
         }
 
@@ -138,7 +150,7 @@ namespace PTEducation.Business.Services.AttendanceServices
         //     };
         // }
 
-        public async Task<MessageResultModel> UpdateAttendance(AttendanceUpdateReqModel attendanceReq)
+        public async Task<AttendanceMutationResModel> UpdateAttendance(AttendanceUpdateReqModel attendanceReq)
         {
             var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(attendanceReq.Id));
             if(CheckExist == null)
@@ -163,9 +175,15 @@ namespace PTEducation.Business.Services.AttendanceServices
                 }
             }
             catch { }
-            return new MessageResultModel()
+            return new AttendanceMutationResModel
             {
-                Message = "Ok"
+                AttendanceId = CheckExist.Id,
+                ClassId = CheckExist.ClassId,
+                Date = CheckExist.Date,
+                StartTime = CheckExist.StartTime,
+                EndTime = CheckExist.EndTime,
+                SessionType = CheckExist.SessionType,
+                Status = CheckExist.Status
             };
         }
 
@@ -191,7 +209,7 @@ namespace PTEducation.Business.Services.AttendanceServices
         //     return allAttendance.ToList();
         // }
 
-        public async Task<MessageResultModel> RestoreAttendance(Guid Id)
+        public async Task<AttendanceMutationResModel> RestoreAttendance(Guid Id)
         {
             var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails");
             if (CheckExist == null)
@@ -208,8 +226,15 @@ namespace PTEducation.Business.Services.AttendanceServices
                 item.Status = GeneralStatusEnums.Active.ToString();
             }
             await _attendanceRepositories.Update(CheckExist);
-            return new MessageResultModel {
-                Message = "Ok",
+            return new AttendanceMutationResModel
+            {
+                AttendanceId = CheckExist.Id,
+                ClassId = CheckExist.ClassId,
+                Date = CheckExist.Date,
+                StartTime = CheckExist.StartTime,
+                EndTime = CheckExist.EndTime,
+                SessionType = CheckExist.SessionType,
+                Status = CheckExist.Status
             };
         }
     }
