@@ -62,20 +62,20 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        // [HttpGet("all")]
+        [HttpGet("{Id:guid}")]
         // [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        // public async Task<IActionResult> GetList(int? pageIndex, [FromQuery] AttendanceFilter searchModel)
-        // {
-        //     try
-        //     {
-        //         var Result = await _attendanceServices.GetListAttendance(pageIndex, searchModel);
-        //         return Ok(Result);
-        //     }
-        //     catch (CustomException ex)
-        //     {
-        //         return BadRequest(new { message = ex.Message });
-        //     }
-        // }
+        public async Task<IActionResult> GetAttendanceDetail(Guid Id)
+        {
+            try
+            {
+                var Result = await _attendanceServices.GetAttendanceDetail(Id);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
 
         [HttpPost("classes/{classId:guid}")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]

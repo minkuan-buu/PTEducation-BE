@@ -88,6 +88,41 @@ namespace PTEducation.Business.Services.AttendanceServices
             };
         }
 
+        public async Task<DataResultModel<AttendanceDetailResModel>> GetAttendanceDetail(Guid Id)
+        {
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails.StudentClass.Student,Class,ClassSchedule");
+            if (CheckExist == null)
+            {
+                throw new CustomException("Attendance not found");
+            }
+            var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(CheckExist.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "Student");
+            var ListStudentInClassId = StudentInClass.Select(x => x.Id).ToList();
+            var ListStudentNotHaveAttend = ListStudentInClassId.Except(CheckExist.AttendanceDetails.Select(x => x.StudentClassId)).ToList();
+            var Result = _mapper.Map<AttendanceDetailResModel>(CheckExist);
+            foreach (var item in ListStudentNotHaveAttend)
+            {
+                var Student = StudentInClass.FirstOrDefault(x => x.Id.Equals(item));
+                if (Student == null)
+                {
+                    continue;
+                }
+                AttendanceDetailStudentResModel attendanceDetailStudent = new()
+                {
+                    StudentClassId = item,
+                    Id = Student.StudentId,
+                    Name = TextConvert.ConvertFromUnicodeEscape(Student.Student.Name),
+                    AttendanceStatus = AttendanceEnums.Absent.ToString()
+                };
+#pragma warning disable CS8602 // Dereference of a possibly null reference.
+                Result.AttendanceDetails.Add(attendanceDetailStudent);
+#pragma warning restore CS8602 // Dereference of a possibly null reference.
+            }
+            return new DataResultModel<AttendanceDetailResModel>()
+            {
+                Data = Result
+            };
+        }
+
         public async Task<AttendanceMutationResModel> SoftDeleteAttendance(Guid Id)
         {
             var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails");

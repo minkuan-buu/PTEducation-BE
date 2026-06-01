@@ -37,7 +37,7 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
             List<AttendanceDetail> ListAddDetail = new();
             foreach (var attendance in AttendanceReq.AttendanceReqList)
             {
-                if (attendance.AttendanceStatus.Equals(AttendanceEnums.Vắng_mặt.ToString()))
+                if (attendance.AttendanceStatus.Equals(AttendanceEnums.Absent.ToString()))
                 {
                     var AttendanceUpdate = AttendanceDetail.FirstOrDefault(x => x.StudentClassId.Equals(attendance.StudentClassId));
                     if (AttendanceUpdate != null)

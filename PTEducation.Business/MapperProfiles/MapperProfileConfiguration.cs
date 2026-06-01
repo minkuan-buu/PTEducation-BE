@@ -150,7 +150,7 @@ namespace PTEducation.Business.MapperProfiles
                         StudentClassId = x.StudentClassId,
                         Id = x.StudentClass.Student.Id,
                         Name = TextConvert.ConvertFromUnicodeEscape(x.StudentClass.Student.Name),
-                        AttendanceStatus = AttendanceEnums.Có_mặt.ToString()
+                        AttendanceStatus = AttendanceEnums.Present.ToString()
                     }).ToList()));
             CreateMap<User, UserListResModel>()
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
