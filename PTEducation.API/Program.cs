@@ -190,7 +190,7 @@ builder.Services.AddScoped<PTEducation.Business.Services.AttendanceServices.IAtt
 // Quartz scheduler
 builder.Services.AddQuartz(q =>
 {
-    q.UseMicrosoftDependencyInjectionScopedJobFactory();
+    q.UseMicrosoftDependencyInjectionJobFactory();
     // jobs will be scheduled dynamically when attendances are created/updated
 });
 builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
@@ -199,6 +199,7 @@ builder.Services.AddScoped<PTEducation.API.Jobs.AttendanceWindowJob>();
 
 builder.Services.AddHostedService<AdminInitializerHostedService>();
 builder.Services.AddHostedService<DatabaseMigrationHostedService>();
+builder.Services.AddHostedService<AttendanceWindowReconciliationHostedService>();
 
 //=========================================== CORS ================================================
 

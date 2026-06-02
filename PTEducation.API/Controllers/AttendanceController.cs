@@ -33,7 +33,7 @@ namespace PTEducation.API.Controllers
         {
             var opensAt = attendance.Date.ToDateTime(attendance.StartTime);
             var closesAt = attendance.Date.ToDateTime(attendance.EndTime);
-            var serverTime = DateTime.UtcNow;
+            var serverTime = DateTime.Now;
             var isOpen = isOpenOverride ?? (serverTime >= opensAt && serverTime <= closesAt);
 
             return new AttendanceWindowStateDto

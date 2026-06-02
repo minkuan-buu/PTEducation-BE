@@ -18,10 +18,11 @@ namespace PTEducation.API.Scheduling
         {
             var scheduler = await _schedulerFactory.GetScheduler();
 
-            var opensAt = attendance.Date.ToDateTime(attendance.StartTime);
-            var closesAt = attendance.Date.ToDateTime(attendance.EndTime);
+            var opensAt = DateTime.SpecifyKind(attendance.Date.ToDateTime(attendance.StartTime), DateTimeKind.Local);
+            var closesAt = DateTime.SpecifyKind(attendance.Date.ToDateTime(attendance.EndTime), DateTimeKind.Local);
+            var now = DateTime.Now;
 
-            if (opensAt > DateTime.UtcNow)
+            if (opensAt > now)
             {
                 var openJob = JobBuilder.Create<AttendanceWindowJob>()
                     .WithIdentity($"attendance-open-{attendance.Id}")
@@ -31,14 +32,14 @@ namespace PTEducation.API.Scheduling
 
                 var openTrigger = TriggerBuilder.Create()
                     .WithIdentity($"attendance-open-trigger-{attendance.Id}")
-                    .StartAt(new DateTimeOffset(opensAt.ToUniversalTime()))
+                    .StartAt(new DateTimeOffset(opensAt))
                     .Build();
 
                 await scheduler.DeleteJob(new JobKey($"attendance-open-{attendance.Id}"));
                 await scheduler.ScheduleJob(openJob, openTrigger);
             }
 
-            if (closesAt > DateTime.UtcNow)
+            if (closesAt > now)
             {
                 var closeJob = JobBuilder.Create<AttendanceWindowJob>()
                     .WithIdentity($"attendance-close-{attendance.Id}")
@@ -48,7 +49,7 @@ namespace PTEducation.API.Scheduling
 
                 var closeTrigger = TriggerBuilder.Create()
                     .WithIdentity($"attendance-close-trigger-{attendance.Id}")
-                    .StartAt(new DateTimeOffset(closesAt.ToUniversalTime()))
+                    .StartAt(new DateTimeOffset(closesAt))
                     .Build();
 
                 await scheduler.DeleteJob(new JobKey($"attendance-close-{attendance.Id}"));

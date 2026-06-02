@@ -33,8 +33,8 @@ namespace PTEducation.API.Jobs
             var attendance = await attendanceRepo.GetSingle(x => x.Id == attendanceId);
             if (attendance == null) return;
 
-            var opensAt = attendance.Date.ToDateTime(attendance.StartTime);
-            var closesAt = attendance.Date.ToDateTime(attendance.EndTime);
+            var opensAt = DateTime.SpecifyKind(attendance.Date.ToDateTime(attendance.StartTime), DateTimeKind.Local);
+            var closesAt = DateTime.SpecifyKind(attendance.Date.ToDateTime(attendance.EndTime), DateTimeKind.Local);
 
             if (action.Equals("open", StringComparison.OrdinalIgnoreCase))
             {
@@ -63,7 +63,7 @@ namespace PTEducation.API.Jobs
                         IsOpen = false,
                         OpensAt = null,
                         ClosesAt = closesAt,
-                        ServerTime = DateTime.UtcNow,
+                        ServerTime = DateTime.Now,
                         Reason = "No upcoming attendance"
                     });
                     return;
@@ -75,7 +75,7 @@ namespace PTEducation.API.Jobs
                     IsOpen = false,
                     OpensAt = nextSession,
                     ClosesAt = null,
-                    ServerTime = DateTime.UtcNow,
+                    ServerTime = DateTime.Now,
                     Reason = "Next session refreshed"
                 });
 
@@ -88,7 +88,7 @@ namespace PTEducation.API.Jobs
                 IsOpen = attendance.Status.Equals(AttendanceStatusEnums.Opening.ToString()),
                 OpensAt = opensAt,
                 ClosesAt = closesAt,
-                ServerTime = DateTime.UtcNow,
+                ServerTime = DateTime.Now,
                 Reason = action.Equals("open", StringComparison.OrdinalIgnoreCase) ? "Attendance window opened" : "Attendance window closed"
             });
         }

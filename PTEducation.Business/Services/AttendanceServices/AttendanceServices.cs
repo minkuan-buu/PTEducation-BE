@@ -23,6 +23,25 @@ namespace PTEducation.Business.Services.AttendanceServices
 {
     public class AttendanceServices : IAttendanceServices
     {
+        private static string ResolveAttendanceStatus(DateOnly date, TimeOnly startTime, TimeOnly endTime)
+        {
+            var now = DateTime.Now;
+            var opensAt = date.ToDateTime(startTime);
+            var closesAt = date.ToDateTime(endTime);
+
+            if (now >= closesAt)
+            {
+                return AttendanceStatusEnums.Closed.ToString();
+            }
+
+            if (now >= opensAt)
+            {
+                return AttendanceStatusEnums.Opening.ToString();
+            }
+
+            return AttendanceStatusEnums.Pending.ToString();
+        }
+
         private readonly IAttendanceRepositories _attendanceRepositories;
         private readonly IAttendanceDetailRepositories _attendanceDetailRepositories;
         private readonly IClassRepositories _classRepositories;
@@ -65,6 +84,7 @@ namespace PTEducation.Business.Services.AttendanceServices
             NewAttendance.Date = attendanceDate;
             NewAttendance.StartTime = startTime;
             NewAttendance.EndTime = endTime;
+            NewAttendance.Status = ResolveAttendanceStatus(attendanceDate, startTime, endTime);
             NewAttendance.Id = NewAttendanceId;
             await _attendanceRepositories.Insert(NewAttendance);
             // schedule open/close jobs if scheduler available
@@ -198,6 +218,7 @@ namespace PTEducation.Business.Services.AttendanceServices
             CheckExist.ClassScheduleId = attendanceReq.ClassScheduleId;
             CheckExist.SessionType = attendanceReq.SessionType;
             CheckExist.Note = attendanceReq.Note;
+            CheckExist.Status = ResolveAttendanceStatus(CheckExist.Date, CheckExist.StartTime, CheckExist.EndTime);
             await _attendanceRepositories.Update(CheckExist);
 
             // reschedule jobs if scheduler available
