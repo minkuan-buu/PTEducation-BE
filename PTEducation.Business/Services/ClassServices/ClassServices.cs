@@ -607,7 +607,7 @@ namespace PTEducation.Business.Services.ClassServices
                 TotalSessions = Class.ClassSchedules
                     .Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString()))
                     .Sum(cs => CountWeekdayOccurrences(Class.StartAt.Date, Class.EndAt.Date, (DayOfWeek)cs.DayOfWeek))
-                    + Class.Attendances.Count(att => att.Status.Equals(GeneralStatusEnums.Active.ToString()) && IsAdditionalSessionType(att.SessionType)),
+                    + Class.Attendances.Count(att => IsAdditionalSessionType(att.SessionType)),
                 StartAt = Class.StartAt,
                 EndAt = Class.EndAt,
                 NextSession = nextSession
