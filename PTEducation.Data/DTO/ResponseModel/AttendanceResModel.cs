@@ -26,6 +26,12 @@ namespace PTEducation.Data.DTO.ResponseModel
 
     public class AttendanceDetailResModel
     {
+        public AttendanceDetailSessionResModel Session { get; set; } = new();
+        public List<AttendanceDetailStudentResModel> AttendanceDetails { get; set; } = new();
+    }
+
+    public class AttendanceDetailSessionResModel
+    {
         public Guid Id { get; set; }
         public DateOnly Date { get; set; }
         public TimeOnly? StartTime { get; set; }
@@ -33,8 +39,6 @@ namespace PTEducation.Data.DTO.ResponseModel
         public Guid? ClassScheduleId { get; set; }
         public string SessionType { get; set; } = null!;
         public string? Note { get; set; }
-        public string ClassName { get; set; } = null!;
-        public List<AttendanceDetailStudentResModel>? AttendanceDetails { get; set; } = new();
         public string Status { get; set; } = null!;
     }
 
@@ -62,8 +66,8 @@ namespace PTEducation.Data.DTO.ResponseModel
     public class AttendanceDetailStudentResModel
     {
         public Guid StudentClassId { get; set; }
-        public string Id { get; set; } = null!;
-        public string Name { get; set; } = null!;
+        public string StudentId { get; set; } = null!;
+        public string StudentName { get; set; } = null!;
         public string AttendanceStatus { get; set; } = null!;
     }
 

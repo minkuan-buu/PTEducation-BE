@@ -142,14 +142,24 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.Date, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.Date)));
             CreateMap<Attendance, AttendanceListResModel>();
             CreateMap<Attendance, AttendanceDetailResModel>()
-                .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
-                    TextConvert.ConvertFromUnicodeEscape(src.Class.Name)))
+                .ForMember(dest => dest.Session, opt => opt.MapFrom(src =>
+                    new AttendanceDetailSessionResModel
+                    {
+                        Id = src.Id,
+                        Date = src.Date,
+                        StartTime = src.StartTime,
+                        EndTime = src.EndTime,
+                        ClassScheduleId = src.ClassScheduleId,
+                        SessionType = src.SessionType,
+                        Note = src.Note != null ? TextConvert.ConvertFromUnicodeEscape(src.Note) : null,
+                        Status = src.Status
+                    }))
                 .ForMember(dest => dest.AttendanceDetails, opt => opt.MapFrom(src =>
                     src.AttendanceDetails.Select(x => new AttendanceDetailStudentResModel
                     {
                         StudentClassId = x.StudentClassId,
-                        Id = x.StudentClass.Student.Id,
-                        Name = TextConvert.ConvertFromUnicodeEscape(x.StudentClass.Student.Name),
+                        StudentId = x.StudentClass.Student.Id,
+                        StudentName = TextConvert.ConvertFromUnicodeEscape(x.StudentClass.Student.Name),
                         AttendanceStatus = AttendanceEnums.Present.ToString()
                     }).ToList()));
             CreateMap<User, UserListResModel>()

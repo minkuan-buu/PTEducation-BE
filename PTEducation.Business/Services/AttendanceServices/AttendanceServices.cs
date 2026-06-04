@@ -129,13 +129,11 @@ namespace PTEducation.Business.Services.AttendanceServices
                 AttendanceDetailStudentResModel attendanceDetailStudent = new()
                 {
                     StudentClassId = item,
-                    Id = Student.StudentId,
-                    Name = TextConvert.ConvertFromUnicodeEscape(Student.Student.Name),
+                    StudentId = Student.StudentId,
+                    StudentName = TextConvert.ConvertFromUnicodeEscape(Student.Student.Name),
                     AttendanceStatus = AttendanceEnums.Absent.ToString()
                 };
-#pragma warning disable CS8602 // Dereference of a possibly null reference.
                 Result.AttendanceDetails.Add(attendanceDetailStudent);
-#pragma warning restore CS8602 // Dereference of a possibly null reference.
             }
             return new DataResultModel<AttendanceDetailResModel>()
             {
