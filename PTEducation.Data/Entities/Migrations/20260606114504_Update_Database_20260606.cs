@@ -11,6 +11,10 @@ namespace PTEducation.Data.Entities.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_Attendance_ClassSchedule",
+                table: "Attendance");
+
             migrationBuilder.DropPrimaryKey(
                 name: "PK__ClassSch__3214EC07C7AAA2EF",
                 table: "ClassSchedule");
@@ -26,11 +30,22 @@ namespace PTEducation.Data.Entities.Migrations
                 name: "PK__ClassSch__3214EC077CA59604",
                 table: "ClassSchedule",
                 column: "Id");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Attendance_ClassSchedule",
+                table: "Attendance",
+                column: "ClassScheduleId",
+                principalTable: "ClassSchedule",
+                principalColumn: "Id");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_Attendance_ClassSchedule",
+                table: "Attendance");
+
             migrationBuilder.DropPrimaryKey(
                 name: "PK__ClassSch__3214EC077CA59604",
                 table: "ClassSchedule");
@@ -43,6 +58,13 @@ namespace PTEducation.Data.Entities.Migrations
                 name: "PK__ClassSch__3214EC07C7AAA2EF",
                 table: "ClassSchedule",
                 column: "Id");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Attendance_ClassSchedule",
+                table: "Attendance",
+                column: "ClassScheduleId",
+                principalTable: "ClassSchedule",
+                principalColumn: "Id");
         }
     }
 }
