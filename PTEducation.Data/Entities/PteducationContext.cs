@@ -70,6 +70,7 @@ public partial class PteducationContext : DbContext
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.AttendanceId).HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.CreatedAt).HasColumnType("datetime");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .IsUnicode(false)
@@ -124,7 +125,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<ClassSchedule>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ClassSch__3214EC07C7AAA2EF");
+            entity.HasKey(e => e.Id).HasName("PK__ClassSch__3214EC077CA59604");
 
             entity.ToTable("ClassSchedule");
 

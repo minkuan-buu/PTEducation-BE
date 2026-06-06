@@ -56,7 +56,8 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
                             Id = Guid.NewGuid(),
                             AttendanceId = AttendanceReq.Id,
                             StudentClassId = attendance.StudentClassId,
-                            Status = GeneralStatusEnums.Active.ToString()
+                            Status = GeneralStatusEnums.Active.ToString(),
+                            CreatedAt = DateTime.Now
                         };
                         ListAddDetail.Add(NewAttendance);
                     }

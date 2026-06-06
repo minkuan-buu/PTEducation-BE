@@ -63,7 +63,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("{Id:guid}")]
-        // [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetAttendanceDetail(Guid Id)
         {
             try

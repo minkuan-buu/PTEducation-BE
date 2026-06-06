@@ -69,6 +69,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string StudentId { get; set; } = null!;
         public string StudentName { get; set; } = null!;
         public string AttendanceStatus { get; set; } = null!;
+        public List<UserGuardianListResModel> Guardians { get; set; } = null!;
     }
 
     public class AttendanceStudentResModel

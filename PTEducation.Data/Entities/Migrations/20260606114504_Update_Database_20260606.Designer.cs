@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PTEducation.Data.Entities;
 
@@ -11,9 +12,11 @@ using PTEducation.Data.Entities;
 namespace PTEducation.Data.Entities.Migrations
 {
     [DbContext(typeof(PteducationContext))]
-    partial class PteducationContextModelSnapshot : ModelSnapshot
+    [Migration("20260606114504_Update_Database_20260606")]
+    partial class Update_Database_20260606
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

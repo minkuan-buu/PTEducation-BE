@@ -8,6 +8,7 @@ namespace PTEducation.Data.Enums
 {
     public enum AttendanceEnums
     {
+        NotYet,
         Present,
         Absent,
         Late
