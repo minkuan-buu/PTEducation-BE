@@ -7,10 +7,8 @@ using PTEducation.Data.Repositories.AttendanceRepositories;
 
 namespace PTEducation.API.HostedServices
 {
-    public class AttendanceWindowReconciliationHostedService : BackgroundService
+    public class AttendanceWindowReconciliationHostedService : IHostedService
     {
-        private static readonly TimeSpan ReconcileInterval = TimeSpan.FromMinutes(1);
-
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<AttendanceWindowReconciliationHostedService> _logger;
 
@@ -22,15 +20,14 @@ namespace PTEducation.API.HostedServices
             _logger = logger;
         }
 
-        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-            await ReconcileAsync(stoppingToken);
+            await ReconcileAsync(cancellationToken);
+        }
 
-            using var timer = new PeriodicTimer(ReconcileInterval);
-            while (await timer.WaitForNextTickAsync(stoppingToken))
-            {
-                await ReconcileAsync(stoppingToken);
-            }
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.CompletedTask;
         }
 
         private async Task ReconcileAsync(CancellationToken cancellationToken)
@@ -39,6 +36,8 @@ namespace PTEducation.API.HostedServices
             {
                 using var scope = _scopeFactory.CreateScope();
                 var attendanceRepositories = scope.ServiceProvider.GetRequiredService<IAttendanceRepositories>();
+                var attendanceServices = scope.ServiceProvider.GetRequiredService<IAttendanceServices>();
+                var attendanceScheduler = scope.ServiceProvider.GetRequiredService<IAttendanceScheduler>();
                 var classServices = scope.ServiceProvider.GetRequiredService<IClassServices>();
                 var realtimeNotifier = scope.ServiceProvider.GetRequiredService<IAttendanceRealtimeNotifier>();
 
@@ -51,34 +50,22 @@ namespace PTEducation.API.HostedServices
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var desiredStatus = ResolveAttendanceStatus(attendance, now);
-                    if (string.Equals(attendance.Status, desiredStatus, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(desiredStatus, AttendanceStatusEnums.Closed.ToString(), StringComparison.OrdinalIgnoreCase))
                     {
+                        await attendanceServices.CloseAttendance(attendance.Id);
+                        await BroadcastAttendanceStateAsync(attendance.ClassId, now, classServices, realtimeNotifier);
                         continue;
                     }
 
-                    attendance.Status = desiredStatus;
-                    await attendanceRepositories.Update(attendance);
-
-                    var metadata = await classServices.GetClassMetadata(attendance.ClassId);
-                    var nextSession = metadata.Data?.NextSession;
-                    var nextSessionEndAt = metadata.Data?.NextSessionEndAt;
-                    var windowKind = metadata.Data?.NextSessionKind;
-                    var isOpen = string.Equals(windowKind, "Current", StringComparison.OrdinalIgnoreCase) &&
-                        nextSession.HasValue &&
-                        nextSessionEndAt.HasValue &&
-                        now >= nextSession.Value &&
-                        now <= nextSessionEndAt.Value;
-
-                    await realtimeNotifier.BroadcastAttendanceWindowAsync(new AttendanceWindowStateDto
+                    if (!string.Equals(attendance.Status, desiredStatus, StringComparison.OrdinalIgnoreCase))
                     {
-                        ClassId = attendance.ClassId,
-                        IsOpen = isOpen,
-                        WindowKind = windowKind,
-                        OpensAt = nextSession,
-                        ClosesAt = nextSessionEndAt,
-                        ServerTime = now,
-                        Reason = "Attendance window reconciled"
-                    });
+                        attendance.Status = desiredStatus;
+                        await attendanceRepositories.Update(attendance);
+                    }
+
+                    await attendanceScheduler.ScheduleAttendanceJobsAsync(attendance);
+
+                    await BroadcastAttendanceStateAsync(attendance.ClassId, now, classServices, realtimeNotifier);
                 }
             }
             catch (OperationCanceledException)
@@ -106,6 +93,34 @@ namespace PTEducation.API.HostedServices
             }
 
             return AttendanceStatusEnums.Pending.ToString();
+        }
+
+        private static async Task BroadcastAttendanceStateAsync(
+            Guid classId,
+            DateTime now,
+            IClassServices classServices,
+            IAttendanceRealtimeNotifier realtimeNotifier)
+        {
+            var metadata = await classServices.GetClassMetadata(classId);
+            var nextSession = metadata.Data?.NextSession;
+            var nextSessionEndAt = metadata.Data?.NextSessionEndAt;
+            var windowKind = metadata.Data?.NextSessionKind;
+            var isOpen = string.Equals(windowKind, "Current", StringComparison.OrdinalIgnoreCase) &&
+                nextSession.HasValue &&
+                nextSessionEndAt.HasValue &&
+                now >= nextSession.Value &&
+                now <= nextSessionEndAt.Value;
+
+            await realtimeNotifier.BroadcastAttendanceWindowAsync(new AttendanceWindowStateDto
+            {
+                ClassId = classId,
+                IsOpen = isOpen,
+                WindowKind = windowKind,
+                OpensAt = nextSession,
+                ClosesAt = nextSessionEndAt,
+                ServerTime = now,
+                Reason = "Attendance window reconciled"
+            });
         }
     }
 }

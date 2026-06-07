@@ -2,8 +2,8 @@ using Quartz;
 using PTEducation.Data.Repositories.AttendanceRepositories;
 using PTEducation.API.Realtime;
 using PTEducation.Data.Enums;
-using PTEducation.API.Realtime;
 using PTEducation.Business.Services.ClassServices;
+using PTEducation.Business.Services.AttendanceServices;
 
 namespace PTEducation.API.Jobs
 {
@@ -12,12 +12,14 @@ namespace PTEducation.API.Jobs
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IAttendanceRealtimeNotifier _notifier;
         private readonly IClassServices _classServices;
+        private readonly IAttendanceServices _attendanceServices;
 
-        public AttendanceWindowJob(IServiceScopeFactory scopeFactory, IAttendanceRealtimeNotifier notifier, IClassServices classServices)
+        public AttendanceWindowJob(IServiceScopeFactory scopeFactory, IAttendanceRealtimeNotifier notifier, IClassServices classServices, IAttendanceServices attendanceServices)
         {
             _scopeFactory = scopeFactory;
             _notifier = notifier;
             _classServices = classServices;
+            _attendanceServices = attendanceServices;
         }
 
         public async Task Execute(IJobExecutionContext context)
@@ -46,11 +48,7 @@ namespace PTEducation.API.Jobs
             }
             else if (action.Equals("close", StringComparison.OrdinalIgnoreCase))
             {
-                if (!attendance.Status.Equals(AttendanceStatusEnums.Closed.ToString()))
-                {
-                    attendance.Status = AttendanceStatusEnums.Closed.ToString();
-                    await attendanceRepo.Update(attendance);
-                }
+                await _attendanceServices.CloseAttendance(attendanceId);
 
                 var metadata = await _classServices.GetClassMetadata(attendance.ClassId);
                 var nextSession = metadata.Data?.NextSession;

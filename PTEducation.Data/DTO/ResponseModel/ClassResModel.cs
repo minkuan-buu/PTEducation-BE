@@ -68,6 +68,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public int TotalStudent { get; set; }
         public int TotalPendingStudent { get; set; }
         public decimal AverageScore { get; set; }
+        public decimal AttendanceRate { get; set; }
         public int TotalSessions { get; set; }
         public int CompletedSessions { get; set; }
         public List<ClassScheduleResModel> WeeklySchedules { get; set; } = new();

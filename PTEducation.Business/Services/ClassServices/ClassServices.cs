@@ -565,15 +565,20 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<DataResultModel<ClassDetailMetaData>> GetClassMetadata(Guid ClassId)
         {
-            var Class = await _classRepositories.GetSingle(x => x.Id == ClassId, includeProperties: "StudentClasses.Student,ClassSchedules,Scores,Attendances");
+            var Class = await _classRepositories.GetSingle(x => x.Id == ClassId, includeProperties: "StudentClasses.Student,ClassSchedules,Scores,Attendances.AttendanceDetails");
             if (Class == null)
             {
                 throw new CustomException("Class not found!");
             }
+
             var TotalStudent = Class.StudentClasses.Count(sc => sc.Status.Equals(GeneralStatusEnums.Active.ToString()) && sc.Student.Status.Equals(AccountStatusEnums.Active.ToString()));
             var TotalPendingStudent = Class.StudentClasses.Count(sc => sc.Student.Status.Equals(AccountStatusEnums.PendingApproved.ToString()));
             var TotalScore = Class.Scores.Count(s => s.Status.Equals(GeneralStatusEnums.Active.ToString()));
-            var TotalAttendance = Class.Attendances.Count(a => a.Status.Equals(AttendanceStatusEnums.Closed.ToString()));
+
+            // Tách riêng danh sách buổi học đã hoàn tất
+            var closedAttendances = Class.Attendances.Where(a => a.Status.Equals(AttendanceStatusEnums.Closed.ToString())).ToList();
+            var TotalAttendance = closedAttendances.Count;
+
             var now = DateTime.Now;
 
             DateTime? nextSession = null;
@@ -617,16 +622,22 @@ namespace PTEducation.Business.Services.ClassServices
                     nextSessionKind = "Upcoming";
                 }
             }
+
             var Metadata = new ClassDetailMetaData()
             {
                 WeeklySchedules = _mapper.Map<List<ClassScheduleResModel>>(Class.ClassSchedules.Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList()),
                 TotalStudent = TotalStudent,
                 TotalPendingStudent = TotalPendingStudent,
-                AverageScore = TotalScore > 0 ? (decimal)TotalScore / TotalStudent : 0,
+                AverageScore = TotalStudent > 0 ? (decimal)TotalScore / TotalStudent : 0, // Đã fix phòng trường hợp TotalStudent = 0
                 Name = Class.Name,
+
+                // FIX: Tính tỉ lệ chuyên cần chính xác
+                AttendanceRate = TotalAttendance > 0
+                    ? ((decimal)closedAttendances.Sum(att => att.AttendanceDetails.Count(ad => ad.Status == AttendanceEnums.Present.ToString())) /
+                    closedAttendances.Sum(att => att.AttendanceDetails.Count)) * 100
+                    : 0,
+
                 CompletedSessions = TotalAttendance,
-                // TotalSessions = tổng số buổi theo từng lịch trong khoảng StartAt..EndAt (đếm theo ngày trong tuần)
-                // Cộng thêm các buổi điểm danh đặc biệt (Adhoc, Mock up) vì chúng không nằm trong lịch cố định
                 TotalSessions = Class.ClassSchedules
                     .Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString()))
                     .Sum(cs => CountWeekdayOccurrences(Class.StartAt.Date, Class.EndAt.Date, (DayOfWeek)cs.DayOfWeek))
@@ -637,11 +648,13 @@ namespace PTEducation.Business.Services.ClassServices
                 NextSessionEndAt = nextSessionEndAt,
                 NextSessionKind = nextSessionKind
             };
+
             return new DataResultModel<ClassDetailMetaData>()
             {
                 Data = Metadata
             };
         }
+        
         private static bool IsWindowOpen(Attendance attendance, DateTime now)
         {
             if (attendance == null)

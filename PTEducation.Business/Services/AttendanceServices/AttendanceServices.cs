@@ -290,6 +290,65 @@ namespace PTEducation.Business.Services.AttendanceServices
             };
         }
 
+        public async Task<AttendanceMutationResModel> CloseAttendance(Guid Id)
+        {
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails");
+            if (CheckExist == null)
+            {
+                throw new CustomException("Attendance not found");
+            }
+
+            var StudentInClass = await _studentClassRepositories.GetList(
+                x => x.ClassId.Equals(CheckExist.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+
+            var ExistingStudentClassIds = CheckExist.AttendanceDetails.Select(x => x.StudentClassId).ToHashSet();
+            var MissingAttendanceDetails = StudentInClass
+                .Where(x => !ExistingStudentClassIds.Contains(x.Id))
+                .Select(x => new AttendanceDetail
+                {
+                    Id = Guid.NewGuid(),
+                    AttendanceId = CheckExist.Id,
+                    StudentClassId = x.Id,
+                    Status = AttendanceEnums.Absent.ToString(),
+                    CreatedAt = DateTime.Now
+                })
+                .ToList();
+
+            await using var transaction = await _attendanceRepositories.BeginTransactionAsync();
+            try
+            {
+                if (MissingAttendanceDetails.Count > 0)
+                {
+                    await _attendanceDetailRepositories.InsertRange(MissingAttendanceDetails, false);
+                }
+
+                if (!CheckExist.Status.Equals(AttendanceStatusEnums.Closed.ToString(), StringComparison.OrdinalIgnoreCase))
+                {
+                    CheckExist.Status = AttendanceStatusEnums.Closed.ToString();
+                    await _attendanceRepositories.Update(CheckExist, false);
+                }
+
+                await _attendanceRepositories.SaveChangesAsync();
+                await _attendanceRepositories.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _attendanceRepositories.RollbackTransactionAsync();
+                throw;
+            }
+
+            return new AttendanceMutationResModel
+            {
+                AttendanceId = CheckExist.Id,
+                ClassId = CheckExist.ClassId,
+                Date = CheckExist.Date,
+                StartTime = CheckExist.StartTime,
+                EndTime = CheckExist.EndTime,
+                SessionType = CheckExist.SessionType,
+                Status = CheckExist.Status
+            };
+        }
+
         // private async Task<List<Attendance>> ViewAllAttendance(int? pageIndex, AttendanceFilter searchModel)
         // {
         //     Func<IQueryable<Attendance>, IOrderedQueryable<Attendance>> orderBy = o => o.OrderByDescending(p => p.Date).ThenByDescending(p => p.StartTime);

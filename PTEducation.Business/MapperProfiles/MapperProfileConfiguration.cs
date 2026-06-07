@@ -160,7 +160,7 @@ namespace PTEducation.Business.MapperProfiles
                         StudentClassId = x.StudentClassId,
                         StudentId = x.StudentClass.Student.Id,
                         StudentName = TextConvert.ConvertFromUnicodeEscape(x.StudentClass.Student.Name),
-                        AttendanceStatus = AttendanceEnums.Present.ToString(),
+                        AttendanceStatus = x.Status,
                         Guardians = x.StudentClass.Student.StudentGuardianStudents.Select(g => new UserGuardianListResModel
                         {
                             Id = g.Guardian.Id,
