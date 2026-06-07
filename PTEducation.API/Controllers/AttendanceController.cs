@@ -19,27 +19,33 @@ namespace PTEducation.API.Controllers
     {
         private readonly IAttendanceServices _attendanceServices;
         private readonly IAttendanceRealtimeNotifier _attendanceRealtimeNotifier;
+        private readonly IClassServices _classServices;
 
-        public AttendanceController(IAttendanceServices attendanceServices, IAttendanceRealtimeNotifier attendanceRealtimeNotifier)
+        public AttendanceController(IAttendanceServices attendanceServices, IAttendanceRealtimeNotifier attendanceRealtimeNotifier, IClassServices classServices)
         {
             _attendanceServices = attendanceServices;
             _attendanceRealtimeNotifier = attendanceRealtimeNotifier;
+            _classServices = classServices;
         }
 
-        private static AttendanceWindowStateDto BuildWindowState(
-            AttendanceMutationResModel attendance,
-            string? reason = null,
-            bool? isOpenOverride = null)
+        private async Task<AttendanceWindowStateDto> BuildWindowStateAsync(Guid classId, string? reason = null)
         {
-            var opensAt = attendance.Date.ToDateTime(attendance.StartTime);
-            var closesAt = attendance.Date.ToDateTime(attendance.EndTime);
+            var metadata = await _classServices.GetClassMetadata(classId);
             var serverTime = DateTime.Now;
-            var isOpen = isOpenOverride ?? (serverTime >= opensAt && serverTime <= closesAt);
+            var opensAt = metadata.Data?.NextSession;
+            var closesAt = metadata.Data?.NextSessionEndAt;
+            var windowKind = metadata.Data?.NextSessionKind;
+            var isOpen = string.Equals(windowKind, "Current", StringComparison.OrdinalIgnoreCase) &&
+                opensAt.HasValue &&
+                closesAt.HasValue &&
+                serverTime >= opensAt.Value &&
+                serverTime <= closesAt.Value;
 
             return new AttendanceWindowStateDto
             {
-                ClassId = attendance.ClassId,
+                ClassId = classId,
                 IsOpen = isOpen,
+                WindowKind = windowKind,
                 OpensAt = opensAt,
                 ClosesAt = closesAt,
                 ServerTime = serverTime,
@@ -86,11 +92,26 @@ namespace PTEducation.API.Controllers
                 var Result = await _attendanceServices.CreateAttendance(AttendanceReq, classId);
 
                 await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
-                    BuildWindowState(Result, "Attendance window scheduled"));
+                    await BuildWindowStateAsync(Result.ClassId, "Attendance window scheduled"));
 
                 // scheduling handled in service layer
 
                 return Ok(new MessageResultModel { Message = "Ok" });
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("{attendanceId:guid}/check-attendance")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> CheckAttendance(Guid attendanceId, [FromBody] CheckAttendanceReqModel checkAttendanceReq)
+        {
+            try
+            {
+                var Result = await _attendanceServices.CheckAttendance(attendanceId, checkAttendanceReq.StudentClassId);
+                return Ok(Result);
             }
             catch (CustomException ex)
             {
@@ -107,7 +128,7 @@ namespace PTEducation.API.Controllers
                 var Result = await _attendanceServices.UpdateAttendance(AttendanceReq);
 
                 await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
-                    BuildWindowState(Result, "Attendance window updated"));
+                    await BuildWindowStateAsync(Result.ClassId, "Attendance window updated"));
 
                 // scheduling handled in service layer
 
@@ -128,7 +149,7 @@ namespace PTEducation.API.Controllers
                 var Result = await _attendanceServices.SoftDeleteAttendance(Id);
 
                 await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
-                    BuildWindowState(Result, "Attendance window deleted", false));
+                    await BuildWindowStateAsync(Result.ClassId, "Attendance window deleted"));
 
                 return Ok(new MessageResultModel { Message = "Ok" });
             }
@@ -147,7 +168,7 @@ namespace PTEducation.API.Controllers
                 var Result = await _attendanceServices.RestoreAttendance(Id);
 
                 await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
-                    BuildWindowState(Result, "Attendance window restored"));
+                    await BuildWindowStateAsync(Result.ClassId, "Attendance window restored"));
 
                 return Ok(new MessageResultModel { Message = "Ok" });
             }

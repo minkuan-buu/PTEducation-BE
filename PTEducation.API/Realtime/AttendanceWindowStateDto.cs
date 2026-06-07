@@ -4,6 +4,7 @@ namespace PTEducation.API.Realtime
     {
         public Guid ClassId { get; init; }
         public bool IsOpen { get; init; }
+        public string? WindowKind { get; init; }
         public DateTime? OpensAt { get; init; }
         public DateTime? ClosesAt { get; init; }
         public DateTime ServerTime { get; init; }

@@ -54,28 +54,23 @@ namespace PTEducation.API.Jobs
 
                 var metadata = await _classServices.GetClassMetadata(attendance.ClassId);
                 var nextSession = metadata.Data?.NextSession;
-
-                if (!nextSession.HasValue || nextSession.Value == default)
-                {
-                    await _notifier.BroadcastAttendanceWindowAsync(new AttendanceWindowStateDto
-                    {
-                        ClassId = attendance.ClassId,
-                        IsOpen = false,
-                        OpensAt = null,
-                        ClosesAt = closesAt,
-                        ServerTime = DateTime.Now,
-                        Reason = "No upcoming attendance"
-                    });
-                    return;
-                }
+                var nextSessionEndAt = metadata.Data?.NextSessionEndAt;
+                var windowKind = metadata.Data?.NextSessionKind;
+                var serverTime = DateTime.Now;
+                var isOpen = string.Equals(windowKind, "Current", StringComparison.OrdinalIgnoreCase) &&
+                    nextSession.HasValue &&
+                    nextSessionEndAt.HasValue &&
+                    serverTime >= nextSession.Value &&
+                    serverTime <= nextSessionEndAt.Value;
 
                 await _notifier.BroadcastAttendanceWindowAsync(new AttendanceWindowStateDto
                 {
                     ClassId = attendance.ClassId,
-                    IsOpen = false,
+                    IsOpen = isOpen,
+                    WindowKind = windowKind,
                     OpensAt = nextSession,
-                    ClosesAt = null,
-                    ServerTime = DateTime.Now,
+                    ClosesAt = nextSessionEndAt,
+                    ServerTime = serverTime,
                     Reason = "Next session refreshed"
                 });
 
@@ -86,6 +81,7 @@ namespace PTEducation.API.Jobs
             {
                 ClassId = attendance.ClassId,
                 IsOpen = attendance.Status.Equals(AttendanceStatusEnums.Opening.ToString()),
+                WindowKind = attendance.Status.Equals(AttendanceStatusEnums.Opening.ToString()) ? "Current" : "Upcoming",
                 OpensAt = opensAt,
                 ClosesAt = closesAt,
                 ServerTime = DateTime.Now,

@@ -1,5 +1,6 @@
 using PTEducation.API.Realtime;
 using PTEducation.Business.Services.AttendanceServices;
+using PTEducation.Business.Services.ClassServices;
 using PTEducation.Data.Entities;
 using PTEducation.Data.Enums;
 using PTEducation.Data.Repositories.AttendanceRepositories;
@@ -38,6 +39,7 @@ namespace PTEducation.API.HostedServices
             {
                 using var scope = _scopeFactory.CreateScope();
                 var attendanceRepositories = scope.ServiceProvider.GetRequiredService<IAttendanceRepositories>();
+                var classServices = scope.ServiceProvider.GetRequiredService<IClassServices>();
                 var realtimeNotifier = scope.ServiceProvider.GetRequiredService<IAttendanceRealtimeNotifier>();
 
                 var attendances = await attendanceRepositories.GetList(
@@ -57,12 +59,23 @@ namespace PTEducation.API.HostedServices
                     attendance.Status = desiredStatus;
                     await attendanceRepositories.Update(attendance);
 
+                    var metadata = await classServices.GetClassMetadata(attendance.ClassId);
+                    var nextSession = metadata.Data?.NextSession;
+                    var nextSessionEndAt = metadata.Data?.NextSessionEndAt;
+                    var windowKind = metadata.Data?.NextSessionKind;
+                    var isOpen = string.Equals(windowKind, "Current", StringComparison.OrdinalIgnoreCase) &&
+                        nextSession.HasValue &&
+                        nextSessionEndAt.HasValue &&
+                        now >= nextSession.Value &&
+                        now <= nextSessionEndAt.Value;
+
                     await realtimeNotifier.BroadcastAttendanceWindowAsync(new AttendanceWindowStateDto
                     {
                         ClassId = attendance.ClassId,
-                        IsOpen = string.Equals(desiredStatus, AttendanceStatusEnums.Opening.ToString(), StringComparison.OrdinalIgnoreCase),
-                        OpensAt = attendance.Date.ToDateTime(attendance.StartTime),
-                        ClosesAt = attendance.Date.ToDateTime(attendance.EndTime),
+                        IsOpen = isOpen,
+                        WindowKind = windowKind,
+                        OpensAt = nextSession,
+                        ClosesAt = nextSessionEndAt,
                         ServerTime = now,
                         Reason = "Attendance window reconciled"
                     });

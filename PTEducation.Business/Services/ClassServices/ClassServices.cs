@@ -573,27 +573,50 @@ namespace PTEducation.Business.Services.ClassServices
             var TotalStudent = Class.StudentClasses.Count(sc => sc.Status.Equals(GeneralStatusEnums.Active.ToString()) && sc.Student.Status.Equals(AccountStatusEnums.Active.ToString()));
             var TotalPendingStudent = Class.StudentClasses.Count(sc => sc.Student.Status.Equals(AccountStatusEnums.PendingApproved.ToString()));
             var TotalScore = Class.Scores.Count(s => s.Status.Equals(GeneralStatusEnums.Active.ToString()));
-            var TotalAttendance = Class.Attendances.Count(a => a.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var TotalAttendance = Class.Attendances.Count(a => a.Status.Equals(AttendanceStatusEnums.Closed.ToString()));
             var now = DateTime.Now;
 
-            var nextScheduledSession = Class.ClassSchedules
-                .Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString()))
-                .Select(cs => GetNextSessionDate(Class.StartAt, Class.EndAt, cs.DayOfWeek, cs.StartTime))
-                .Where(date => date >= now && date != DateTime.MaxValue)
-                .OrderBy(date => date)
+            DateTime? nextSession = null;
+            DateTime? nextSessionEndAt = null;
+            string? nextSessionKind = null;
+
+            var currentSession = Class.Attendances
+                .Where(att => IsWindowOpen(att, now))
+                .OrderBy(att => att.Date.ToDateTime(att.StartTime))
                 .FirstOrDefault();
 
-            var nextAdditionalSession = Class.Attendances
-                .Where(att => !att.Status.Equals(AttendanceStatusEnums.Closed.ToString()) && IsAdditionalSessionType(att.SessionType))
-                .Select(att => att.Date.ToDateTime(att.StartTime))
-                .Where(date => date >= now)
-                .OrderBy(date => date)
-                .FirstOrDefault();
+            if (currentSession != null)
+            {
+                nextSession = currentSession.Date.ToDateTime(currentSession.StartTime);
+                nextSessionEndAt = currentSession.Date.ToDateTime(currentSession.EndTime);
+                nextSessionKind = "Current";
+            }
+            else
+            {
+                var nextSessionCandidates = new List<(DateTime StartAt, DateTime EndAt)>();
 
-            var nextSession = new[] { nextScheduledSession, nextAdditionalSession }
-                .Where(date => date != default)
-                .OrderBy(date => date)
-                .FirstOrDefault();
+                foreach (var schedule in Class.ClassSchedules.Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString())))
+                {
+                    var nextScheduledSession = GetNextSessionWindow(Class.StartAt, Class.EndAt, schedule.DayOfWeek, schedule.StartTime, schedule.EndTime);
+                    if (nextScheduledSession.HasValue)
+                    {
+                        nextSessionCandidates.Add(nextScheduledSession.Value);
+                    }
+                }
+
+                foreach (var attendance in Class.Attendances.Where(att => IsFutureWindow(att, now)))
+                {
+                    nextSessionCandidates.Add((attendance.Date.ToDateTime(attendance.StartTime), attendance.Date.ToDateTime(attendance.EndTime)));
+                }
+
+                if (nextSessionCandidates.Any())
+                {
+                    var nextSessionCandidate = nextSessionCandidates.OrderBy(candidate => candidate.StartAt).First();
+                    nextSession = nextSessionCandidate.StartAt;
+                    nextSessionEndAt = nextSessionCandidate.EndAt;
+                    nextSessionKind = "Upcoming";
+                }
+            }
             var Metadata = new ClassDetailMetaData()
             {
                 WeeklySchedules = _mapper.Map<List<ClassScheduleResModel>>(Class.ClassSchedules.Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList()),
@@ -610,14 +633,41 @@ namespace PTEducation.Business.Services.ClassServices
                     + Class.Attendances.Count(att => IsAdditionalSessionType(att.SessionType)),
                 StartAt = Class.StartAt,
                 EndAt = Class.EndAt,
-                NextSession = nextSession
+                NextSession = nextSession,
+                NextSessionEndAt = nextSessionEndAt,
+                NextSessionKind = nextSessionKind
             };
             return new DataResultModel<ClassDetailMetaData>()
             {
                 Data = Metadata
             };
         }
-        private DateTime GetNextSessionDate(DateTime StartAt, DateTime EndAt, byte DayOfWeek, TimeOnly StartTime)
+        private static bool IsWindowOpen(Attendance attendance, DateTime now)
+        {
+            if (attendance == null)
+            {
+                return false;
+            }
+
+            var opensAt = attendance.Date.ToDateTime(attendance.StartTime);
+            var closesAt = attendance.Date.ToDateTime(attendance.EndTime);
+
+            return !attendance.Status.Equals(AttendanceStatusEnums.Closed.ToString()) &&
+                   now >= opensAt && now <= closesAt;
+        }
+
+        private static bool IsFutureWindow(Attendance attendance, DateTime now)
+        {
+            if (attendance == null)
+            {
+                return false;
+            }
+
+            var opensAt = attendance.Date.ToDateTime(attendance.StartTime);
+            return !attendance.Status.Equals(AttendanceStatusEnums.Closed.ToString()) && opensAt > now;
+        }
+
+        private (DateTime StartAt, DateTime EndAt)? GetNextSessionWindow(DateTime StartAt, DateTime EndAt, byte DayOfWeek, TimeOnly StartTime, TimeOnly EndTime)
         {
             var now = DateTime.Now;
             var nextSession = now.Date;
@@ -628,18 +678,20 @@ namespace PTEducation.Business.Services.ClassServices
             }
 
             nextSession = new DateTime(nextSession.Year, nextSession.Month, nextSession.Day, StartTime.Hour, StartTime.Minute, 0);
+            var nextSessionEndAt = new DateTime(nextSession.Year, nextSession.Month, nextSession.Day, EndTime.Hour, EndTime.Minute, 0);
 
             if (nextSession <= now)
             {
                 nextSession = nextSession.AddDays(7);
+                nextSessionEndAt = nextSessionEndAt.AddDays(7);
             }
 
             if (nextSession < StartAt || nextSession > EndAt)
             {
-                return DateTime.MaxValue;
+                return null;
             }
 
-            return nextSession;
+            return (nextSession, nextSessionEndAt);
         }
 
         private int CountWeekdayOccurrences(DateTime startDate, DateTime endDate, DayOfWeek targetDay)

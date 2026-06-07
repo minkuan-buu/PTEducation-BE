@@ -18,6 +18,31 @@ namespace PTEducation.API.Hubs
 
         public static string GetClassGroupName(Guid classId) => $"class:{classId:D}";
 
+        private async Task<AttendanceWindowStateDto> BuildWindowStateAsync(Guid classId, string? reason = null)
+        {
+            var metadata = await _classServices.GetClassMetadata(classId);
+            var serverTime = DateTime.UtcNow;
+            var opensAt = metadata.Data?.NextSession;
+            var closesAt = metadata.Data?.NextSessionEndAt;
+            var windowKind = metadata.Data?.NextSessionKind;
+            var isOpen = string.Equals(windowKind, "Current", StringComparison.OrdinalIgnoreCase) &&
+                opensAt.HasValue &&
+                closesAt.HasValue &&
+                serverTime >= opensAt.Value.ToUniversalTime() &&
+                serverTime <= closesAt.Value.ToUniversalTime();
+
+            return new AttendanceWindowStateDto
+            {
+                ClassId = classId,
+                IsOpen = isOpen,
+                WindowKind = windowKind,
+                OpensAt = opensAt,
+                ClosesAt = closesAt,
+                ServerTime = serverTime,
+                Reason = reason
+            };
+        }
+
         public async Task JoinClassGroup(string classId)
         {
             if (!Guid.TryParse(classId, out var parsedClassId))
@@ -27,21 +52,9 @@ namespace PTEducation.API.Hubs
 
             await Groups.AddToGroupAsync(Context.ConnectionId, GetClassGroupName(parsedClassId));
 
-            var metadata = await _classServices.GetClassMetadata(parsedClassId);
-            var nextSession = metadata.Data?.NextSession;
-
-            if (nextSession.HasValue && nextSession.Value != default)
-            {
-                await Clients.Caller.SendAsync(AttendanceRealtimeEvents.AttendanceWindowStateChanged, new AttendanceWindowStateDto
-                {
-                    ClassId = parsedClassId,
-                    IsOpen = DateTime.UtcNow >= nextSession.Value.ToUniversalTime(),
-                    OpensAt = nextSession.Value,
-                    ClosesAt = null,
-                    ServerTime = DateTime.UtcNow,
-                    Reason = "Initial class window state"
-                });
-            }
+            await Clients.Caller.SendAsync(
+                AttendanceRealtimeEvents.AttendanceWindowStateChanged,
+                await BuildWindowStateAsync(parsedClassId, "Initial class window state"));
         }
 
         public async Task<AttendanceWindowStateDto?> GetClassWindowState(string classId)
@@ -51,23 +64,7 @@ namespace PTEducation.API.Hubs
                 throw new HubException("Invalid class id.");
             }
 
-            var metadata = await _classServices.GetClassMetadata(parsedClassId);
-            var nextSession = metadata.Data?.NextSession;
-
-            if (!nextSession.HasValue || nextSession.Value == default)
-            {
-                return null;
-            }
-
-            return new AttendanceWindowStateDto
-            {
-                ClassId = parsedClassId,
-                IsOpen = DateTime.UtcNow >= nextSession.Value.ToUniversalTime(),
-                OpensAt = nextSession.Value,
-                ClosesAt = null,
-                ServerTime = DateTime.UtcNow,
-                Reason = "Initial class window state"
-            };
+            return await BuildWindowStateAsync(parsedClassId, "Initial class window state");
         }
 
         public async Task LeaveClassGroup(string classId)

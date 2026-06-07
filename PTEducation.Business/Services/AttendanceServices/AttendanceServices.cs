@@ -214,13 +214,35 @@ namespace PTEducation.Business.Services.AttendanceServices
 
         public async Task<MessageResultModel> CheckAttendance(Guid AttendanceId, Guid StudentClassId)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceId) && x.AttendanceDetails.Any(d => d.StudentClassId.Equals(StudentClassId) && d.Status.Equals(AttendanceStatusEnums.Opening.ToString())), includeProperties: "AttendanceDetails");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceId) && x.Status.Equals(AttendanceStatusEnums.Opening.ToString()), includeProperties: "AttendanceDetails");
             if (CheckExist == null)
             {
                 return new MessageResultModel()
                 {
-                    Message = "Not Found"
+                    Message = "Not Found or Attendance is not opening"
                 };
+            }
+            var CheckExistStudentClass = await _studentClassRepositories.GetSingle(x => x.Id.Equals(StudentClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            if (CheckExistStudentClass == null)
+            {
+                return new MessageResultModel()
+                {
+                    Message = "StudentClass not found or not active"
+                };
+            }
+            var CheckExistAttendanceDetail = CheckExist.AttendanceDetails.FirstOrDefault(x => x.StudentClassId.Equals(StudentClassId));
+            if (CheckExistAttendanceDetail == null)
+            {
+                AttendanceDetail newAttendanceDetail = new AttendanceDetail()
+                {
+                    Id = Guid.NewGuid(),
+                    AttendanceId = AttendanceId,
+                    StudentClassId = StudentClassId,
+                    Status = AttendanceEnums.Present.ToString(),
+                    CreatedAt = DateTime.Now
+                };
+
+                await _attendanceDetailRepositories.Insert(newAttendanceDetail);
             }
 
             return new MessageResultModel()

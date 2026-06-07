@@ -73,7 +73,9 @@ namespace PTEducation.Data.DTO.ResponseModel
         public List<ClassScheduleResModel> WeeklySchedules { get; set; } = new();
         public DateTime StartAt { get; set; }
         public DateTime EndAt { get; set; }
-        public DateTime NextSession { get; set; }
+        public DateTime? NextSession { get; set; }
+        public DateTime? NextSessionEndAt { get; set; }
+        public string? NextSessionKind { get; set; }
     }
 
     public class ClassScheduleResModel

@@ -160,7 +160,16 @@ namespace PTEducation.Business.MapperProfiles
                         StudentClassId = x.StudentClassId,
                         StudentId = x.StudentClass.Student.Id,
                         StudentName = TextConvert.ConvertFromUnicodeEscape(x.StudentClass.Student.Name),
-                        AttendanceStatus = AttendanceEnums.Present.ToString()
+                        AttendanceStatus = AttendanceEnums.Present.ToString(),
+                        Guardians = x.StudentClass.Student.StudentGuardianStudents.Select(g => new UserGuardianListResModel
+                        {
+                            Id = g.Guardian.Id,
+                            Name = g.Guardian.Name,
+                            Email = g.Guardian.Email,
+                            Phone = g.Guardian.Phone,
+                            Relationship = g.Relationship,
+                            IsPrimary = g.IsPrimary
+                        }).ToList()
                     }).ToList()));
             CreateMap<User, UserListResModel>()
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
