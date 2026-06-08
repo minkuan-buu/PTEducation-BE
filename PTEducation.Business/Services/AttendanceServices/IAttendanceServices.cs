@@ -18,6 +18,7 @@ namespace PTEducation.Business.Services.AttendanceServices
         Task<AttendanceMutationResModel> UpdateAttendance(AttendanceUpdateReqModel attendanceReq);
         Task<AttendanceMutationResModel> CloseAttendance(Guid Id);
         Task<AttendanceMutationResModel> SoftDeleteAttendance(Guid Id);
+        Task<MessageResultModel> UpdateAttendanceV2(Guid AttendanceId, List<AttendanceDetailStudentReqModel> AttendanceReqList);
         Task<AttendanceMutationResModel> RestoreAttendance(Guid Id);
     }
 }

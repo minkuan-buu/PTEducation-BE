@@ -50,6 +50,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public TimeOnly EndTime { get; set; }
         public string SessionType { get; set; } = null!;
         public string Status { get; set; } = null!;
+        public string? Note { get; set; }
     }
 
     public class AttendanceMutationResModel

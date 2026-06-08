@@ -11,6 +11,5 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
     public interface IAttendanceDetailServices
     {
         Task<MessageResultModel> UpdateAttendance(AttendanceDetailUpdateReqModel AttendanceReq);
-        Task<MessageResultModel> UpdateAttendanceV2(Guid AttendanceId, List<AttendanceDetailStudentReqModel> AttendanceReqList);
     }
 }

@@ -79,7 +79,7 @@ namespace PTEducation.Business.Services.AttendanceServices
             }
             var NewAttendanceId = Guid.NewGuid();
             var NewAttendance = _mapper.Map<Attendance>(attendanceReq);
-            NewAttendance.SessionType = "Adhoc";
+            NewAttendance.SessionType = attendanceReq.SessionType;
             NewAttendance.ClassId = classId;
             NewAttendance.Date = attendanceDate;
             NewAttendance.StartTime = startTime;
@@ -144,6 +144,7 @@ namespace PTEducation.Business.Services.AttendanceServices
                 };
                 Result.AttendanceDetails.Add(attendanceDetailStudent);
             }
+            Result.AttendanceDetails = Result.AttendanceDetails.OrderBy(x => x.StudentName).ToList();
             return new DataResultModel<AttendanceDetailResModel>()
             {
                 Data = Result
@@ -254,7 +255,7 @@ namespace PTEducation.Business.Services.AttendanceServices
 
         public async Task<AttendanceMutationResModel> UpdateAttendance(AttendanceUpdateReqModel attendanceReq)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(attendanceReq.Id));
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(attendanceReq.Id) && x.Status.Equals(AttendanceStatusEnums.Pending.ToString()));
             if(CheckExist == null)
             {
                 throw new CustomException("Attendance not found");
@@ -398,6 +399,60 @@ namespace PTEducation.Business.Services.AttendanceServices
                 SessionType = CheckExist.SessionType,
                 Status = CheckExist.Status
             };
+        }
+
+        public async Task<MessageResultModel> UpdateAttendanceV2(Guid AttendanceId, List<AttendanceDetailStudentReqModel> AttendanceReqList)
+        {
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceId), includeProperties: "AttendanceDetails");
+            if (CheckExist == null)
+            {
+                return new MessageResultModel()
+                {
+                    Message = "Not Found"
+                };
+            }
+            await ApplyAttendanceChanges(AttendanceId, CheckExist.AttendanceDetails.ToList(), AttendanceReqList);
+            return new MessageResultModel()
+            {
+                Message = "Ok"
+            };
+        }
+
+        private async Task ApplyAttendanceChanges(Guid attendanceId, List<AttendanceDetail> existingDetails, List<AttendanceDetailStudentReqModel> attendanceReqList)
+        {
+            var detailsByStudentClassId = existingDetails.ToDictionary(x => x.StudentClassId);
+            var distinctRequests = attendanceReqList
+                .GroupBy(x => x.StudentClassId)
+                .Select(x => x.Last())
+                .ToList();
+
+            List<AttendanceDetail> listAddDetail = new();
+
+            foreach (var attendance in distinctRequests)
+            {
+                if (detailsByStudentClassId.TryGetValue(attendance.StudentClassId, out var existingDetail))
+                {
+                    existingDetail.Status = attendance.AttendanceStatus;
+                }
+                else
+                {
+                    listAddDetail.Add(new AttendanceDetail()
+                    {
+                        Id = Guid.NewGuid(),
+                        AttendanceId = attendanceId,
+                        StudentClassId = attendance.StudentClassId,
+                        Status = attendance.AttendanceStatus,
+                        CreatedAt = DateTime.Now
+                    });
+                }
+            }
+
+            if (listAddDetail.Count > 0)
+            {
+                await _attendanceDetailRepositories.InsertRange(listAddDetail, false);
+            }
+
+            await _attendanceDetailRepositories.SaveChangesAsync();
         }
     }
 }

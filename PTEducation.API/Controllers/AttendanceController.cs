@@ -83,6 +83,21 @@ namespace PTEducation.API.Controllers
             }
         }
 
+        [HttpPatch("{Id:guid}")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> UpdateAttendanceDetail(Guid Id, [FromBody] List<AttendanceDetailStudentReqModel> attendanceDetailReq)
+        {
+            try
+            {
+                var Result = await _attendanceServices.UpdateAttendanceV2(Id, attendanceDetailReq);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("classes/{classId:guid}")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> CreateAttendance(Guid classId, [FromBody] AttendanceCreateReqModel AttendanceReq)
