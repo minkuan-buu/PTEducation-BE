@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.Extensions.Logging;
 using PTEducation.Business.ApplicationMiddleware;
 using PTEducation.Business.Ultilities.Email;
@@ -565,7 +565,7 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<DataResultModel<ClassDetailMetaData>> GetClassMetadata(Guid ClassId)
         {
-            var Class = await _classRepositories.GetSingle(x => x.Id == ClassId, includeProperties: "StudentClasses.Student,ClassSchedules,Scores,Attendances.AttendanceDetails");
+            var Class = await _classRepositories.GetSingle(x => x.Id == ClassId, includeProperties: "StudentClasses.Student,ClassSchedules,Scores.ScoreDetails,Attendances.AttendanceDetails");
             if (Class == null)
             {
                 throw new CustomException("Class not found!");
@@ -578,6 +578,11 @@ namespace PTEducation.Business.Services.ClassServices
             // Tách riêng danh sách buổi học đã hoàn tất
             var closedAttendances = Class.Attendances.Where(a => a.Status.Equals(AttendanceStatusEnums.Closed.ToString())).ToList();
             var TotalAttendance = closedAttendances.Count;
+
+            var activeScores = Class.Scores.Where(s => s.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList();
+            var averageScore = (TotalStudent > 0 && activeScores.Any())
+                ? activeScores.Average(s => s.ScoreDetails.Any() ? s.ScoreDetails.Average(sd => sd.Score) : 0)
+                : 0;
 
             var now = DateTime.Now;
 
@@ -628,7 +633,7 @@ namespace PTEducation.Business.Services.ClassServices
                 WeeklySchedules = _mapper.Map<List<ClassScheduleResModel>>(Class.ClassSchedules.Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList()),
                 TotalStudent = TotalStudent,
                 TotalPendingStudent = TotalPendingStudent,
-                AverageScore = TotalStudent > 0 ? (decimal)TotalScore / TotalStudent : 0, // Đã fix phòng trường hợp TotalStudent = 0
+                AverageScore = averageScore,
                 Name = Class.Name,
 
                 // FIX: Tính tỉ lệ chuyên cần chính xác

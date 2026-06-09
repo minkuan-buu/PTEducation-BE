@@ -1,4 +1,4 @@
-﻿using PTEducation.Business.ApplicationMiddleware;
+using PTEducation.Business.ApplicationMiddleware;
 using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Data.DTO.ResponseModel;
@@ -31,10 +31,9 @@ namespace PTEducation.Business.Services.ScoreDetailServices
             {
                 throw new CustomException("Score not found");
             }
-            var ScoreDetail = Score.ScoreDetails.ToList();
             foreach (var score in ScoreReq.ScoreReqList)
             {
-                var ScoreUpdate = ScoreDetail.FirstOrDefault(x => x.StudentClassId.Equals(score.StudentClassId));
+                var ScoreUpdate = Score.ScoreDetails.FirstOrDefault(x => x.StudentClassId.Equals(score.StudentClassId));
                 if (ScoreUpdate != null)
                 {
                     ScoreUpdate.Score = score.Score;
@@ -51,10 +50,9 @@ namespace PTEducation.Business.Services.ScoreDetailServices
                         Note = score.Note != null ? TextConvert.ConvertToUnicodeEscape(score.Note) : null,
                         Status = GeneralStatusEnums.Active.ToString()
                     };
-                    ScoreDetail.Add(NewScore);
+                    Score.ScoreDetails.Add(NewScore);
                 }
             }
-            Score.ScoreDetails = ScoreDetail;
             await _scoreRepositories.Update(Score);
             return new MessageResultModel()
             {

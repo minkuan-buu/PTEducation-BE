@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -215,7 +215,6 @@ public partial class PteducationContext : DbContext
                 .IsUnicode(false)
                 .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.Score)
-                .HasDefaultValueSql("(NULL)")
                 .HasColumnType("decimal(4, 2)");
             entity.Property(e => e.ScoreId).HasDefaultValueSql("(NULL)");
             entity.Property(e => e.Status)
