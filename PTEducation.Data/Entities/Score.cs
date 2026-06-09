@@ -15,15 +15,11 @@ public partial class Score
 
     public DateTime? ModifiedAt { get; set; }
 
-    public string CreateBy { get; set; } = null!;
-
     public string Status { get; set; } = null!;
 
     public string? Shift { get; set; }
 
     public virtual Class Class { get; set; } = null!;
-
-    public virtual User CreateByNavigation { get; set; } = null!;
 
     public virtual ICollection<ScoreDetail> ScoreDetails { get; set; } = new List<ScoreDetail>();
 }

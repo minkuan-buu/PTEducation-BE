@@ -179,10 +179,6 @@ public partial class PteducationContext : DbContext
 
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.ClassId).HasDefaultValueSql("(NULL)");
-            entity.Property(e => e.CreateBy)
-                .HasMaxLength(30)
-                .IsUnicode(false)
-                .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.CreatedAt)
                 .HasDefaultValueSql("(NULL)")
                 .HasColumnType("datetime");
@@ -205,11 +201,6 @@ public partial class PteducationContext : DbContext
                 .HasForeignKey(d => d.ClassId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK__Score__ClassId__47DBAE45");
-
-            entity.HasOne(d => d.CreateByNavigation).WithMany(p => p.Scores)
-                .HasForeignKey(d => d.CreateBy)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK__Score__CreateBy__48CFD27E");
         });
 
         modelBuilder.Entity<ScoreDetail>(entity =>

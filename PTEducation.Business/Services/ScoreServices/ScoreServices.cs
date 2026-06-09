@@ -38,7 +38,7 @@ namespace PTEducation.Business.Services.ScoreServices
 
         public async Task<DataResultModel<ScoreDetailResModel>> GetScoreDetail(Guid Id)
         {
-            var CheckExist = await _scoreRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "CreateByNavigation,ScoreDetails.StudentClass.Student,Class");
+            var CheckExist = await _scoreRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "ScoreDetails.StudentClass.Student,Class");
             if (CheckExist == null)
             {
                 throw new CustomException("Score not found");
@@ -76,9 +76,8 @@ namespace PTEducation.Business.Services.ScoreServices
             };
         }
 
-        public async Task<MessageResultModel> CreateScore(ScoreCreateReqModel ScoreReq, string token)
+        public async Task<MessageResultModel> CreateScore(ScoreCreateReqModel ScoreReq)
         {
-            var userId = Authentication.DecodeToken(token, "userid");
             var CheckExist = await _scoreRepositories.GetSingle(x => x.TestDateAt.Equals(ScoreReq.TestDateAt) && x.ClassId.Equals(ScoreReq.ClassId));
             if (CheckExist != null)
             {
@@ -92,7 +91,6 @@ namespace PTEducation.Business.Services.ScoreServices
             var NewScoreId = Guid.NewGuid();
             var NewScore = _mapper.Map<Score>(ScoreReq);
             NewScore.Id = NewScoreId;
-            NewScore.CreateBy = userId;
             List<ScoreDetail> ListScoreDetail = new();
             foreach (var item in ScoreReq.ScoreReqList)
             {
@@ -117,9 +115,8 @@ namespace PTEducation.Business.Services.ScoreServices
             };
         }
 
-        public async Task<DataResultModel<Guid>> CreateScoreFromSheet(ScoreCreateReqModel ScoreReq, string token)
+        public async Task<DataResultModel<Guid>> CreateScoreFromSheet(ScoreCreateReqModel ScoreReq)
         {
-            var userId = Authentication.DecodeToken(token, "userid");
             var CheckExist = await _scoreRepositories.GetSingle(x => x.TestDateAt.Equals(ScoreReq.TestDateAt) && x.ClassId.Equals(ScoreReq.ClassId));
             if (CheckExist != null)
             {
@@ -133,7 +130,6 @@ namespace PTEducation.Business.Services.ScoreServices
             var NewScoreId = Guid.NewGuid();
             var NewScore = _mapper.Map<Score>(ScoreReq);
             NewScore.Id = NewScoreId;
-            NewScore.CreateBy = userId;
             List<ScoreDetail> ListScoreDetail = new();
             foreach (var item in ScoreReq.ScoreReqList)
             {
@@ -272,7 +268,7 @@ namespace PTEducation.Business.Services.ScoreServices
                 }
             }
 
-            var allScore = await _scoreRepositories.GetList(filter, orderBy, includeProperties: "CreateByNavigation,ScoreDetails", pageIndex ?? 1);
+            var allScore = await _scoreRepositories.GetList(filter, orderBy, includeProperties: "ScoreDetails", pageIndex ?? 1);
 
             return allScore.ToList();
         }

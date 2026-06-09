@@ -56,8 +56,7 @@ namespace PTEducation.API.Controllers
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _scoreServices.CreateScore(ScoreReq, token);
+                var Result = await _scoreServices.CreateScore(ScoreReq);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -72,8 +71,7 @@ namespace PTEducation.API.Controllers
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _scoreServices.CreateScoreFromSheet(ScoreReq, token);
+                var Result = await _scoreServices.CreateScoreFromSheet(ScoreReq);
                 return Ok(Result);
             }
             catch (CustomException ex)

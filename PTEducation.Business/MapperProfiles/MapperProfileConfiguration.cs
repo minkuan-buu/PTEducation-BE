@@ -108,12 +108,6 @@ namespace PTEducation.Business.MapperProfiles
             CreateMap<Score, ScoreDetailResModel>()
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
                     TextConvert.ConvertFromUnicodeEscape(src.Class.Name)))
-                .ForMember(dest => dest.CreateBy, opt => opt.MapFrom(src => new ScoreCreatedByModel()
-                {
-                    Id = src.CreateByNavigation.Id,
-                    Name = TextConvert.ConvertFromUnicodeEscape(src.CreateByNavigation.Name),
-                    Email = src.CreateByNavigation.Email
-                }))
                 .ForMember(dest => dest.ScoreDetails, opt => opt.MapFrom(src =>
                     src.ScoreDetails.Select(x => new ScoreDetailStudentResModel
                     {
@@ -124,12 +118,6 @@ namespace PTEducation.Business.MapperProfiles
                         Note = x.Note != null ? TextConvert.ConvertFromUnicodeEscape(x.Note) : null
                     }).ToList()));
             CreateMap<Score, ScoreListResModel>()
-                .ForMember(dest => dest.CreateBy, opt => opt.MapFrom(src => new ScoreCreatedByModel()
-                {
-                    Id = src.CreateByNavigation.Id,
-                    Name = TextConvert.ConvertFromUnicodeEscape(src.CreateByNavigation.Name),
-                    Email = src.CreateByNavigation.Email
-                }))
                 .ForMember(dest => dest.AverageScore, opt => opt.MapFrom(src =>
                     src.ScoreDetails.Count == 0 ? 0 : src.ScoreDetails.Average(x => x.Score)));
             CreateMap<User, UserProfileResModel>()
@@ -173,7 +161,7 @@ namespace PTEducation.Business.MapperProfiles
                     }).ToList()));
             CreateMap<User, UserListResModel>()
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
-                    src.StudentClasses.Count == 0 ? null :src.StudentClasses.First().Class.Name))
+                    src.StudentClasses.Count == 0 ? null : src.StudentClasses.First().Class.Name))
                 .ForMember(dest => dest.Guardians, opt => opt.MapFrom(src =>
                     src.StudentGuardianStudents.Select(x => new UserGuardianListResModel
                     {
