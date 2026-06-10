@@ -24,7 +24,7 @@ namespace PTEducation.Data.DTO.ResponseModel
     public class ScoreSessionResModel
     {
         public DateTime TestDateAt { get; set; }
-        public string Shift { get; set; } = null!;
+        public string? Shift { get; set; }
         public string Score { get; set; } = null!;
         public string Note { get; set; } = null!;
     }

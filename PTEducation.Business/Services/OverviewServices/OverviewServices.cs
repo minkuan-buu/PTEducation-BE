@@ -176,7 +176,7 @@ namespace PTEducation.Business.Services.OverviewServices
                 .Select(sd => new ScoreSessionResModel
                 {
                     TestDateAt = sd.ScoreNavigation.TestDateAt,
-                    Shift = sd.ScoreNavigation.Shift ?? "Ca sáng",
+                    Shift = sd.ScoreNavigation.Shift,
                     Score = sd.Score.ToString("F1", System.Globalization.CultureInfo.InvariantCulture),
                     Note = sd.Note ?? ""
                 })
