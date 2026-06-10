@@ -9,9 +9,9 @@ namespace PTEducation.Business.Services.StudentServices
 {
     public interface IStudentServices
     {
-        Task<DataResultModel<ScoreStudentResModel>> GetScoreByMonth(int Month, int Year, string Token);
+        Task<DataResultModel<ScoreStudentResModel>> GetScoreByMonth(int Month, int Year, string userId);
         Task<DataResultModel<AttendanceStudentResModel>> GetAttendanceByMonth(int Month, int Year, string Token);
-        Task<ListDataResultModel<ScoreMonthResModel>> GetScoreMonth(string Token);
+        Task<ListDataResultModel<ScoreMonthResModel>> GetScoreMonth(string userId);
         Task<ListDataResultModel<AttendanceMonthResModel>> GetAttendanceMonth(string Token);
     }
 }

@@ -30,9 +30,8 @@ namespace PTEducation.Business.Services.StudentServices
             _scoreRepositories = scoreRepositories;
         }
 
-        public async Task<DataResultModel<ScoreStudentResModel>> GetScoreByMonth(int Month, int Year, string Token)
+        public async Task<DataResultModel<ScoreStudentResModel>> GetScoreByMonth(int Month, int Year, string userId)
         {
-            var userId = Authentication.DecodeToken(Token, "userid");
             var User = await _userRepositories.GetSingle(x => x.Id.Equals(userId), includeProperties: "StudentClasses");
             var Score = await _scoreRepositories.GetList(x => x.TestDateAt.Month == Month && x.TestDateAt.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "ScoreDetails.StudentClass");
             var UserClass = User.StudentClasses.FirstOrDefault();
@@ -65,9 +64,8 @@ namespace PTEducation.Business.Services.StudentServices
             };
         }
 
-        public async Task<DataResultModel<AttendanceStudentResModel>> GetAttendanceByMonth(int Month, int Year, string Token)
+        public async Task<DataResultModel<AttendanceStudentResModel>> GetAttendanceByMonth(int Month, int Year, string userId)
         {
-            var userId = Authentication.DecodeToken(Token, "userid");
             var User = await _userRepositories.GetSingle(x => x.Id.Equals(userId), includeProperties: "StudentClasses");
             var Attandance = await _attendanceRepositories.GetList(x => x.Date.Month == Month && x.Date.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "AttendanceDetails.StudentClass");
             var UserClass = User.StudentClasses.FirstOrDefault();
@@ -100,9 +98,8 @@ namespace PTEducation.Business.Services.StudentServices
             };
         }
 
-        public async Task<ListDataResultModel<ScoreMonthResModel>> GetScoreMonth(string Token)
+        public async Task<ListDataResultModel<ScoreMonthResModel>> GetScoreMonth(string userId)
         {
-            var userId = Authentication.DecodeToken(Token, "userid");
             var Class = await _studentClassRepositories.GetSingle(x => x.StudentId.Equals(userId));
             var Score = await _scoreRepositories.GetList(x => x.ClassId.Equals(Class.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             var distinctMonths = Score
@@ -126,9 +123,8 @@ namespace PTEducation.Business.Services.StudentServices
             };
         }
 
-        public async Task<ListDataResultModel<AttendanceMonthResModel>> GetAttendanceMonth(string Token)
+        public async Task<ListDataResultModel<AttendanceMonthResModel>> GetAttendanceMonth(string userId)
         {
-            var userId = Authentication.DecodeToken(Token, "userid");
             var Class = await _studentClassRepositories.GetSingle(x => x.StudentId.Equals(userId));
             var Score = await _attendanceRepositories.GetList(x => x.ClassId.Equals(Class.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             var distinctMonths = Score

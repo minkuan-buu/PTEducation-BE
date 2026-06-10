@@ -19,6 +19,7 @@ using PTEducation.Business.Services.AttendanceServices;
 using PTEducation.Business.Services.AuthServices;
 using PTEducation.Business.Services.ClassServices;
 using PTEducation.Business.Services.OTPServices;
+using PTEducation.Business.Services.OverviewServices;
 using PTEducation.Business.Services.ScoreDetailServices;
 using PTEducation.Business.Services.ScoreServices;
 using PTEducation.Business.Services.StudentClassServices;
@@ -184,6 +185,7 @@ builder.Services.AddScoped<IEmail, Email>();
 builder.Services.AddScoped<IAttendanceServices, AttendanceServices>();
 builder.Services.AddScoped<IAttendanceDetailServices, AttendanceDetailServices>();
 builder.Services.AddScoped<IOTPServices, OTPServices>();
+builder.Services.AddScoped<IOverviewServices, OverviewServices>();
 builder.Services.AddScoped<IAttendanceRealtimeNotifier, AttendanceRealtimeNotifier>();
 builder.Services.AddScoped<PTEducation.Business.Services.AttendanceServices.IAttendanceScheduler, PTEducation.API.Scheduling.AttendanceScheduler>();
 

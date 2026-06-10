@@ -29,8 +29,12 @@ namespace PTEducation.API.Controllers
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _studentServices.GetScoreByMonth(ScoreReq.Month, ScoreReq.Year, token);
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+                var Result = await _studentServices.GetScoreByMonth(ScoreReq.Month, ScoreReq.Year, userId);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -45,8 +49,12 @@ namespace PTEducation.API.Controllers
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _studentServices.GetScoreMonth(token);
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+                var Result = await _studentServices.GetScoreMonth(userId);
                 return Ok(Result);
             }
             catch (CustomException ex)
