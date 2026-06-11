@@ -565,11 +565,28 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<DataResultModel<ClassDetailMetaData>> GetClassMetadata(Guid ClassId)
         {
-            var Class = await _classRepositories.GetSingle(x => x.Id == ClassId, includeProperties: "StudentClasses.Student,ClassSchedules,Scores.ScoreDetails,Attendances.AttendanceDetails");
+            var Class = await _classRepositories.GetSingle(x => x.Id == ClassId, includeProperties: "ClassSchedules");
             if (Class == null)
             {
                 throw new CustomException("Class not found!");
             }
+
+            var studentClasses = await _studentClassRepositories.GetList(
+                x => x.ClassId == ClassId,
+                includeProperties: "Student"
+            );
+            var scores = await _scoreRepositories.GetList(
+                x => x.ClassId == ClassId,
+                includeProperties: "ScoreDetails"
+            );
+            var attendances = await _attendanceRepositories.GetList(
+                x => x.ClassId == ClassId,
+                includeProperties: "AttendanceDetails"
+            );
+
+            Class.StudentClasses = studentClasses.ToList();
+            Class.Scores = scores.ToList();
+            Class.Attendances = attendances.ToList();
 
             var TotalStudent = Class.StudentClasses.Count(sc => sc.Status.Equals(GeneralStatusEnums.Active.ToString()) && sc.Student.Status.Equals(AccountStatusEnums.Active.ToString()));
             var TotalPendingStudent = Class.StudentClasses.Count(sc => sc.Student.Status.Equals(AccountStatusEnums.PendingApproved.ToString()));
@@ -578,6 +595,7 @@ namespace PTEducation.Business.Services.ClassServices
             // Tách riêng danh sách buổi học đã hoàn tất
             var closedAttendances = Class.Attendances.Where(a => a.Status.Equals(AttendanceStatusEnums.Closed.ToString())).ToList();
             var TotalAttendance = closedAttendances.Count;
+            var TotalAttendanceDetails = closedAttendances.Sum(att => att.AttendanceDetails.Count);
 
             var activeScores = Class.Scores.Where(s => s.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList();
             var averageScore = (TotalStudent > 0 && activeScores.Any())
@@ -637,9 +655,9 @@ namespace PTEducation.Business.Services.ClassServices
                 Name = Class.Name,
 
                 // FIX: Tính tỉ lệ chuyên cần chính xác
-                AttendanceRate = TotalAttendance > 0
+                AttendanceRate = TotalAttendanceDetails > 0
                     ? ((decimal)closedAttendances.Sum(att => att.AttendanceDetails.Count(ad => ad.Status == AttendanceEnums.Present.ToString())) /
-                    closedAttendances.Sum(att => att.AttendanceDetails.Count)) * 100
+                    TotalAttendanceDetails) * 100
                     : 0,
 
                 CompletedSessions = TotalAttendance,

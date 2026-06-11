@@ -11,7 +11,8 @@ namespace PTEducation.Data.Enums
         NotYet,
         Present,
         Absent,
-        Late
+        Late,
+        Excused
     }
 
     public enum AttendanceStatusEnums

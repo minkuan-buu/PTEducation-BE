@@ -1,4 +1,4 @@
-﻿using PTEducation.Data.DTO.Custom;
+using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Business.Services.UserServices;
 using Microsoft.AspNetCore.Authorization;
@@ -25,7 +25,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet]
-        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
         public async Task<IActionResult> GetAttendanceStudentByMonth([FromQuery] AttendanceStudentReqModel AttendanceReq)
         {
             try
@@ -45,7 +45,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("month")]
-        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
         public async Task<IActionResult> GetMonthAttendance()
         {
             try

@@ -85,7 +85,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public DateOnly Date { get; set; }
         public TimeOnly? StartTime { get; set; }
         public TimeOnly? EndTime { get; set; }
-        public bool isPresent { get; set; }
+        public string AttendanceStatus { get; set; } = null!;
     }
 
     public class AttendanceMonthResModel

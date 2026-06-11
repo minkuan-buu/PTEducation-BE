@@ -45,6 +45,8 @@ namespace PTEducation.API.HostedServices
                     x => x.Status != GeneralStatusEnums.Inactive.ToString());
 
                 var now = DateTime.Now;
+                var classesToBroadcast = new HashSet<Guid>();
+
                 foreach (var attendance in attendances)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -53,7 +55,7 @@ namespace PTEducation.API.HostedServices
                     if (string.Equals(desiredStatus, AttendanceStatusEnums.Closed.ToString(), StringComparison.OrdinalIgnoreCase))
                     {
                         await attendanceServices.CloseAttendance(attendance.Id);
-                        await BroadcastAttendanceStateAsync(attendance.ClassId, now, classServices, realtimeNotifier);
+                        classesToBroadcast.Add(attendance.ClassId);
                         continue;
                     }
 
@@ -64,8 +66,13 @@ namespace PTEducation.API.HostedServices
                     }
 
                     await attendanceScheduler.ScheduleAttendanceJobsAsync(attendance);
+                    classesToBroadcast.Add(attendance.ClassId);
+                }
 
-                    await BroadcastAttendanceStateAsync(attendance.ClassId, now, classServices, realtimeNotifier);
+                // Chỉ broadcast mỗi Class duy nhất một lần sau khi đã xử lý xong vòng lặp
+                foreach (var classId in classesToBroadcast)
+                {
+                    await BroadcastAttendanceStateAsync(classId, now, classServices, realtimeNotifier);
                 }
             }
             catch (OperationCanceledException)

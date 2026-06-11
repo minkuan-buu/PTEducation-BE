@@ -24,7 +24,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet]
-        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
         public async Task<IActionResult> GetScoreStudentByMonth([FromQuery] ScoreStudentReqModel ScoreReq)
         {
             try
@@ -44,7 +44,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("month")]
-        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
         public async Task<IActionResult> GetMonthTest()
         {
             try

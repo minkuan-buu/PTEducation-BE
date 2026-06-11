@@ -1,6 +1,7 @@
-﻿using Org.BouncyCastle.Bcpg;
+using Org.BouncyCastle.Bcpg;
 using PTEducation.Business.ApplicationMiddleware;
 using PTEducation.Business.Services.AttendanceServices;
+using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.ResponseModel;
 using PTEducation.Data.Entities;
 using PTEducation.Data.Enums;
@@ -30,19 +31,56 @@ namespace PTEducation.Business.Services.StudentServices
             _scoreRepositories = scoreRepositories;
         }
 
+        private async Task<(User Student, StudentClass ActiveClass)> ResolveStudentAndClass(string userId)
+        {
+            var user = await _userRepositories.GetSingle(
+                x => x.Id.Equals(userId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()),
+                includeProperties: "StudentClasses,StudentGuardianGuardians"
+            );
+
+            if (user == null)
+            {
+                throw new CustomException("User not found!");
+            }
+
+            User student = user;
+            if (user.Role.Equals(RoleEnums.Guardian.ToString()))
+            {
+                var relationship = user.StudentGuardianGuardians.FirstOrDefault();
+                if (relationship == null)
+                {
+                    throw new CustomException("No students associated with this guardian.");
+                }
+                
+                student = await _userRepositories.GetSingle(
+                    x => x.Id.Equals(relationship.StudentId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()),
+                    includeProperties: "StudentClasses"
+                );
+                
+                if (student == null)
+                {
+                    throw new CustomException("Associated student not found.");
+                }
+            }
+
+            var activeClass = student.StudentClasses.FirstOrDefault(x => x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            if (activeClass == null)
+            {
+                throw new CustomException("Student is not assigned to any active class.");
+            }
+
+            return (student, activeClass);
+        }
+
         public async Task<DataResultModel<ScoreStudentResModel>> GetScoreByMonth(int Month, int Year, string userId)
         {
-            var User = await _userRepositories.GetSingle(x => x.Id.Equals(userId), includeProperties: "StudentClasses");
-            var Score = await _scoreRepositories.GetList(x => x.TestDateAt.Month == Month && x.TestDateAt.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "ScoreDetails.StudentClass");
-            var UserClass = User.StudentClasses.FirstOrDefault();
+            var (student, userClass) = await ResolveStudentAndClass(userId);
+            var Score = await _scoreRepositories.GetList(x => x.ClassId == userClass.ClassId && x.TestDateAt.Month == Month && x.TestDateAt.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "ScoreDetails.StudentClass");
             var ListScore = Score.ToList();
-            var ScoreDetails = ListScore
-                .Where(x => x.ScoreDetails.Any(sd => sd.StudentClass.ClassId.Equals(UserClass.ClassId)))
-                .ToList();
             List<ScoreStudentDetailResModel> ListScoreDetails = new();
-            foreach (var score in ScoreDetails)
+            foreach (var score in ListScore)
             {
-                var getStudentScore = score.ScoreDetails.FirstOrDefault(x => x.StudentClass.StudentId.Equals(userId));
+                var getStudentScore = score.ScoreDetails.FirstOrDefault(x => x.StudentClass.StudentId.Equals(student.Id));
                 ScoreStudentDetailResModel ScoreDetail = new()
                 {
                     TestDateAt = score.TestDateAt,
@@ -54,9 +92,9 @@ namespace PTEducation.Business.Services.StudentServices
             }
             var Result = new ScoreStudentResModel()
             {
-                Id = userId,
-                Name = TextConvert.ConvertFromUnicodeEscape(User.Name),
-                Scores = ListScoreDetails
+                Id = student.Id,
+                Name = TextConvert.ConvertFromUnicodeEscape(student.Name),
+                Scores = ListScoreDetails.OrderByDescending(x => x.TestDateAt).ToList()
             };
             return new DataResultModel<ScoreStudentResModel>()
             {
@@ -66,31 +104,27 @@ namespace PTEducation.Business.Services.StudentServices
 
         public async Task<DataResultModel<AttendanceStudentResModel>> GetAttendanceByMonth(int Month, int Year, string userId)
         {
-            var User = await _userRepositories.GetSingle(x => x.Id.Equals(userId), includeProperties: "StudentClasses");
-            var Attandance = await _attendanceRepositories.GetList(x => x.Date.Month == Month && x.Date.Year == Year && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "AttendanceDetails.StudentClass");
-            var UserClass = User.StudentClasses.FirstOrDefault();
+            var (student, userClass) = await ResolveStudentAndClass(userId);
+            var Attandance = await _attendanceRepositories.GetList(x => x.ClassId == userClass.ClassId && x.Date.Month == Month && x.Date.Year == Year && !x.Status.Equals(GeneralStatusEnums.Inactive.ToString()), includeProperties: "AttendanceDetails.StudentClass");
             var ListAttandance = Attandance.ToList();
-            var AttandanceDetails = ListAttandance
-                .Where(x => x.AttendanceDetails.Any(sd => sd.StudentClass.ClassId.Equals(UserClass.ClassId)))
-                .ToList();
             List<AttendanceStudentDetailResModel> ListAttendanceDetails = new();
-            foreach (var attendance in AttandanceDetails)
+            foreach (var attendance in ListAttandance)
             {
-                var getStudentAttandance = attendance.AttendanceDetails.FirstOrDefault(x => x.StudentClass.StudentId.Equals(userId));
+                var getStudentAttandance = attendance.AttendanceDetails.FirstOrDefault(x => x.StudentClass.StudentId.Equals(student.Id));
                 AttendanceStudentDetailResModel AttendanceDetail = new()
                 {
                     Date = attendance.Date,
                     StartTime = attendance.StartTime,
                     EndTime = attendance.EndTime,
-                    isPresent = getStudentAttandance != null,
+                    AttendanceStatus = getStudentAttandance!.Status
                 };
                 ListAttendanceDetails.Add(AttendanceDetail);
             }
             var Result = new AttendanceStudentResModel()
             {
-                Id = userId,
-                Name = TextConvert.ConvertFromUnicodeEscape(User.Name),
-                Attendances = ListAttendanceDetails
+                Id = student.Id,
+                Name = TextConvert.ConvertFromUnicodeEscape(student.Name),
+                Attendances = ListAttendanceDetails.OrderBy(x => x.Date).ToList()
             };
             return new DataResultModel<AttendanceStudentResModel>()
             {
@@ -100,8 +134,8 @@ namespace PTEducation.Business.Services.StudentServices
 
         public async Task<ListDataResultModel<ScoreMonthResModel>> GetScoreMonth(string userId)
         {
-            var Class = await _studentClassRepositories.GetSingle(x => x.StudentId.Equals(userId));
-            var Score = await _scoreRepositories.GetList(x => x.ClassId.Equals(Class.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var (student, userClass) = await ResolveStudentAndClass(userId);
+            var Score = await _scoreRepositories.GetList(x => x.ClassId.Equals(userClass.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             var distinctMonths = Score
                 .Select(test => new { test.TestDateAt.Year, test.TestDateAt.Month })  // Lấy ra năm và tháng của từng bài kiểm tra
                 .Distinct()  // Lấy ra các tháng khác nhau
@@ -125,8 +159,8 @@ namespace PTEducation.Business.Services.StudentServices
 
         public async Task<ListDataResultModel<AttendanceMonthResModel>> GetAttendanceMonth(string userId)
         {
-            var Class = await _studentClassRepositories.GetSingle(x => x.StudentId.Equals(userId));
-            var Score = await _attendanceRepositories.GetList(x => x.ClassId.Equals(Class.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var (student, userClass) = await ResolveStudentAndClass(userId);
+            var Score = await _attendanceRepositories.GetList(x => x.ClassId.Equals(userClass.ClassId) && !x.Status.Equals(GeneralStatusEnums.Inactive.ToString()));
             var distinctMonths = Score
                 .Select(attendance => new { attendance.Date.Year, attendance.Date.Month })  // Lấy ra năm và tháng của từng bài kiểm tra
                 .Distinct()  // Lấy ra các tháng khác nhau
