@@ -1,3 +1,4 @@
+using AutoMapper;
 using PTEducation.Business.ApplicationMiddleware;
 using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.ResponseModel;
@@ -24,6 +25,7 @@ namespace PTEducation.Business.Services.OverviewServices
         private readonly IAttendanceDetailRepositories _attendanceDetailRepositories;
         private readonly IScoreRepositories _scoreRepositories;
         private readonly IScoreDetailRepositories _scoreDetailRepositories;
+        private readonly IMapper _mapper;
 
         public OverviewServices(
             IUserRepositories userRepositories,
@@ -31,7 +33,8 @@ namespace PTEducation.Business.Services.OverviewServices
             IAttendanceRepositories attendanceRepositories,
             IAttendanceDetailRepositories attendanceDetailRepositories,
             IScoreRepositories scoreRepositories,
-            IScoreDetailRepositories scoreDetailRepositories)
+            IScoreDetailRepositories scoreDetailRepositories, 
+            IMapper mapper)
         {
             _userRepositories = userRepositories;
             _classRepositories = classRepositories;
@@ -39,14 +42,14 @@ namespace PTEducation.Business.Services.OverviewServices
             _attendanceDetailRepositories = attendanceDetailRepositories;
             _scoreRepositories = scoreRepositories;
             _scoreDetailRepositories = scoreDetailRepositories;
+            _mapper = mapper;
         }
 
-        public async Task<DataResultModel<StudentGuardianOverviewResModel>> GetOverviewForStudentOrGuardian(string userId)
+        private async Task<(User Student, StudentClass ActiveClass)> ResolveStudentAndClass(string userId)
         {
-            // Retrieve user with necessary relations
             var user = await _userRepositories.GetSingle(
-                x => x.Id.Equals(userId),
-                includeProperties: "StudentClasses.Class,StudentGuardianGuardians.Student.StudentClasses.Class"
+                x => x.Id.Equals(userId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()),
+                includeProperties: "StudentClasses,StudentGuardianGuardians"
             );
 
             if (user == null)
@@ -54,31 +57,39 @@ namespace PTEducation.Business.Services.OverviewServices
                 throw new CustomException("User not found!");
             }
 
-            User? studentUser = null;
-            if (user.Role.Equals(RoleEnums.Guardian.ToString(), StringComparison.OrdinalIgnoreCase))
+            User student = user;
+            if (user.Role.Equals(RoleEnums.Guardian.ToString()))
             {
-                var guardianRelation = user.StudentGuardianGuardians.FirstOrDefault();
-                if (guardianRelation != null)
+                var relationship = user.StudentGuardianGuardians.FirstOrDefault();
+                if (relationship == null)
                 {
-                    studentUser = guardianRelation.Student;
+                    throw new CustomException("No students associated with this guardian.");
+                }
+                
+                student = await _userRepositories.GetSingle(
+                    x => x.Id.Equals(relationship.StudentId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()),
+                    includeProperties: "StudentClasses"
+                );
+                
+                if (student == null)
+                {
+                    throw new CustomException("Associated student not found.");
                 }
             }
-            else if (user.Role.Equals(RoleEnums.Student.ToString(), StringComparison.OrdinalIgnoreCase))
+
+            var activeClass = student.StudentClasses.FirstOrDefault(x => x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            if (activeClass == null)
             {
-                studentUser = user;
+                throw new CustomException("Student is not assigned to any active class.");
             }
 
-            if (studentUser == null)
-            {
-                throw new CustomException("No associated student found!");
-            }
+            return (student, activeClass);
+        }
 
-            var activeStudentClass = studentUser.StudentClasses.FirstOrDefault(sc => sc.Status.Equals(GeneralStatusEnums.Active.ToString()));
-            if (activeStudentClass == null || activeStudentClass.Class == null)
-            {
-                throw new CustomException("Student is not enrolled in any class!");
-            }
 
+        public async Task<DataResultModel<StudentGuardianOverviewResModel>> GetOverviewForStudentOrGuardian(string userId)
+        {
+            var (student, activeStudentClass) = await ResolveStudentAndClass(userId);
             var classId = activeStudentClass.ClassId;
             var studentClassId = activeStudentClass.Id;
 
@@ -195,6 +206,94 @@ namespace PTEducation.Business.Services.OverviewServices
             return new DataResultModel<StudentGuardianOverviewResModel>
             {
                 Data = result
+            };
+        }
+
+        public async Task<DataResultModel<AttendanceStudentGuardianOverviewResModel>>GetAttendanceOverviewForStudentOrGuardian(string userId)
+        {
+            var (student, activeStudentClass) = await ResolveStudentAndClass(userId);
+            var classId = activeStudentClass.ClassId;
+            var studentClassId = activeStudentClass.Id;
+
+            // Fetch target class with schedules & attendances for NextSession logic
+            var targetClass = await _classRepositories.GetSingle(
+                c => c.Id == classId,
+                includeProperties: "ClassSchedules,Attendances"
+            );
+
+            var closedAttendanceDetails = await _attendanceDetailRepositories.GetList(
+                ad => ad.StudentClassId == studentClassId && ad.Attendance.Status == AttendanceStatusEnums.Closed.ToString(),
+                includeProperties: "Attendance"
+            );
+            var totalClosedSessions = closedAttendanceDetails.Count();
+            var presentOrLateSessions = closedAttendanceDetails.Count(ad =>
+                ad.Status == AttendanceEnums.Present.ToString() ||
+                ad.Status == AttendanceEnums.Late.ToString()
+            );
+            var absentSessions = closedAttendanceDetails.Count(ad =>
+                ad.Status == AttendanceEnums.Absent.ToString()
+            );
+
+            decimal attendanceRate = totalClosedSessions > 0
+                ? ((decimal)presentOrLateSessions / totalClosedSessions) * 100
+                : 0;
+
+            var Attendances = await _attendanceRepositories.GetList(x => x.ClassId.Equals(classId) && !x.Status.Equals(GeneralStatusEnums.Inactive.ToString()));
+            var distinctMonths = Attendances
+                .Select(attendance => new { attendance.Date.Year, attendance.Date.Month })
+                .Distinct()
+                .ToList();
+            List<AttendanceMonthResModel> ListRes = new();
+            foreach (var item in distinctMonths)
+            {
+                AttendanceMonthResModel AttendanceMonth = new()
+                {
+                    Id = $"{item.Month.ToString()}/{item.Year.ToString()}",
+                    Month = item.Month,
+                    Year = item.Year
+                };
+                ListRes.Add(AttendanceMonth);
+            }
+
+            var weeklySchedules = _mapper.Map<List<ClassScheduleResModel>>(
+                targetClass.ClassSchedules.Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList()
+            );
+
+            DateTime now = DateTime.Now;
+            int diff = (7 + (now.DayOfWeek - DayOfWeek.Monday)) % 7;
+            DateTime startOfWeek = now.AddDays(-1 * diff).Date;
+            DateTime endOfWeek = startOfWeek.AddDays(7).AddSeconds(-1);
+
+            var extraAttendancesThisWeek = Attendances.Where(a =>
+                a.ClassScheduleId == null &&
+                a.Date.ToDateTime(TimeOnly.MinValue) >= startOfWeek &&
+                a.Date.ToDateTime(TimeOnly.MinValue) <= endOfWeek
+            ).ToList();
+
+            foreach (var attendance in extraAttendancesThisWeek)
+            {
+                weeklySchedules.Add(new ClassScheduleResModel
+                {
+                    DayOfWeek = (byte)attendance.Date.DayOfWeek,
+                    StartTime = attendance.StartTime,
+                    EndTime = attendance.EndTime
+                });
+            }
+
+            return new DataResultModel<AttendanceStudentGuardianOverviewResModel>
+            {
+                Data = new AttendanceStudentGuardianOverviewResModel
+                {
+                    ClassId = activeStudentClass.ClassId,
+                    ClassName = activeStudentClass.Class.Name,
+                    StudentName = student.Name,
+                    AttendanceRate = attendanceRate,
+                    PresentAttendance = presentOrLateSessions,
+                    AbsentAttendance = absentSessions,
+                    TotalSession = totalClosedSessions,
+                    Months = ListRes,
+                    WeeklySchedules = weeklySchedules,
+                }
             };
         }
 

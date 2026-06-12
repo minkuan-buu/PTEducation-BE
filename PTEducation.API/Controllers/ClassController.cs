@@ -1,4 +1,4 @@
-﻿using Asp.Versioning;
+using Asp.Versioning;
 using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Business.Services.UserServices;
@@ -201,6 +201,7 @@ namespace PTEducation.API.Controllers
 
         [HttpPut("{id:guid}")]
         [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateClass(Guid id, [FromBody] ClassUpdateReqModel ClassReq)
         {

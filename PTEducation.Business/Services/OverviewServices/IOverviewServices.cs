@@ -12,5 +12,6 @@ namespace PTEducation.Business.Services.OverviewServices
     public interface IOverviewServices
     {
         Task<DataResultModel<StudentGuardianOverviewResModel>> GetOverviewForStudentOrGuardian(string userId);
+        Task<DataResultModel<AttendanceStudentGuardianOverviewResModel>>GetAttendanceOverviewForStudentOrGuardian(string userId);
     }
 }

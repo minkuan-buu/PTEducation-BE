@@ -88,6 +88,19 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string AttendanceStatus { get; set; } = null!;
     }
 
+    public class AttendanceStudentGuardianOverviewResModel
+    {
+        public Guid ClassId { get; set; }
+        public string ClassName { get; set; } = null!;
+        public string StudentName { get; set; } = null!;
+        public decimal AttendanceRate { get; set; }
+        public int PresentAttendance { get; set; }
+        public int AbsentAttendance { get; set; }
+        public int TotalSession { get; set; }
+        public List<AttendanceMonthResModel> Months { get; set; } = new();
+        public List<ClassScheduleResModel> WeeklySchedules { get; set; } = new();
+    }
+
     public class AttendanceMonthResModel
     {
         public string Id { get; set; } = null!;

@@ -39,5 +39,26 @@ namespace PTEducation.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpGet("attendance")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
+        public async Task<IActionResult> GetAttendanceOverviewForStudentOrGuardian()
+        {
+            try
+            {
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "Unauthorized access." });
+                }
+
+                var result = await _overviewServices.GetAttendanceOverviewForStudentOrGuardian(userId);
+                return Ok(result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -41,6 +41,7 @@ namespace PTEducation.Data.DTO.RequestModel
         public string Name { get; set; } = null!;
         public DateTime StartAt { get; set; }
         public DateTime EndAt { get; set; }
+        public List<ClassScheduleReqModel>? Schedules { get; set; }
     }
 
     public class StudentsImportWithClass

@@ -116,7 +116,7 @@ namespace PTEducation.Business.Services.StudentServices
                     Date = attendance.Date,
                     StartTime = attendance.StartTime,
                     EndTime = attendance.EndTime,
-                    AttendanceStatus = getStudentAttandance!.Status
+                    AttendanceStatus = getStudentAttandance != null ? getStudentAttandance.Status : "Pending"
                 };
                 ListAttendanceDetails.Add(AttendanceDetail);
             }

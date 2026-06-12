@@ -228,7 +228,7 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<MessageResultModel> UpdateClass(ClassUpdateReqModel ClassReq)
         {
-            var CheckExist = await _classRepositories.GetSingle(x => x.Id == ClassReq.Id);
+            var CheckExist = await _classRepositories.GetSingle(x => x.Id == ClassReq.Id, includeProperties: "ClassSchedules");
             if (CheckExist == null)
             {
                 throw new CustomException("Class not found!");
@@ -241,6 +241,29 @@ namespace PTEducation.Business.Services.ClassServices
             CheckExist.Name = TextConvert.ConvertToUnicodeEscape(ClassReq.Name);
             CheckExist.StartAt = ClassReq.StartAt;
             CheckExist.EndAt = ClassReq.EndAt;
+
+            if (ClassReq.Schedules != null)
+            {
+                foreach (var oldSchedule in CheckExist.ClassSchedules)
+                {
+                    oldSchedule.Status = GeneralStatusEnums.Inactive.ToString();
+                }
+
+                foreach (var schedule in ClassReq.Schedules)
+                {
+                    ClassSchedule NewSchedule = new()
+                    {
+                        Id = Guid.NewGuid(),
+                        ClassId = ClassReq.Id,
+                        DayOfWeek = schedule.DayOfWeek,
+                        StartTime = schedule.StartTime,
+                        EndTime = schedule.EndTime,
+                        Status = GeneralStatusEnums.Active.ToString()
+                    };
+                    CheckExist.ClassSchedules.Add(NewSchedule);
+                }
+            }
+
             await _classRepositories.Update(CheckExist);
             return new MessageResultModel()
             {
