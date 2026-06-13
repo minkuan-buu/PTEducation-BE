@@ -195,6 +195,7 @@ namespace PTEducation.Business.Services.OverviewServices
 
             var result = new StudentGuardianOverviewResModel
             {
+                StudentName = student.Name,
                 ClassName = className,
                 AverageScore = averageScore,
                 AttendanceRate = attendanceRate,

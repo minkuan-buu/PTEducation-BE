@@ -2,6 +2,7 @@ namespace PTEducation.Data.DTO.ResponseModel
 {
     public class StudentGuardianOverviewResModel
     {
+        public string StudentName { get; set; } = null!;
         public string ClassName { get; set; } = null!;
         public decimal AverageScore { get; set; }
         public decimal AttendanceRate { get; set; }

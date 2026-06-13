@@ -105,7 +105,7 @@ namespace PTEducation.Business.Services.StudentServices
         public async Task<DataResultModel<AttendanceStudentResModel>> GetAttendanceByMonth(int Month, int Year, string userId)
         {
             var (student, userClass) = await ResolveStudentAndClass(userId);
-            var Attandance = await _attendanceRepositories.GetList(x => x.ClassId == userClass.ClassId && x.Date.Month == Month && x.Date.Year == Year && !x.Status.Equals(GeneralStatusEnums.Inactive.ToString()), includeProperties: "AttendanceDetails.StudentClass");
+            var Attandance = await _attendanceRepositories.GetList(x => x.ClassId == userClass.ClassId && x.Date.Month == Month && x.Date.Year == Year && x.Status.Equals(AttendanceStatusEnums.Closed.ToString()), includeProperties: "AttendanceDetails.StudentClass");
             var ListAttandance = Attandance.ToList();
             List<AttendanceStudentDetailResModel> ListAttendanceDetails = new();
             foreach (var attendance in ListAttandance)
@@ -123,8 +123,8 @@ namespace PTEducation.Business.Services.StudentServices
             var Result = new AttendanceStudentResModel()
             {
                 Id = student.Id,
-                Name = TextConvert.ConvertFromUnicodeEscape(student.Name),
-                Attendances = ListAttendanceDetails.OrderByDescending(x => x.Date).ToList()
+                Name = student.Name,
+                Attendances = ListAttendanceDetails.OrderByDescending(x => x.Date).ThenByDescending(x => x.StartTime).ToList()
             };
             return new DataResultModel<AttendanceStudentResModel>()
             {
