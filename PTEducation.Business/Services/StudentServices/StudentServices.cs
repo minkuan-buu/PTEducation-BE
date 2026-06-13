@@ -51,12 +51,12 @@ namespace PTEducation.Business.Services.StudentServices
                 {
                     throw new CustomException("No students associated with this guardian.");
                 }
-                
+
                 student = await _userRepositories.GetSingle(
                     x => x.Id.Equals(relationship.StudentId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()),
                     includeProperties: "StudentClasses"
                 );
-                
+
                 if (student == null)
                 {
                     throw new CustomException("Associated student not found.");
@@ -124,7 +124,7 @@ namespace PTEducation.Business.Services.StudentServices
             {
                 Id = student.Id,
                 Name = TextConvert.ConvertFromUnicodeEscape(student.Name),
-                Attendances = ListAttendanceDetails.OrderBy(x => x.Date).ToList()
+                Attendances = ListAttendanceDetails.OrderByDescending(x => x.Date).ToList()
             };
             return new DataResultModel<AttendanceStudentResModel>()
             {
