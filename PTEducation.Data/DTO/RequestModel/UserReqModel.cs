@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -30,8 +31,8 @@ namespace PTEducation.Data.DTO.RequestModel
         public string Name { get; set; } = null!;
         public Guid ClassId { get; set; }
         public string Email { get; set; } = null!;
-        public string Phone { get; set; } = null!;
-        public string? School { get; set; }
+        public string? Phone { get; set; }
+        public string School { get; set; } = null!;
         public List<GuardianInfoReqModel> Guardians { get; set; } = new List<GuardianInfoReqModel>();
     }
 
@@ -71,5 +72,11 @@ namespace PTEducation.Data.DTO.RequestModel
         public string Phone { get; set; } = null!;
         public string? DefaultPassword { get; set; }
         public bool IsResendInfo { get; set; } = false;
+    }
+
+    public class AccessReqModel
+    {
+        [RegularExpression("^(Approved|Rejected)$")]
+        public string AccessStatus { get; set; } = "Rejected";
     }
 }

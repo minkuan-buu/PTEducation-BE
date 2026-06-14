@@ -4,17 +4,22 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Any;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using PTEducation.API.Middleware;
+using PTEducation.API.Hubs;
 using PTEducation.API.Swagger;
+using PTEducation.API.Realtime;
+using PTEducation.API.Serialization;
 using PTEducation.Business.MapperProfiles;
 using PTEducation.Business.Services.AttendanceDetailServices;
 using PTEducation.Business.Services.AttendanceServices;
 using PTEducation.Business.Services.AuthServices;
 using PTEducation.Business.Services.ClassServices;
 using PTEducation.Business.Services.OTPServices;
+using PTEducation.Business.Services.OverviewServices;
 using PTEducation.Business.Services.ScoreDetailServices;
 using PTEducation.Business.Services.ScoreServices;
 using PTEducation.Business.Services.StudentClassServices;
@@ -23,6 +28,7 @@ using PTEducation.Business.Services.UserServices;
 using PTEducation.Business.Ultilities.Email;
 using PTEducation.API.HostedServices;
 using PTEducation.Data.Entities;
+using Quartz;
 using PTEducation.Data.Repositories.AttendanceDetailRepositories;
 using PTEducation.Data.Repositories.AttendanceRepositories;
 using PTEducation.Data.Repositories.ClassRepositories;
@@ -35,6 +41,7 @@ using PTEducation.Data.Repositories.UserRepositories;
 using System.Text;
 using System.Text.Json.Serialization;
 using PTEducation.Data.Repositories.StudentGuardianRepositories;
+using PTEducation.Data.Repositories.ChatRepositories;
 
 DotNetEnv.Env.Load();
 
@@ -43,6 +50,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddSignalR();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
@@ -74,6 +82,13 @@ builder.Services.AddSwaggerGen(c =>
             },
             new string[]{}
         }
+    });
+
+    c.MapType<TimeOnly>(() => new OpenApiSchema
+    {
+        Type = "string",
+        Format = "time",
+        Example = new OpenApiString("08:00:00")
     });
 });
 //========================================== DATABASE =============================================
@@ -142,6 +157,7 @@ builder.Services.AddControllers()
         .AddJsonOptions(options =>
         {
             options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+            options.JsonSerializerOptions.Converters.Add(new TimeOnlyJsonConverter());
         });
 
 //========================================== REPOSITORY ===========================================
@@ -155,6 +171,9 @@ builder.Services.AddTransient<IAttendanceRepositories, AttendanceRepositories>()
 builder.Services.AddTransient<IAttendanceDetailRepositories, AttendanceDetailRepositories>();
 builder.Services.AddTransient<IStudentGuardianRepositories, StudentGuardianRepositories>();
 builder.Services.AddTransient<IOTPRepositories, OTPRepositories>();
+builder.Services.AddTransient<IChatRepositories, ChatRepositories>();
+builder.Services.AddTransient<IChatDetailRepositories, ChatDetailRepositories>();
+builder.Services.AddTransient<IChatMessageRepositories, ChatMessageRepositories>();
 builder.Services.AddScoped(typeof(IGenericRepositories<>), typeof(GenericRepositories<>));
 
 //=========================================== SERVICE =============================================
@@ -170,8 +189,23 @@ builder.Services.AddScoped<IEmail, Email>();
 builder.Services.AddScoped<IAttendanceServices, AttendanceServices>();
 builder.Services.AddScoped<IAttendanceDetailServices, AttendanceDetailServices>();
 builder.Services.AddScoped<IOTPServices, OTPServices>();
+builder.Services.AddScoped<IOverviewServices, OverviewServices>();
+builder.Services.AddScoped<IAttendanceRealtimeNotifier, AttendanceRealtimeNotifier>();
+builder.Services.AddScoped<PTEducation.Business.Services.AttendanceServices.IAttendanceScheduler, PTEducation.API.Scheduling.AttendanceScheduler>();
+
+// Quartz scheduler
+builder.Services.AddQuartz(q =>
+{
+    q.UseMicrosoftDependencyInjectionJobFactory();
+    // jobs will be scheduled dynamically when attendances are created/updated
+});
+builder.Services.AddQuartzHostedService(q => q.WaitForJobsToComplete = true);
+
+builder.Services.AddScoped<PTEducation.API.Jobs.AttendanceWindowJob>();
 
 builder.Services.AddHostedService<AdminInitializerHostedService>();
+builder.Services.AddHostedService<DatabaseMigrationHostedService>();
+builder.Services.AddHostedService<AttendanceWindowReconciliationHostedService>();
 
 //=========================================== CORS ================================================
 
@@ -185,7 +219,7 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials()
-            .WithExposedHeaders("Content-Disposition");
+            .WithExposedHeaders("Content-Disposition", "X-Access-Token");
     });
 });
 
@@ -242,5 +276,6 @@ app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<AttendanceHub>("/hubs/attendance");
 
 app.Run();

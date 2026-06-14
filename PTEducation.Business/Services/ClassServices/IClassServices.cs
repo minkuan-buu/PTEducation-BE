@@ -14,7 +14,8 @@ namespace PTEducation.Business.Services.ClassServices
         Task<DataResultModel<ClassDetailResModel>> GetClassDetail(Guid Id);
         Task<PagedListDataResultModel<ListClassResModel>> GetClassList(int? pageIndex, ClassFilter searchModel);
         Task<DataResultModel<List<ListClassResModel>>> GetClassList();
-        Task<MessageResultModel> CreateClass(ClassCreateReqModel ClassReq, string token);
+        Task<MessageResultModel> CreateClass(ClassCreateReqModel ClassReq, string userId);
+        Task<MessageResultModel> CreateClassV2(ClassCreateReqModelV2 ClassReq, string userId);
         Task<MessageResultModel> UpdateClass(ClassUpdateReqModel ClassReq);
         Task<MessageResultModel> SoftDeleteClass(Guid Id);
         Task<MessageResultModel> HardDeleteClass(Guid Id);
@@ -23,6 +24,9 @@ namespace PTEducation.Business.Services.ClassServices
         Task<MessageResultModel> MoveOutStudent(MoveOutStudentClassModel MoveOutReq);
         Task<ListDataResultModel<ClassListSelectResModel>> GetClassSelectList();
         Task<DataResultModel<Guid>> GetClassIdByName(string ClassName);
+        Task<DataResultModel<ClassDetailMetaData>> GetClassMetadata(Guid ClassId);
+        Task<PagedListDataResultModel<StudentInClassResModel>> GetStudentByClassId(Guid ClassId, int? pageIndex, UserFilter searchModel, bool isPending);
         Task<ClassScoreStudentExport> GetStudentScoreByClassIdAndRangeDate(Guid ClassId, DateTime? FromDate, DateTime? ToDate);
+        Task<List<string>> GetCalendarIndicators(Guid classId, AttendanceFilter filter);
     }
 }

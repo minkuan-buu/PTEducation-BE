@@ -7,20 +7,68 @@ using ClosedXML.Excel;
 using PTEducation.Business.Services.ClassServices;
 using PTEducation.Data.DTO.ResponseModel;
 using PTEducation.Business.Services.AttendanceServices;
+using Asp.Versioning;
+using PTEducation.API.Realtime;
 
 namespace PTEducation.API.Controllers
 {
     [ApiController]
-    [Route("api/attendance")]
+    [ApiVersion("2.0")]
+    [Route("api/v{version:apiVersion}/attendances")]
     public class AttendanceController : ControllerBase
     {
         private readonly IAttendanceServices _attendanceServices;
-        public AttendanceController(IAttendanceServices attendanceServices)
+        private readonly IAttendanceRealtimeNotifier _attendanceRealtimeNotifier;
+        private readonly IClassServices _classServices;
+
+        public AttendanceController(IAttendanceServices attendanceServices, IAttendanceRealtimeNotifier attendanceRealtimeNotifier, IClassServices classServices)
         {
             _attendanceServices = attendanceServices;
+            _attendanceRealtimeNotifier = attendanceRealtimeNotifier;
+            _classServices = classServices;
         }
 
-        [HttpGet("get")]
+        private async Task<AttendanceWindowStateDto> BuildWindowStateAsync(Guid classId, string? reason = null)
+        {
+            var metadata = await _classServices.GetClassMetadata(classId);
+            var serverTime = DateTime.Now;
+            var opensAt = metadata.Data?.NextSession;
+            var closesAt = metadata.Data?.NextSessionEndAt;
+            var windowKind = metadata.Data?.NextSessionKind;
+            var isOpen = string.Equals(windowKind, "Current", StringComparison.OrdinalIgnoreCase) &&
+                opensAt.HasValue &&
+                closesAt.HasValue &&
+                serverTime >= opensAt.Value &&
+                serverTime <= closesAt.Value;
+
+            return new AttendanceWindowStateDto
+            {
+                ClassId = classId,
+                IsOpen = isOpen,
+                WindowKind = windowKind,
+                OpensAt = opensAt,
+                ClosesAt = closesAt,
+                ServerTime = serverTime,
+                Reason = reason
+            };
+        }
+
+        [HttpGet("classes/{classId:guid}")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetAttendanceSessions(Guid classId, [FromQuery] DateTime date)
+        {
+            try
+            {
+                var Result = await _attendanceServices.GetAttendanceSessions(classId, DateOnly.FromDateTime(date));
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("{Id:guid}")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetAttendanceDetail(Guid Id)
         {
@@ -35,13 +83,13 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpGet("all")]
+        [HttpPatch("{Id:guid}")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> GetList(int? pageIndex, [FromQuery] AttendanceFilter searchModel)
+        public async Task<IActionResult> UpdateAttendanceDetail(Guid Id, [FromBody] List<AttendanceDetailStudentReqModel> attendanceDetailReq)
         {
             try
             {
-                var Result = await _attendanceServices.GetListAttendance(pageIndex, searchModel);
+                var Result = await _attendanceServices.UpdateAttendanceV2(Id, attendanceDetailReq);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -50,14 +98,34 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [HttpPost("create")]
+        [HttpPost("classes/{classId:guid}")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> CreateAttendance([FromBody] AttendanceCreateReqModel AttendanceReq)
+        public async Task<IActionResult> CreateAttendance(Guid classId, [FromBody] AttendanceCreateReqModel AttendanceReq)
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _attendanceServices.CreateAttendance(AttendanceReq, token);
+                var Result = await _attendanceServices.CreateAttendance(AttendanceReq, classId);
+
+                await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
+                    await BuildWindowStateAsync(Result.ClassId, "Attendance window scheduled"));
+
+                // scheduling handled in service layer
+
+                return Ok(new MessageResultModel { Message = "Ok" });
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("{attendanceId:guid}/check-attendance")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> CheckAttendance(Guid attendanceId, [FromBody] CheckAttendanceReqModel checkAttendanceReq)
+        {
+            try
+            {
+                var Result = await _attendanceServices.CheckAttendance(attendanceId, checkAttendanceReq.StudentClassId);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -73,7 +141,13 @@ namespace PTEducation.API.Controllers
             try
             {
                 var Result = await _attendanceServices.UpdateAttendance(AttendanceReq);
-                return Ok(Result);
+
+                await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
+                    await BuildWindowStateAsync(Result.ClassId, "Attendance window updated"));
+
+                // scheduling handled in service layer
+
+                return Ok(new MessageResultModel { Message = "Ok" });
             }
             catch (CustomException ex)
             {
@@ -88,7 +162,11 @@ namespace PTEducation.API.Controllers
             try
             {
                 var Result = await _attendanceServices.SoftDeleteAttendance(Id);
-                return Ok(Result);
+
+                await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
+                    await BuildWindowStateAsync(Result.ClassId, "Attendance window deleted"));
+
+                return Ok(new MessageResultModel { Message = "Ok" });
             }
             catch (CustomException ex)
             {
@@ -103,7 +181,11 @@ namespace PTEducation.API.Controllers
             try
             {
                 var Result = await _attendanceServices.RestoreAttendance(Id);
-                return Ok(Result);
+
+                await _attendanceRealtimeNotifier.BroadcastAttendanceWindowAsync(
+                    await BuildWindowStateAsync(Result.ClassId, "Attendance window restored"));
+
+                return Ok(new MessageResultModel { Message = "Ok" });
             }
             catch (CustomException ex)
             {

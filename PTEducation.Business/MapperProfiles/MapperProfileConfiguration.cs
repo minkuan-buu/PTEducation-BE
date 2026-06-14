@@ -28,6 +28,13 @@ namespace PTEducation.Business.MapperProfiles
                     DateTime.Now))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
                     GeneralStatusEnums.Active.ToString()));
+            CreateMap<ClassCreateReqModelV2, Class>()
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
+                    TextConvert.ConvertToUnicodeEscape(src.Name)))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src =>
+                    DateTime.Now))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
+                    GeneralStatusEnums.Active.ToString()));
             CreateMap<StudentsImportWithClass, User>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
                     TextConvert.ConvertToUnicodeEscape(src.Name)))
@@ -81,9 +88,12 @@ namespace PTEducation.Business.MapperProfiles
             CreateMap<Class, ClassListSelectResModel>()
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
                     TextConvert.ConvertFromUnicodeEscape(src.Name)));
+            CreateMap<ClassSchedule, ClassScheduleResModel>()
+                .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => src.StartTime))
+                .ForMember(dest => dest.EndTime, opt => opt.MapFrom(src => src.EndTime));
             CreateMap<ScoreCreateReqModel, Score>()
                 .ForMember(dest => dest.Shift, opt => opt.MapFrom(src =>
-                    TextConvert.ConvertToUnicodeEscape(src.Shift)))
+                    src.Shift != null ? TextConvert.ConvertToUnicodeEscape(src.Shift) : null))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src =>
                     DateTime.Now))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
@@ -93,16 +103,11 @@ namespace PTEducation.Business.MapperProfiles
                     Guid.NewGuid()))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
                     GeneralStatusEnums.Active.ToString()))
-                .ForMember(dest => dest.Note, opt => opt.MapFrom(src => TextConvert.ConvertToUnicodeEscape(src.Note)));
+                .ForMember(dest => dest.Note, opt => opt.MapFrom(src =>
+                    src.Note != null ? TextConvert.ConvertToUnicodeEscape(src.Note) : null));
             CreateMap<Score, ScoreDetailResModel>()
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
                     TextConvert.ConvertFromUnicodeEscape(src.Class.Name)))
-                .ForMember(dest => dest.CreateBy, opt => opt.MapFrom(src => new ScoreCreatedByModel()
-                {
-                    Id = src.CreateByNavigation.Id,
-                    Name = TextConvert.ConvertFromUnicodeEscape(src.CreateByNavigation.Name),
-                    Email = src.CreateByNavigation.Email
-                }))
                 .ForMember(dest => dest.ScoreDetails, opt => opt.MapFrom(src =>
                     src.ScoreDetails.Select(x => new ScoreDetailStudentResModel
                     {
@@ -113,12 +118,6 @@ namespace PTEducation.Business.MapperProfiles
                         Note = x.Note != null ? TextConvert.ConvertFromUnicodeEscape(x.Note) : null
                     }).ToList()));
             CreateMap<Score, ScoreListResModel>()
-                .ForMember(dest => dest.CreateBy, opt => opt.MapFrom(src => new ScoreCreatedByModel()
-                {
-                    Id = src.CreateByNavigation.Id,
-                    Name = TextConvert.ConvertFromUnicodeEscape(src.CreateByNavigation.Name),
-                    Email = src.CreateByNavigation.Email
-                }))
                 .ForMember(dest => dest.AverageScore, opt => opt.MapFrom(src =>
                     src.ScoreDetails.Count == 0 ? 0 : src.ScoreDetails.Average(x => x.Score)));
             CreateMap<User, UserProfileResModel>()
@@ -127,31 +126,70 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
                     src.StudentClasses.Count == 0 ? null : TextConvert.ConvertFromUnicodeEscape(src.StudentClasses.First().Class.Name)));
             CreateMap<AttendanceCreateReqModel, Attendance>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => GeneralStatusEnums.Active.ToString()));
-            CreateMap<Attendance, AttendanceListResModel>()
-                .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => new AttendanceCreatedByModel()
-                {
-                    Id = src.CreatedByNavigation.Id,
-                    Name = TextConvert.ConvertFromUnicodeEscape(src.CreatedByNavigation.Name),
-                    Email = src.CreatedByNavigation.Email
-                }));
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => AttendanceStatusEnums.Pending.ToString()))
+                .ForMember(dest => dest.Date, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.Date)));
+            CreateMap<Attendance, AttendanceListResModel>();
             CreateMap<Attendance, AttendanceDetailResModel>()
-                .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
-                    TextConvert.ConvertFromUnicodeEscape(src.Class.Name)))
-                .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => new AttendanceCreatedByModel()
-                {
-                    Id = src.CreatedByNavigation.Id,
-                    Name = TextConvert.ConvertFromUnicodeEscape(src.CreatedByNavigation.Name),
-                    Email = src.CreatedByNavigation.Email
-                }))
+                .ForMember(dest => dest.Session, opt => opt.MapFrom(src =>
+                    new AttendanceDetailSessionResModel
+                    {
+                        Id = src.Id,
+                        Date = src.Date,
+                        StartTime = src.StartTime,
+                        EndTime = src.EndTime,
+                        ClassScheduleId = src.ClassScheduleId,
+                        SessionType = src.SessionType,
+                        Note = src.Note != null ? TextConvert.ConvertFromUnicodeEscape(src.Note) : null,
+                        Status = src.Status
+                    }))
                 .ForMember(dest => dest.AttendanceDetails, opt => opt.MapFrom(src =>
                     src.AttendanceDetails.Select(x => new AttendanceDetailStudentResModel
                     {
                         StudentClassId = x.StudentClassId,
-                        Id = x.StudentClass.Student.Id,
-                        Name = TextConvert.ConvertFromUnicodeEscape(x.StudentClass.Student.Name),
-                        AttendanceStatus = AttendanceEnums.Có_mặt.ToString()
+                        StudentId = x.StudentClass.Student.Id,
+                        StudentName = TextConvert.ConvertFromUnicodeEscape(x.StudentClass.Student.Name),
+                        AttendanceStatus = x.Status,
+                        Guardians = x.StudentClass.Student.StudentGuardianStudents.Select(g => new UserGuardianListResModel
+                        {
+                            Id = g.Guardian.Id,
+                            Name = g.Guardian.Name,
+                            Email = g.Guardian.Email,
+                            Phone = g.Guardian.Phone,
+                            Relationship = g.Relationship,
+                            IsPrimary = g.IsPrimary
+                        }).ToList()
                     }).ToList()));
+            CreateMap<User, UserListResModel>()
+                .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
+                    src.StudentClasses.Count == 0 ? null : src.StudentClasses.First().Class.Name))
+                .ForMember(dest => dest.Guardians, opt => opt.MapFrom(src =>
+                    src.StudentGuardianStudents.Select(x => new UserGuardianListResModel
+                    {
+                        Id = x.Guardian.Id,
+                        Name = x.Guardian.Name,
+                        Email = x.Guardian.Email,
+                        Phone = x.Guardian.Phone,
+                        Relationship = x.Relationship,
+                        IsPrimary = x.IsPrimary
+                    }).ToList()));
+            CreateMap<StudentClass, StudentInClassResModel>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Student.Id))
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
+                    TextConvert.ConvertFromUnicodeEscape(src.Student.Name)))
+                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Student.Email))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.Student.Phone))
+                .ForMember(dest => dest.Guardians, opt => opt.MapFrom(src =>
+                    src.Student.StudentGuardianStudents.Select(x => new UserGuardianListResModel
+                    {
+                        Id = x.Guardian.Id,
+                        Name = x.Guardian.Name,
+                        Email = x.Guardian.Email,
+                        Phone = x.Guardian.Phone,
+                        Relationship = x.Relationship,
+                        IsPrimary = x.IsPrimary
+                    }).ToList()));
+
+            CreateMap<Attendance, AttendanceSessionResModel>();
         }
     }
 }

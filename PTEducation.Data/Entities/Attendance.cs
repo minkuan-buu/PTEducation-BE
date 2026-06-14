@@ -7,19 +7,25 @@ public partial class Attendance
 {
     public Guid Id { get; set; }
 
-    public DateTime StartDate { get; set; }
+    public TimeOnly StartTime { get; set; }
 
-    public DateTime EndDate { get; set; }
+    public TimeOnly EndTime { get; set; }
 
     public Guid ClassId { get; set; }
 
-    public string CreatedBy { get; set; } = null!;
-
     public string Status { get; set; } = null!;
+
+    public Guid? ClassScheduleId { get; set; }
+
+    public string SessionType { get; set; } = null!;
+
+    public string? Note { get; set; }
+
+    public DateOnly Date { get; set; }
 
     public virtual ICollection<AttendanceDetail> AttendanceDetails { get; set; } = new List<AttendanceDetail>();
 
     public virtual Class Class { get; set; } = null!;
 
-    public virtual User CreatedByNavigation { get; set; } = null!;
+    public virtual ClassSchedule? ClassSchedule { get; set; }
 }

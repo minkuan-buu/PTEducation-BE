@@ -211,37 +211,60 @@ namespace PTEducation.Business.Services.UserServices
                 Id = $"1{classBlockCode}{nextStudentSequence:000}",
                 Name = ReqModel.Name,
                 Email = ReqModel.Email,
-                Phone = ReqModel.Phone,
+                Phone = ReqModel.Phone ?? "",
                 Role = RoleEnums.Student.ToString(),
                 IsNeedResetPassword = true,
             };
+
+            StudentClass NewStudentClass = new()
+            {
+                Id = Guid.NewGuid(),
+                ClassId = ReqModel.ClassId,
+                StudentId = NewStudent.Id,
+                Status = AccountStatusEnums.PendingApproved.ToString(),
+            };
+
             var GeneratePassword = Authentication.GenerateRandomPassword();
             string HashedPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
             NewStudent.PasswordBcrypt = HashedPassword;
-            NewStudent.Status = AccountStatusEnums.Active.ToString();
+            NewStudent.Status = AccountStatusEnums.PendingApproved.ToString();
             ListAddUser.Add(NewStudent);
             List<StudentGuardian> ListStudentGuardian = new List<StudentGuardian>();
-
+            var listEmail = new List<EmailReqModel>();
+            string FileGuardianPath = "../PTEducation.Business/TemplateEmail/FirstInformationNewGuardian.html";
             foreach (var guardian in ReqModel.Guardians)
             {
                 if (nextGuardianSequence > 9999)
                 {
                     throw new CustomException($"Đã vượt quá giới hạn mã giám hộ cho khối {classBlockCode}.");
                 }
+                var NewGeneratePassword = Authentication.GenerateRandomPassword();
 
                 var NewGuardian = new User
                 {
                     Id = $"2{classBlockCode}{nextGuardianSequence:0000}",
                     Name = guardian.Name,
                     Email = guardian.Email,
-                    Phone = guardian.Phone,
-                    Role = RoleEnums.Guardan.ToString(),
-                    Status = AccountStatusEnums.Active.ToString(),
+                    Phone = guardian.Phone ?? "",
+                    Role = RoleEnums.Guardian.ToString(),
+                    Status = AccountStatusEnums.PendingApproved.ToString(),
                     IsNeedResetPassword = true,
-                    PasswordBcrypt = Authentication.CreateHashPasswordBCrypt(Authentication.GenerateRandomPassword())
+                    PasswordBcrypt = Authentication.CreateHashPasswordBCrypt(NewGeneratePassword)
                 };
                 ListAddUser.Add(NewGuardian);
                 nextGuardianSequence++;
+                string GuardHtml = File.ReadAllText(FileGuardianPath);
+                GuardHtml = GuardHtml.Replace("{{PASSWORD}}", NewGeneratePassword);
+                GuardHtml = GuardHtml.Replace("{{STUDENTNAME}}", ReqModel.Name);
+                GuardHtml = GuardHtml.Replace("{{GUARDIANNAME}}", guardian.Name);
+                GuardHtml = GuardHtml.Replace("{{USERNAME}}", guardian.Email);
+                listEmail.Add(
+                    new EmailReqModel
+                    {
+                        Email = guardian.Email,
+                        HtmlContent = GuardHtml
+                    }
+                );
 
                 var NewStudentGuardian = new StudentGuardian
                 {
@@ -256,6 +279,20 @@ namespace PTEducation.Business.Services.UserServices
             }
             await _userRepositories.InsertRange(ListAddUser);
             await _studentGuardianRepositories.InsertRange(ListStudentGuardian);
+            await _studentClassRepositories.Insert(NewStudentClass);
+            string FilePath = "../PTEducation.Business/TemplateEmail/FirstInformationNew.html";
+            string Html = File.ReadAllText(FilePath);
+            Html = Html.Replace("{{PASSWORD}}", GeneratePassword);
+            Html = Html.Replace("{{STUDENTNAME}}", ReqModel.Name);
+            Html = Html.Replace("{{USERNAME}}", ReqModel.Email);
+            listEmail.Add(
+                new EmailReqModel
+                {
+                    Email = ReqModel.Email,
+                    HtmlContent = Html
+                }
+            );
+            await _email.SendEmail("[Thông tin đăng nhập]", listEmail);
             return new MessageResultModel
             {
                 Message = "Ok"
@@ -557,9 +594,255 @@ namespace PTEducation.Business.Services.UserServices
             }
             catch
             {
-                throw new CustomException("Error");    
+                throw new CustomException("Error");
             }
-            
+
+        }
+
+        public async Task<PagedListDataResultModel<UserListResModel>> GetAllStudents(int? pageIndex, UserFilter searchModel)
+        {
+            var ListStudent = await ViewAllStudents(pageIndex, 20, searchModel);
+            return new PagedListDataResultModel<UserListResModel>()
+            {
+                Data = _mapper.Map<List<UserListResModel>>(ListStudent.Data),
+                PageNumber = pageIndex ?? 1,
+                PageSize = 20,
+                TotalPages = ListStudent.TotalPages
+            };
+        }
+
+        private async Task<PagedListDataResultModel<User>> ViewAllStudents(int? pageIndex, int? pageSize, UserFilter searchModel)
+        {
+            Func<IQueryable<User>, IOrderedQueryable<User>> orderBy = o => o.OrderBy(p => p.Name);
+            Expression<Func<User, bool>> filter = p => true;
+
+            if (searchModel != null)
+            {
+                if (!string.IsNullOrEmpty(searchModel.Keyword))
+                {
+                    var keyword = searchModel.Keyword.ToLower();
+                    var unicodeKeyword = TextConvert.ConvertToUnicodeEscape(searchModel.Keyword).ToLower();
+                    filter = filter.And(p =>
+                        p.Name.ToLower().Contains(unicodeKeyword) ||
+                        p.Email.ToLower().StartsWith(keyword)
+                    );
+                }
+            }
+
+            filter = filter.And(p => p.Role.Equals(RoleEnums.Student.ToString()));
+
+            var allStudents = await _userRepositories.GetPagedList(filter, orderBy, "StudentGuardianStudents.Guardian,StudentClasses.Class", pageIndex ?? 1, pageSize ?? 10);
+
+            return allStudents;
+        }
+
+        public async Task<MessageResultModel> UpdateStudentAccess(string userId, AccessReqModel reqModel)
+        {
+            var user = await _userRepositories.GetSingle(x => x.Id == userId && x.Role.Equals(RoleEnums.Student.ToString()));
+            if (user == null)
+            {
+                throw new CustomException("Không tìm thấy học sinh!");
+            }
+            if (reqModel.AccessStatus != "Approved" && reqModel.AccessStatus != "Rejected")
+            {
+                throw new CustomException("Trạng thái truy cập không hợp lệ!");
+            }
+            var studentClasses = (await _studentClassRepositories.GetList(
+                x => x.StudentId == userId,
+                includeProperties: "AttendanceDetails,ScoreDetails")).ToList();
+
+            var studentGuardians = (await _studentGuardianRepositories.GetList(
+                x => x.StudentId == userId,
+                includeProperties: "Guardian")).ToList();
+
+            var guardians = studentGuardians
+                .Where(x => x.Guardian != null)
+                .Select(x => x.Guardian)
+                .GroupBy(x => x.Id)
+                .Select(x => x.First())
+                .ToList();
+
+            using var transaction = await _userRepositories.BeginTransactionAsync();
+            try
+            {
+                if (reqModel.AccessStatus == "Approved")
+                {
+                    user.Status = AccountStatusEnums.Active.ToString();
+
+                    foreach (var studentClass in studentClasses)
+                    {
+                        studentClass.Status = AccountStatusEnums.Active.ToString();
+                    }
+
+                    foreach (var guardian in guardians)
+                    {
+                        guardian.Status = AccountStatusEnums.Active.ToString();
+                    }
+
+                    await _userRepositories.Update(user, saveChanges: false);
+
+                    if (studentClasses.Count > 0)
+                    {
+                        await _studentClassRepositories.UpdateRange(studentClasses, saveChanges: false);
+                    }
+
+                    if (guardians.Count > 0)
+                    {
+                        await _userRepositories.UpdateRange(guardians, saveChanges: false);
+                    }
+
+                    await _userRepositories.SaveChangesAsync();
+                    await _userRepositories.CommitTransactionAsync();
+
+                    return new MessageResultModel
+                    {
+                        Message = "Ok"
+                    };
+                }
+
+                var attendanceDetails = studentClasses.SelectMany(x => x.AttendanceDetails).ToList();
+                var scoreDetails = studentClasses.SelectMany(x => x.ScoreDetails).ToList();
+
+                if (attendanceDetails.Count > 0)
+                {
+                    await _attendanceDetailRepositories.DeleteRange(attendanceDetails, saveChanges: false);
+                }
+
+                if (scoreDetails.Count > 0)
+                {
+                    await _scoreDetailRepositories.DeleteRange(scoreDetails, saveChanges: false);
+                }
+
+                if (studentGuardians.Count > 0)
+                {
+                    await _studentGuardianRepositories.DeleteRange(studentGuardians, saveChanges: false);
+                }
+
+                var studentOtps = (await _otpRepositories.GetList(x => x.UserId == userId)).ToList();
+                if (studentOtps.Count > 0)
+                {
+                    await _otpRepositories.DeleteRange(studentOtps, saveChanges: false);
+                }
+
+                if (guardians.Count > 0)
+                {
+                    var guardianIds = guardians.Select(x => x.Id).ToList();
+                    var guardianOtps = (await _otpRepositories.GetList(x => guardianIds.Contains(x.UserId))).ToList();
+                    if (guardianOtps.Count > 0)
+                    {
+                        await _otpRepositories.DeleteRange(guardianOtps, saveChanges: false);
+                    }
+                }
+
+                if (studentClasses.Count > 0)
+                {
+                    await _studentClassRepositories.DeleteRange(studentClasses, saveChanges: false);
+                }
+
+                if (guardians.Count > 0)
+                {
+                    await _userRepositories.DeleteRange(guardians, saveChanges: false);
+                }
+
+                await _userRepositories.Delete(user, saveChanges: false);
+                await _userRepositories.SaveChangesAsync();
+                await _userRepositories.CommitTransactionAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+
+            return new MessageResultModel
+            {
+                Message = "Ok"
+            };
+        }
+        
+        public async Task<MessageResultModel> DeleteStudent(string userId)
+        {
+            var user = await _userRepositories.GetSingle(x => x.Id == userId && x.Role.Equals(RoleEnums.Student.ToString()));
+            if (user == null)
+            {
+                throw new CustomException("Không tìm thấy học sinh!");
+            }
+
+            var studentClasses = (await _studentClassRepositories.GetList(
+                x => x.StudentId == userId,
+                includeProperties: "AttendanceDetails,ScoreDetails")).ToList();
+
+            var studentGuardians = (await _studentGuardianRepositories.GetList(
+                x => x.StudentId == userId,
+                includeProperties: "Guardian")).ToList();
+
+            var guardians = studentGuardians
+                .Where(x => x.Guardian != null)
+                .Select(x => x.Guardian)
+                .GroupBy(x => x.Id)
+                .Select(x => x.First())
+                .ToList();
+
+            using var transaction = await _userRepositories.BeginTransactionAsync();
+            try
+            {
+                var attendanceDetails = studentClasses.SelectMany(x => x.AttendanceDetails).ToList();
+                var scoreDetails = studentClasses.SelectMany(x => x.ScoreDetails).ToList();
+
+                if (attendanceDetails.Count > 0)
+                {
+                    await _attendanceDetailRepositories.DeleteRange(attendanceDetails, saveChanges: false);
+                }
+
+                if (scoreDetails.Count > 0)
+                {
+                    await _scoreDetailRepositories.DeleteRange(scoreDetails, saveChanges: false);
+                }
+
+                if (studentGuardians.Count > 0)
+                {
+                    await _studentGuardianRepositories.DeleteRange(studentGuardians, saveChanges: false);
+                }
+
+                var studentOtps = (await _otpRepositories.GetList(x => x.UserId == userId)).ToList();
+                if (studentOtps.Count > 0)
+                {
+                    await _otpRepositories.DeleteRange(studentOtps, saveChanges: false);
+                }
+
+                if (guardians.Count > 0)
+                {
+                    var guardianIds = guardians.Select(x => x.Id).ToList();
+                    var guardianOtps = (await _otpRepositories.GetList(x => guardianIds.Contains(x.UserId))).ToList();
+                    if (guardianOtps.Count > 0)
+                    {
+                        await _otpRepositories.DeleteRange(guardianOtps, saveChanges: false);
+                    }
+                }
+
+                if (studentClasses.Count > 0)
+                {
+                    await _studentClassRepositories.DeleteRange(studentClasses, saveChanges: false);
+                }
+
+                if (guardians.Count > 0)
+                {
+                    await _userRepositories.DeleteRange(guardians, saveChanges: false);
+                }
+                await _userRepositories.Delete(user, saveChanges: false);
+                await _userRepositories.SaveChangesAsync();
+                await _userRepositories.CommitTransactionAsync();
+                
+                return new MessageResultModel
+                {
+                    Message = "Ok"
+                };
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 }

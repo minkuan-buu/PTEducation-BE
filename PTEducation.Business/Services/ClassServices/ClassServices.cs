@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Microsoft.Extensions.Logging;
 using PTEducation.Business.ApplicationMiddleware;
 using PTEducation.Business.Ultilities.Email;
@@ -18,6 +18,7 @@ using PTEducation.Data.Repositories.StudentClassRepositories;
 using PTEducation.Data.Repositories.UserRepositories;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -67,12 +68,12 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<PagedListDataResultModel<ListClassResModel>> GetClassList(int? pageIndex, ClassFilter searchModel)
         {
-            var ListClass = await ViewAllClasses(pageIndex, 10, searchModel);
+            var ListClass = await ViewAllClasses(pageIndex, 5, searchModel);
             return new PagedListDataResultModel<ListClassResModel>()
             {
                 Data = _mapper.Map<List<ListClassResModel>>(ListClass.Data),
                 PageNumber = pageIndex ?? 1,
-                PageSize = 10,
+                PageSize = 5,
                 TotalPages = ListClass.TotalPages
             };
         }
@@ -95,9 +96,8 @@ namespace PTEducation.Business.Services.ClassServices
             };
         }
 
-        public async Task<MessageResultModel> CreateClass(ClassCreateReqModel ClassReq, string token)
+        public async Task<MessageResultModel> CreateClass(ClassCreateReqModel ClassReq, string userId)
         {
-            var userId = Authentication.DecodeToken(token, "userid");
             var CheckExist = await _classRepositories.GetSingle(x => x.Name.Equals(TextConvert.ConvertToUnicodeEscape(ClassReq.Name)) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             if (CheckExist != null)
             {
@@ -195,9 +195,40 @@ namespace PTEducation.Business.Services.ClassServices
             }
         }
 
+        public async Task<MessageResultModel> CreateClassV2(ClassCreateReqModelV2 ClassReq, string userId)
+        {
+            var CheckExist = await _classRepositories.GetSingle(x => x.Name.Equals(TextConvert.ConvertToUnicodeEscape(ClassReq.Name)) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            if (CheckExist != null)
+            {
+                throw new CustomException("Tên lớp đã tồn tại");
+            }
+            var ClassId = Guid.NewGuid();
+            var NewClass = _mapper.Map<Class>(ClassReq);
+            NewClass.Id = ClassId;
+            NewClass.CreatedBy = userId;
+            foreach (var schedule in ClassReq.Schedules)
+            {
+                ClassSchedule NewSchedule = new()
+                {
+                    Id = Guid.NewGuid(),
+                    ClassId = ClassId,
+                    DayOfWeek = schedule.DayOfWeek,
+                    StartTime = schedule.StartTime,
+                    EndTime = schedule.EndTime,
+                    Status = GeneralStatusEnums.Active.ToString()
+                };
+                NewClass.ClassSchedules.Add(NewSchedule);
+            }
+            await _classRepositories.Insert(NewClass);
+            return new MessageResultModel()
+            {
+                Message = "Ok"
+            };
+        }
+
         public async Task<MessageResultModel> UpdateClass(ClassUpdateReqModel ClassReq)
         {
-            var CheckExist = await _classRepositories.GetSingle(x => x.Id == ClassReq.Id);
+            var CheckExist = await _classRepositories.GetSingle(x => x.Id == ClassReq.Id, includeProperties: "ClassSchedules");
             if (CheckExist == null)
             {
                 throw new CustomException("Class not found!");
@@ -210,6 +241,29 @@ namespace PTEducation.Business.Services.ClassServices
             CheckExist.Name = TextConvert.ConvertToUnicodeEscape(ClassReq.Name);
             CheckExist.StartAt = ClassReq.StartAt;
             CheckExist.EndAt = ClassReq.EndAt;
+
+            if (ClassReq.Schedules != null)
+            {
+                foreach (var oldSchedule in CheckExist.ClassSchedules)
+                {
+                    oldSchedule.Status = GeneralStatusEnums.Inactive.ToString();
+                }
+
+                foreach (var schedule in ClassReq.Schedules)
+                {
+                    ClassSchedule NewSchedule = new()
+                    {
+                        Id = Guid.NewGuid(),
+                        ClassId = ClassReq.Id,
+                        DayOfWeek = schedule.DayOfWeek,
+                        StartTime = schedule.StartTime,
+                        EndTime = schedule.EndTime,
+                        Status = GeneralStatusEnums.Active.ToString()
+                    };
+                    CheckExist.ClassSchedules.Add(NewSchedule);
+                }
+            }
+
             await _classRepositories.Update(CheckExist);
             return new MessageResultModel()
             {
@@ -510,7 +564,7 @@ namespace PTEducation.Business.Services.ClassServices
 
                 if (!string.IsNullOrEmpty(searchModel.Keyword))
                 {
-                    filter = filter.And(p => p.Name.ToLower().Contains(TextConvert.ConvertToUnicodeEscape(searchModel.Keyword).ToLower()));
+                    filter = filter.And(p => p.Name.ToLower().Contains(searchModel.Keyword.ToLower()));
                 }
             }
 
@@ -532,6 +586,193 @@ namespace PTEducation.Business.Services.ClassServices
             };
         }
 
+        public async Task<DataResultModel<ClassDetailMetaData>> GetClassMetadata(Guid ClassId)
+        {
+            var Class = await _classRepositories.GetSingle(x => x.Id == ClassId, includeProperties: "ClassSchedules");
+            if (Class == null)
+            {
+                throw new CustomException("Class not found!");
+            }
+
+            var studentClasses = await _studentClassRepositories.GetList(
+                x => x.ClassId == ClassId,
+                includeProperties: "Student"
+            );
+            var scores = await _scoreRepositories.GetList(
+                x => x.ClassId == ClassId,
+                includeProperties: "ScoreDetails"
+            );
+            var attendances = await _attendanceRepositories.GetList(
+                x => x.ClassId == ClassId,
+                includeProperties: "AttendanceDetails"
+            );
+
+            Class.StudentClasses = studentClasses.ToList();
+            Class.Scores = scores.ToList();
+            Class.Attendances = attendances.ToList();
+
+            var TotalStudent = Class.StudentClasses.Count(sc => sc.Status.Equals(GeneralStatusEnums.Active.ToString()) && sc.Student.Status.Equals(AccountStatusEnums.Active.ToString()));
+            var TotalPendingStudent = Class.StudentClasses.Count(sc => sc.Student.Status.Equals(AccountStatusEnums.PendingApproved.ToString()));
+            var TotalScore = Class.Scores.Count(s => s.Status.Equals(GeneralStatusEnums.Active.ToString()));
+
+            // Tách riêng danh sách buổi học đã hoàn tất
+            var closedAttendances = Class.Attendances.Where(a => a.Status.Equals(AttendanceStatusEnums.Closed.ToString())).ToList();
+            var TotalAttendance = closedAttendances.Count;
+            var TotalAttendanceDetails = closedAttendances.Sum(att => att.AttendanceDetails.Count);
+
+            var activeScores = Class.Scores.Where(s => s.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList();
+            var averageScore = (TotalStudent > 0 && activeScores.Any())
+                ? activeScores.Average(s => s.ScoreDetails.Any() ? s.ScoreDetails.Average(sd => sd.Score) : 0)
+                : 0;
+
+            var now = DateTime.Now;
+
+            DateTime? nextSession = null;
+            DateTime? nextSessionEndAt = null;
+            string? nextSessionKind = null;
+
+            var currentSession = Class.Attendances
+                .Where(att => IsWindowOpen(att, now))
+                .OrderBy(att => att.Date.ToDateTime(att.StartTime))
+                .FirstOrDefault();
+
+            if (currentSession != null)
+            {
+                nextSession = currentSession.Date.ToDateTime(currentSession.StartTime);
+                nextSessionEndAt = currentSession.Date.ToDateTime(currentSession.EndTime);
+                nextSessionKind = "Current";
+            }
+            else
+            {
+                var nextSessionCandidates = new List<(DateTime StartAt, DateTime EndAt)>();
+
+                foreach (var schedule in Class.ClassSchedules.Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString())))
+                {
+                    var nextScheduledSession = GetNextSessionWindow(Class.StartAt, Class.EndAt, schedule.DayOfWeek, schedule.StartTime, schedule.EndTime);
+                    if (nextScheduledSession.HasValue)
+                    {
+                        nextSessionCandidates.Add(nextScheduledSession.Value);
+                    }
+                }
+
+                foreach (var attendance in Class.Attendances.Where(att => IsFutureWindow(att, now)))
+                {
+                    nextSessionCandidates.Add((attendance.Date.ToDateTime(attendance.StartTime), attendance.Date.ToDateTime(attendance.EndTime)));
+                }
+
+                if (nextSessionCandidates.Any())
+                {
+                    var nextSessionCandidate = nextSessionCandidates.OrderBy(candidate => candidate.StartAt).First();
+                    nextSession = nextSessionCandidate.StartAt;
+                    nextSessionEndAt = nextSessionCandidate.EndAt;
+                    nextSessionKind = "Upcoming";
+                }
+            }
+
+            var Metadata = new ClassDetailMetaData()
+            {
+                WeeklySchedules = _mapper.Map<List<ClassScheduleResModel>>(Class.ClassSchedules.Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList()),
+                TotalStudent = TotalStudent,
+                TotalPendingStudent = TotalPendingStudent,
+                AverageScore = averageScore,
+                Name = Class.Name,
+
+                // FIX: Tính tỉ lệ chuyên cần chính xác
+                AttendanceRate = TotalAttendanceDetails > 0
+                    ? ((decimal)closedAttendances.Sum(att => att.AttendanceDetails.Count(ad => ad.Status == AttendanceEnums.Present.ToString())) /
+                    TotalAttendanceDetails) * 100
+                    : 0,
+
+                CompletedSessions = TotalAttendance,
+                TotalSessions = Class.ClassSchedules
+                    .Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString()))
+                    .Sum(cs => CountWeekdayOccurrences(Class.StartAt.Date, Class.EndAt.Date, (DayOfWeek)cs.DayOfWeek))
+                    + Class.Attendances.Count(att => IsAdditionalSessionType(att.SessionType)),
+                StartAt = Class.StartAt,
+                EndAt = Class.EndAt,
+                NextSession = nextSession,
+                NextSessionEndAt = nextSessionEndAt,
+                NextSessionKind = nextSessionKind
+            };
+
+            return new DataResultModel<ClassDetailMetaData>()
+            {
+                Data = Metadata
+            };
+        }
+        
+        private static bool IsWindowOpen(Attendance attendance, DateTime now)
+        {
+            if (attendance == null)
+            {
+                return false;
+            }
+
+            var opensAt = attendance.Date.ToDateTime(attendance.StartTime);
+            var closesAt = attendance.Date.ToDateTime(attendance.EndTime);
+
+            return !attendance.Status.Equals(AttendanceStatusEnums.Closed.ToString()) &&
+                   now >= opensAt && now <= closesAt;
+        }
+
+        private static bool IsFutureWindow(Attendance attendance, DateTime now)
+        {
+            if (attendance == null)
+            {
+                return false;
+            }
+
+            var opensAt = attendance.Date.ToDateTime(attendance.StartTime);
+            return !attendance.Status.Equals(AttendanceStatusEnums.Closed.ToString()) && opensAt > now;
+        }
+
+        private (DateTime StartAt, DateTime EndAt)? GetNextSessionWindow(DateTime StartAt, DateTime EndAt, byte DayOfWeek, TimeOnly StartTime, TimeOnly EndTime)
+        {
+            var now = DateTime.Now;
+            var nextSession = now.Date;
+
+            while (nextSession.DayOfWeek != (DayOfWeek)DayOfWeek)
+            {
+                nextSession = nextSession.AddDays(1);
+            }
+
+            nextSession = new DateTime(nextSession.Year, nextSession.Month, nextSession.Day, StartTime.Hour, StartTime.Minute, 0);
+            var nextSessionEndAt = new DateTime(nextSession.Year, nextSession.Month, nextSession.Day, EndTime.Hour, EndTime.Minute, 0);
+
+            if (nextSession <= now)
+            {
+                nextSession = nextSession.AddDays(7);
+                nextSessionEndAt = nextSessionEndAt.AddDays(7);
+            }
+
+            if (nextSession < StartAt || nextSession > EndAt)
+            {
+                return null;
+            }
+
+            return (nextSession, nextSessionEndAt);
+        }
+
+        private int CountWeekdayOccurrences(DateTime startDate, DateTime endDate, DayOfWeek targetDay)
+        {
+            if (startDate > endDate) return 0;
+
+            // Tìm ngày đầu tiên >= startDate có DayOfWeek == targetDay
+            int daysToAdd = ((int)targetDay - (int)startDate.DayOfWeek + 7) % 7;
+            DateTime first = startDate.AddDays(daysToAdd);
+
+            if (first > endDate) return 0;
+
+            // Số buổi = 1 + số tuần chẵn giữa first và endDate
+            return 1 + (int)((endDate.Date - first.Date).TotalDays / 7);
+        }
+
+        private bool IsAdditionalSessionType(string sessionType)
+        {
+            var normalizedSessionType = sessionType?.Replace(" ", string.Empty).Trim();
+            return string.Equals(normalizedSessionType, "Adhoc", StringComparison.OrdinalIgnoreCase) || string.Equals(normalizedSessionType, "Makeup", StringComparison.OrdinalIgnoreCase);
+        }
+
         public async Task<ClassScoreStudentExport> GetStudentScoreByClassIdAndRangeDate(Guid ClassId, DateTime? FromDate, DateTime? ToDate)
         {
             // --- [LOGIC MỚI] XỬ LÝ KHOẢNG THỜI GIAN ---
@@ -549,8 +790,8 @@ namespace PTEducation.Business.Services.ClassServices
                 filter: s => s.ClassId == ClassId &&
                                 s.TestDateAt >= filterFrom &&  // Dùng biến đã xử lý
                                 s.TestDateAt <= filterTo,      // Dùng biến đã xử lý
-                // Include thêm Class để lấy tên lớp
-                includeProperties: "ScoreDetails.StudentClass.Student,Class" 
+                                                               // Include thêm Class để lấy tên lớp
+                includeProperties: "ScoreDetails.StudentClass.Student,Class"
             );
 
             // --- 2. Xử lý danh sách học sinh (Giữ nguyên) ---
@@ -589,6 +830,120 @@ namespace PTEducation.Business.Services.ClassServices
                 Name = className,
                 StudentData = studentData
             };
+        }
+        
+        public async Task<PagedListDataResultModel<StudentInClassResModel>> GetStudentByClassId(Guid ClassId, int? pageIndex, UserFilter searchModel, bool isPending)
+        {
+            Func<IQueryable<StudentClass>, IOrderedQueryable<StudentClass>> orderBy = o => o.OrderBy(p => p.Student.Name);
+            Expression<Func<StudentClass, bool>> filter = sc => sc.ClassId == ClassId;
+
+            if (searchModel != null)
+            {
+                if (!string.IsNullOrEmpty(searchModel.Keyword))
+                {
+                    filter = filter.And(sc => sc.Student.Name.ToLower().Contains(searchModel.Keyword.ToLower()) || sc.Student.Email.ToLower().Contains(searchModel.Keyword.ToLower()) || sc.Student.Phone.ToLower().Contains(searchModel.Keyword.ToLower()) || sc.Student.StudentGuardianStudents.Any(sgs => sgs.Guardian.Name.ToLower().Contains(searchModel.Keyword.ToLower()) || sgs.Guardian.Email.ToLower().Contains(searchModel.Keyword.ToLower()) || sgs.Guardian.Phone.ToLower().Contains(searchModel.Keyword.ToLower())));
+                }
+            }
+
+            if (isPending)
+            {
+                filter = filter.And(sc => sc.Student.Status.Equals(AccountStatusEnums.PendingApproved.ToString()));
+            } else
+            {
+                filter = filter.And(sc => sc.Student.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            }
+
+            var studentInClass = await _studentClassRepositories.GetPagedList(filter, orderBy, includeProperties: "Student.StudentGuardianStudents.Guardian", pageIndex ?? 1, 10);
+
+            return new PagedListDataResultModel<StudentInClassResModel>()
+            {
+                Data = _mapper.Map<List<StudentInClassResModel>>(studentInClass.Data),
+                PageNumber = pageIndex ?? 1,
+                PageSize = 10,
+                TotalPages = studentInClass.TotalPages
+            };
+        }
+
+        
+        public async Task<List<string>> GetCalendarIndicators(Guid classId, AttendanceFilter filter)
+        {
+            if (filter == null)
+            {
+                throw new CustomException("Filter is required");
+            }
+
+            if (classId == Guid.Empty)
+            {
+                throw new CustomException("ClassId is required");
+            }
+
+            var classEntity = await _classRepositories.GetSingle(
+                x => x.Id.Equals(classId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()),
+                includeProperties: "ClassSchedules");
+
+            if (classEntity == null)
+            {
+                throw new CustomException("Class not found or not active");
+            }
+
+            var classStart = DateOnly.FromDateTime(classEntity.StartAt);
+            var classEnd = DateOnly.FromDateTime(classEntity.EndAt);
+
+            var rangeStart = filter.FromDate.HasValue
+                ? DateOnly.FromDateTime(filter.FromDate.Value)
+                : classStart;
+
+            var rangeEnd = filter.ToDate.HasValue
+                ? DateOnly.FromDateTime(filter.ToDate.Value)
+                : classEnd;
+
+            var scheduleStart = rangeStart < classStart ? classStart : rangeStart;
+            var scheduleEnd = rangeEnd > classEnd ? classEnd : rangeEnd;
+
+            Expression<Func<Attendance, bool>> dateFilter = p =>
+                p.ClassId.Equals(classId) &&
+                p.ClassScheduleId == null;
+
+            if (filter.FromDate.HasValue)
+            {
+                dateFilter = dateFilter.And(t => t.Date >= DateOnly.FromDateTime(filter.FromDate.Value));
+            }
+
+            if (filter.ToDate.HasValue)
+            {
+                dateFilter = dateFilter.And(t => t.Date <= DateOnly.FromDateTime(filter.ToDate.Value));
+            }
+
+            var attendanceList = await _attendanceRepositories.GetList(dateFilter, o => o.OrderBy(p => p.Date));
+            var additionalAttendances = attendanceList
+                .Where(att => IsAdditionalSessionType(att.SessionType));
+            var calendarDates = new HashSet<DateOnly>();
+
+            foreach (var attendance in additionalAttendances)
+            {
+                calendarDates.Add(attendance.Date);
+            }
+
+            if (scheduleStart <= scheduleEnd)
+            {
+                foreach (var schedule in classEntity.ClassSchedules.Where(cs => cs.Status.Equals(GeneralStatusEnums.Active.ToString())))
+                {
+                    var targetDay = (DayOfWeek)schedule.DayOfWeek;
+                    var daysToAdd = ((int)targetDay - (int)scheduleStart.DayOfWeek + 7) % 7;
+                    var current = scheduleStart.AddDays(daysToAdd);
+
+                    while (current <= scheduleEnd)
+                    {
+                        calendarDates.Add(current);
+                        current = current.AddDays(7);
+                    }
+                }
+            }
+
+            return calendarDates
+                .OrderBy(date => date)
+                .Select(date => date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture))
+                .ToList();
         }
     }
 }

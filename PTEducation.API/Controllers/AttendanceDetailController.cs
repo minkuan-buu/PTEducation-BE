@@ -1,4 +1,4 @@
-﻿using PTEducation.Data.DTO.Custom;
+using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Business.Services.UserServices;
 using Microsoft.AspNetCore.Authorization;
@@ -25,13 +25,17 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet]
-        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
         public async Task<IActionResult> GetAttendanceStudentByMonth([FromQuery] AttendanceStudentReqModel AttendanceReq)
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _studentServices.GetAttendanceByMonth(AttendanceReq.Month, AttendanceReq.Year, token);
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+                var Result = await _studentServices.GetAttendanceByMonth(AttendanceReq.Month, AttendanceReq.Year, userId);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -41,13 +45,17 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("month")]
-        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
         public async Task<IActionResult> GetMonthAttendance()
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _studentServices.GetAttendanceMonth(token);
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+                var Result = await _studentServices.GetAttendanceMonth(userId);
                 return Ok(Result);
             }
             catch (CustomException ex)

@@ -24,7 +24,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string PhoneNumber { get; set; } = null!;
         public string Role { get; set; } = null!;
         public bool IsResetPassword = false;
-        public string Token { get; set; } = null!;
+        // public string Token { get; set; } = null!;
         public bool IsNeedChangePassword { get; set; } = false;
     }
 
@@ -67,5 +67,27 @@ namespace PTEducation.Data.DTO.ResponseModel
     public class UserFilter
     {
         public string? Keyword { get; set; }
+    }
+
+    public class UserListResModel
+    {
+        public string Id { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string Phone { get; set; } = null!;
+        public string Role { get; set; } = null!;
+        public string Status { get; set; } = null!;
+        public string? ClassName { get; set; }
+        public List<UserGuardianListResModel> Guardians { get; set; } = null!;
+    }
+
+    public class UserGuardianListResModel
+    {
+        public string Id { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string Phone { get; set; } = null!;
+        public string Relationship { get; set; } = null!;
+        public bool IsPrimary { get; set; } = false;
     }
 }

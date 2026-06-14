@@ -8,7 +8,17 @@ namespace PTEducation.Data.Enums
 {
     public enum AttendanceEnums
     {
-        Có_mặt,
-        Vắng_mặt,
+        NotYet,
+        Present,
+        Absent,
+        Late,
+        Excused
+    }
+
+    public enum AttendanceStatusEnums
+    {
+        Pending,
+        Opening,
+        Closed,
     }
 }

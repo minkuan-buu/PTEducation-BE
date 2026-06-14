@@ -37,7 +37,7 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
             List<AttendanceDetail> ListAddDetail = new();
             foreach (var attendance in AttendanceReq.AttendanceReqList)
             {
-                if (attendance.AttendanceStatus.Equals(AttendanceEnums.Vắng_mặt.ToString()))
+                if (attendance.AttendanceStatus.Equals(AttendanceEnums.Absent.ToString()))
                 {
                     var AttendanceUpdate = AttendanceDetail.FirstOrDefault(x => x.StudentClassId.Equals(attendance.StudentClassId));
                     if (AttendanceUpdate != null)
@@ -56,7 +56,57 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
                             Id = Guid.NewGuid(),
                             AttendanceId = AttendanceReq.Id,
                             StudentClassId = attendance.StudentClassId,
-                            Status = GeneralStatusEnums.Active.ToString()
+                            Status = GeneralStatusEnums.Active.ToString(),
+                            CreatedAt = DateTime.Now
+                        };
+                        ListAddDetail.Add(NewAttendance);
+                    }
+                }
+            }
+            await _attendanceDetailRepositories.InsertRange(ListAddDetail);
+            await _attendanceDetailRepositories.DeleteRange(ListRemoveDetail);
+            return new MessageResultModel()
+            {
+                Message = "Ok"
+            };
+        }
+
+        public async Task<MessageResultModel> UpdateAttendanceV2(Guid AttendanceId, List<AttendanceDetailStudentReqModel> AttendanceReqList)
+        {
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceId), includeProperties: "AttendanceDetails");
+            if (CheckExist == null)
+            {
+                return new MessageResultModel()
+                {
+                    Message = "Not Found"
+                };
+            }
+            var AttendanceDetail = CheckExist.AttendanceDetails.ToList();
+            List<AttendanceDetail> ListRemoveDetail = new();
+            List<AttendanceDetail> ListAddDetail = new();
+            foreach (var attendance in AttendanceReqList)
+            {
+                if (attendance.AttendanceStatus.Equals(AttendanceEnums.Absent.ToString()))
+                {
+                    var AttendanceUpdate = AttendanceDetail.FirstOrDefault(x => x.StudentClassId.Equals(attendance.StudentClassId));
+                    if (AttendanceUpdate != null)
+                    {
+                        ListRemoveDetail.Add(AttendanceUpdate);
+                    }
+                }
+                else
+                {
+                    var AttendanceUpdate = AttendanceDetail.FirstOrDefault(x => x.StudentClassId.Equals(attendance.StudentClassId));
+                    if (AttendanceUpdate == null)
+                    {
+
+                        var NewAttendance = new AttendanceDetail()
+                        {
+                            Id = Guid.NewGuid(),
+                            AttendanceId = AttendanceId,
+                            StudentClassId = attendance.StudentClassId,
+                            Status = GeneralStatusEnums.Active.ToString(),
+                            CreatedAt = DateTime.Now
                         };
                         ListAddDetail.Add(NewAttendance);
                     }

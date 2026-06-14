@@ -13,6 +13,8 @@ public partial class AttendanceDetail
 
     public string Status { get; set; } = null!;
 
+    public DateTime CreatedAt { get; set; }
+
     public virtual Attendance Attendance { get; set; } = null!;
 
     public virtual StudentClass StudentClass { get; set; } = null!;

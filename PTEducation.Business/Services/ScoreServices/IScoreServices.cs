@@ -12,12 +12,12 @@ namespace PTEducation.Business.Services.ScoreServices
     {
         Task<DataResultModel<ScoreDetailResModel>> GetScoreDetail(Guid Id);
         Task<DataResultModel<List<ScoreListResModel>>> GetListScore(int? pageIndex, ScoreFilter filter);
-        Task<MessageResultModel> CreateScore(ScoreCreateReqModel ScoreReq, string token);
+        Task<MessageResultModel> CreateScore(ScoreCreateReqModel ScoreReq);
         Task<MessageResultModel> UpdateScore(ScoreUpdateReqModel ScoreReq);
         Task<MessageResultModel> SoftDeleteScore(Guid Id);
         Task<MessageResultModel> HardDeleteScore(Guid Id);
         Task<MessageResultModel> RestoreScore(Guid Id);
-        Task<DataResultModel<Guid>> CreateScoreFromSheet(ScoreCreateReqModel ScoreReq, string token);
+        Task<DataResultModel<Guid>> CreateScoreFromSheet(ScoreCreateReqModel ScoreReq);
         Task<DataResultModel<Guid>> GetScoreIdByDateAndClassId(ScoreIdReqModel scoreIdReq);
     }
 }
