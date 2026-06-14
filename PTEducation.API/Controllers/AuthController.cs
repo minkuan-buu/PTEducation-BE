@@ -1,4 +1,4 @@
-﻿using PTEducation.Data.DTO.Custom;
+using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Business.Services.UserServices;
 using Microsoft.AspNetCore.Authorization;
@@ -38,7 +38,8 @@ namespace PTEducation.API.Controllers
                 {
                     HttpOnly = true,
                     Secure = true,
-                    SameSite = SameSiteMode.Strict,
+                    SameSite = SameSiteMode.Lax,
+                    Domain = ".pteducation.edu.vn",
                     Expires = DateTimeOffset.UtcNow.AddDays(7)
                 });
                 var Result = _mapper.Map<DataResultModel<UserLoginResModel>>(RawResult);
@@ -57,7 +58,10 @@ namespace PTEducation.API.Controllers
         {
             try
             {
-                Response.Cookies.Delete("at");
+                Response.Cookies.Delete("at", new CookieOptions
+                {
+                    Domain = ".pteducation.edu.vn"
+                });
                 return Ok();
             }
             catch (CustomException ex)
