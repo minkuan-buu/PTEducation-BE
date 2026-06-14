@@ -21,6 +21,8 @@ public partial class Class
 
     public virtual ICollection<Attendance> Attendances { get; set; } = new List<Attendance>();
 
+    public virtual ICollection<Chat> Chats { get; set; } = new List<Chat>();
+
     public virtual ICollection<ClassSchedule> ClassSchedules { get; set; } = new List<ClassSchedule>();
 
     public virtual User CreatedByNavigation { get; set; } = null!;

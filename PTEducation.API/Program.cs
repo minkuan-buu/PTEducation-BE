@@ -41,6 +41,7 @@ using PTEducation.Data.Repositories.UserRepositories;
 using System.Text;
 using System.Text.Json.Serialization;
 using PTEducation.Data.Repositories.StudentGuardianRepositories;
+using PTEducation.Data.Repositories.ChatRepositories;
 
 DotNetEnv.Env.Load();
 
@@ -170,6 +171,9 @@ builder.Services.AddTransient<IAttendanceRepositories, AttendanceRepositories>()
 builder.Services.AddTransient<IAttendanceDetailRepositories, AttendanceDetailRepositories>();
 builder.Services.AddTransient<IStudentGuardianRepositories, StudentGuardianRepositories>();
 builder.Services.AddTransient<IOTPRepositories, OTPRepositories>();
+builder.Services.AddTransient<IChatRepositories, ChatRepositories>();
+builder.Services.AddTransient<IChatDetailRepositories, ChatDetailRepositories>();
+builder.Services.AddTransient<IChatMessageRepositories, ChatMessageRepositories>();
 builder.Services.AddScoped(typeof(IGenericRepositories<>), typeof(GenericRepositories<>));
 
 //=========================================== SERVICE =============================================

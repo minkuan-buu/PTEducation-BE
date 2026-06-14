@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,6 +14,12 @@ public partial class PteducationContext : DbContext
     public virtual DbSet<Attendance> Attendances { get; set; }
 
     public virtual DbSet<AttendanceDetail> AttendanceDetails { get; set; }
+
+    public virtual DbSet<Chat> Chats { get; set; }
+
+    public virtual DbSet<ChatDetail> ChatDetails { get; set; }
+
+    public virtual DbSet<ChatMessage> ChatMessages { get; set; }
 
     public virtual DbSet<Class> Classes { get; set; }
 
@@ -86,6 +92,63 @@ public partial class PteducationContext : DbContext
                 .HasForeignKey(d => d.StudentClassId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("AttendanceDetail_StudentClass_Id_fk");
+        });
+
+        modelBuilder.Entity<Chat>(entity =>
+        {
+            entity.ToTable("Chat");
+
+            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Title).HasMaxLength(255);
+
+            entity.HasOne(d => d.Class).WithMany(p => p.Chats)
+                .HasForeignKey(d => d.ClassId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .HasConstraintName("FK_Chat_Class");
+        });
+
+        modelBuilder.Entity<ChatDetail>(entity =>
+        {
+            entity.ToTable("ChatDetail");
+
+            entity.HasIndex(e => e.UserId, "IX_ChatDetail_UserId");
+
+            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.UserId)
+                .HasMaxLength(30)
+                .IsUnicode(false);
+
+            entity.HasOne(d => d.Chat).WithMany(p => p.ChatDetails)
+                .HasForeignKey(d => d.ChatId)
+                .HasConstraintName("FK_ChatDetail_Chat");
+
+            entity.HasOne(d => d.LastReadMessage).WithMany(p => p.ChatDetails)
+                .HasForeignKey(d => d.LastReadMessageId)
+                .HasConstraintName("FK_ChatDetail_LastReadMessage");
+
+            entity.HasOne(d => d.User).WithMany(p => p.ChatDetails)
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ChatDetail_User");
+        });
+
+        modelBuilder.Entity<ChatMessage>(entity =>
+        {
+            entity.ToTable("ChatMessage");
+
+            entity.HasIndex(e => new { e.ChatId, e.CreatedAt }, "IX_ChatMessage_ChatId_CreatedAt");
+
+            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+
+            entity.HasOne(d => d.Chat).WithMany(p => p.ChatMessages)
+                .HasForeignKey(d => d.ChatId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ChatMessage_Chat");
+
+            entity.HasOne(d => d.SenderDetail).WithMany(p => p.ChatMessages)
+                .HasForeignKey(d => d.SenderDetailId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ChatMessage_ChatDetail");
         });
 
         modelBuilder.Entity<Class>(entity =>
@@ -173,7 +236,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Score>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Score__3214EC072819449D");
+            entity.HasKey(e => e.Id).HasName("PK__Score__3214EC07B6B61F78");
 
             entity.ToTable("Score");
 
@@ -205,7 +268,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<ScoreDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ScoreDet__3214EC07D24DDF71");
+            entity.HasKey(e => e.Id).HasName("PK__ScoreDet__3214EC07C6E12743");
 
             entity.ToTable("ScoreDetail");
 
@@ -215,6 +278,7 @@ public partial class PteducationContext : DbContext
                 .IsUnicode(false)
                 .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.Score)
+                .HasDefaultValueSql("(NULL)")
                 .HasColumnType("decimal(4, 2)");
             entity.Property(e => e.ScoreId).HasDefaultValueSql("(NULL)");
             entity.Property(e => e.Status)
