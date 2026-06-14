@@ -123,9 +123,8 @@ namespace PTEducation.Business.Services.ClassServices
                 string Html = File.ReadAllText(FilePath);
                 var NewUser = _mapper.Map<User>(item);
                 var GeneratePassword = ClassReq.DefaultPassword ?? Environment.GetEnvironmentVariable("STUDENT_DEFAULT_PASSWORD") ?? throw new CustomException("Default student password is not configured in the system. Please contact the administrator.");
-                CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
-                NewUser.Password = HashedPassword.HashedPassword;
-                NewUser.Salt = HashedPassword.Salt;
+                var NewPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
+                NewUser.PasswordBcrypt = NewPassword;
                 NewUser.Role = RoleEnums.Student.ToString();
                 NewUser.IsNeedResetPassword = true;
                 ListNewUser.Add(NewUser);
@@ -440,9 +439,8 @@ namespace PTEducation.Business.Services.ClassServices
                 {
                     var NewUser = _mapper.Map<User>(item);
                     var GeneratePassword = AddStudentsReq.DefaultPassword ?? Environment.GetEnvironmentVariable("STUDENT_DEFAULT_PASSWORD") ?? throw new CustomException("Default student password is not configured in the system. Please contact the administrator.");
-                    CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
-                    NewUser.Password = HashedPassword.HashedPassword;
-                    NewUser.Salt = HashedPassword.Salt;
+                    var NewPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
+                    NewUser.PasswordBcrypt = NewPassword;
                     NewUser.Role = RoleEnums.Student.ToString();
                     NewUser.IsNeedResetPassword = true;
                     ListNewUser.Add(NewUser);
@@ -700,7 +698,7 @@ namespace PTEducation.Business.Services.ClassServices
                 Data = Metadata
             };
         }
-        
+
         private static bool IsWindowOpen(Attendance attendance, DateTime now)
         {
             if (attendance == null)
@@ -831,7 +829,7 @@ namespace PTEducation.Business.Services.ClassServices
                 StudentData = studentData
             };
         }
-        
+
         public async Task<PagedListDataResultModel<StudentInClassResModel>> GetStudentByClassId(Guid ClassId, int? pageIndex, UserFilter searchModel, bool isPending)
         {
             Func<IQueryable<StudentClass>, IOrderedQueryable<StudentClass>> orderBy = o => o.OrderBy(p => p.Student.Name);
@@ -848,7 +846,8 @@ namespace PTEducation.Business.Services.ClassServices
             if (isPending)
             {
                 filter = filter.And(sc => sc.Student.Status.Equals(AccountStatusEnums.PendingApproved.ToString()));
-            } else
+            }
+            else
             {
                 filter = filter.And(sc => sc.Student.Status.Equals(GeneralStatusEnums.Active.ToString()));
             }
@@ -864,7 +863,7 @@ namespace PTEducation.Business.Services.ClassServices
             };
         }
 
-        
+
         public async Task<List<string>> GetCalendarIndicators(Guid classId, AttendanceFilter filter)
         {
             if (filter == null)

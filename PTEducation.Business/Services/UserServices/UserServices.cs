@@ -49,35 +49,36 @@ namespace PTEducation.Business.Services.UserServices
 
         public async Task<DataResultModel<RawUserLoginResModel>> Login(string Username, string Password)
         {
-            var CheckExist = await _userRepositories.GetSingle(x => (x.Email.Equals(Username) || x.Id.Equals(Username)) && x.Status.Equals(AccountStatusEnums.Active.ToString()));
-            if (CheckExist == null)
-            {
-                throw new CustomException("Không tìm thấy tài khoản!");
-            }
-            if (!string.IsNullOrWhiteSpace(CheckExist.PasswordBcrypt))
-            {
-                var Auth = Authentication.VerifyPasswordBCrypt(Password, CheckExist.PasswordBcrypt);
-                if (!Auth)
-                {
-                    throw new CustomException("Mật khẩu không chính xác!");
-                }
-            }
-            else
-            {
-                var Auth = Authentication.VerifyPasswordHashed(Password, CheckExist.Salt, CheckExist.Password);
-                if (!Auth)
-                {
-                    throw new CustomException("Mật khẩu không chính xác!");
-                }
-            }
-            var User = _mapper.Map<RawUserLoginResModel>(CheckExist);
-            User.Token = Authentication.GenerateJWT(CheckExist);
-            User.EncryptedToken = SelfCrypto.Encrypt(User.Token);
-            User.IsNeedChangePassword = CheckExist.IsNeedResetPassword;
-            return new DataResultModel<RawUserLoginResModel>()
-            {
-                Data = User
-            };
+            // var CheckExist = await _userRepositories.GetSingle(x => (x.Email.Equals(Username) || x.Id.Equals(Username)) && x.Status.Equals(AccountStatusEnums.Active.ToString()));
+            // if (CheckExist == null)
+            // {
+            //     throw new CustomException("Không tìm thấy tài khoản!");
+            // }
+            // if (!string.IsNullOrWhiteSpace(CheckExist.PasswordBcrypt))
+            // {
+            //     var Auth = Authentication.VerifyPasswordBCrypt(Password, CheckExist.PasswordBcrypt);
+            //     if (!Auth)
+            //     {
+            //         throw new CustomException("Mật khẩu không chính xác!");
+            //     }
+            // }
+            // else
+            // {
+            //     var Auth = Authentication.VerifyPasswordHashed(Password, CheckExist.Salt, CheckExist.Password);
+            //     if (!Auth)
+            //     {
+            //         throw new CustomException("Mật khẩu không chính xác!");
+            //     }
+            // }
+            // var User = _mapper.Map<RawUserLoginResModel>(CheckExist);
+            // User.Token = Authentication.GenerateJWT(CheckExist);
+            // User.EncryptedToken = SelfCrypto.Encrypt(User.Token);
+            // User.IsNeedChangePassword = CheckExist.IsNeedResetPassword;
+            // return new DataResultModel<RawUserLoginResModel>()
+            // {
+            //     Data = User
+            // };
+            throw new NotImplementedException();
         }
 
         public async Task InitAdminIfNeeded()
@@ -104,8 +105,6 @@ namespace PTEducation.Business.Services.UserServices
                 Role = RoleEnums.Admin.ToString(),
                 Status = AccountStatusEnums.Active.ToString(),
                 PasswordBcrypt = Authentication.CreateHashPasswordBCrypt(defaultPassword),
-                Password = Array.Empty<byte>(),
-                Salt = Array.Empty<byte>(),
                 IsNeedResetPassword = true
             };
 
@@ -126,40 +125,41 @@ namespace PTEducation.Business.Services.UserServices
 
         public async Task<MessageResultModel> Register(UserRegisterReqModel ReqModel)
         {
-            var CheckExist = await _userRepositories.GetSingle(x => x.Email == ReqModel.Email || x.Id == ReqModel.Id);
-            if (CheckExist != null)
-            {
-                throw new CustomException("Tài khoản với Email hoặc Id này đã tồn tại!");
-            }
-            var NewUser = _mapper.Map<User>(ReqModel);
-            if (ReqModel.Id == null)
-            {
-                Random rnd = new Random();
-                NewUser.Id = $"{ReqModel.Role}-{rnd.Next(100000, 999999)}";
-            }
-            var GeneratePassword = Authentication.GenerateRandomPassword();
-            CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
-            NewUser.Status = AccountStatusEnums.Active.ToString();
-            NewUser.Password = HashedPassword.HashedPassword;
-            NewUser.Salt = HashedPassword.Salt;
-            await _userRepositories.Insert(NewUser);
-            string FilePath = "../PTEducation.Business/TemplateEmail/FirstInformation.html";
-            string Html = File.ReadAllText(FilePath);
-            Html = Html.Replace("{{Password}}", GeneratePassword);
-            Html = Html.Replace("{{Email}}", ReqModel.Email);
-            var listEmail = new List<EmailReqModel>
-            {
-                new EmailReqModel
-                {
-                    Email = ReqModel.Email,
-                    HtmlContent = Html
-                }
-            };
-            await _email.SendEmail("[Thông tin đăng nhập]", listEmail);
-            return new MessageResultModel
-            {
-                Message = "Ok"
-            };
+            // var CheckExist = await _userRepositories.GetSingle(x => x.Email == ReqModel.Email || x.Id == ReqModel.Id);
+            // if (CheckExist != null)
+            // {
+            //     throw new CustomException("Tài khoản với Email hoặc Id này đã tồn tại!");
+            // }
+            // var NewUser = _mapper.Map<User>(ReqModel);
+            // if (ReqModel.Id == null)
+            // {
+            //     Random rnd = new Random();
+            //     NewUser.Id = $"{ReqModel.Role}-{rnd.Next(100000, 999999)}";
+            // }
+            // var GeneratePassword = Authentication.GenerateRandomPassword();
+            // CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
+            // NewUser.Status = AccountStatusEnums.Active.ToString();
+            // NewUser.Password = HashedPassword.HashedPassword;
+            // NewUser.Salt = HashedPassword.Salt;
+            // await _userRepositories.Insert(NewUser);
+            // string FilePath = "../PTEducation.Business/TemplateEmail/FirstInformation.html";
+            // string Html = File.ReadAllText(FilePath);
+            // Html = Html.Replace("{{Password}}", GeneratePassword);
+            // Html = Html.Replace("{{Email}}", ReqModel.Email);
+            // var listEmail = new List<EmailReqModel>
+            // {
+            //     new EmailReqModel
+            //     {
+            //         Email = ReqModel.Email,
+            //         HtmlContent = Html
+            //     }
+            // };
+            // await _email.SendEmail("[Thông tin đăng nhập]", listEmail);
+            // return new MessageResultModel
+            // {
+            //     Message = "Ok"
+            // };
+            throw new NotImplementedException();
         }
 
         public async Task<MessageResultModel> Register(UserRegisterWithGuardianInfo ReqModel)
@@ -307,6 +307,10 @@ namespace PTEducation.Business.Services.UserServices
             {
                 throw new CustomException("Không tìm thấy người dùng!");
             }
+            if (user.PasswordBcrypt == null)
+            {
+                throw new CustomException("Đã có lỗi xảy ra, vui lòng liên hệ quản trị viên!");
+            }
             if (ReqModel.NewPassword != ReqModel.ConfirmPassword)
             {
                 throw new CustomException("Mật khẩu mới và xác nhận mật khẩu không khớp!");
@@ -319,14 +323,13 @@ namespace PTEducation.Business.Services.UserServices
             {
                 throw new CustomException("Mật khẩu phải có ít nhất 6 ký tự!");
             }
-            var Auth = Authentication.VerifyPasswordHashed(ReqModel.OldPassword, user.Salt, user.Password);
+            var Auth = Authentication.VerifyPasswordBCrypt(ReqModel.OldPassword, user.PasswordBcrypt);
             if (!Auth)
             {
                 throw new CustomException("Mật khẩu cũ không chính xác!");
             }
-            CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(ReqModel.NewPassword);
-            user.Password = HashedPassword.HashedPassword;
-            user.Salt = HashedPassword.Salt;
+            var NewPassword = Authentication.CreateHashPasswordBCrypt(ReqModel.NewPassword);
+            user.PasswordBcrypt = NewPassword;
             user.IsNeedResetPassword = false;
             await _userRepositories.Update(user);
             return new MessageResultModel
@@ -368,9 +371,8 @@ namespace PTEducation.Business.Services.UserServices
                 {
                     throw new CustomException("Mật khẩu phải có ít nhất 6 ký tự!");
                 }
-                var Auth = Authentication.CreateHashPassword(ReqModel.NewPassword);
-                user.Password = Auth.HashedPassword;
-                user.Salt = Auth.Salt;
+                var NewPassword = Authentication.CreateHashPasswordBCrypt(ReqModel.NewPassword);
+                user.PasswordBcrypt = NewPassword;
                 user.IsNeedResetPassword = false;
                 user.Status = GeneralStatusEnums.Active.ToString();
                 await _userRepositories.Update(user);
@@ -405,10 +407,9 @@ namespace PTEducation.Business.Services.UserServices
                 Random rnd = new Random();
                 NewUser.Id = $"Manager-{rnd.Next(100000, 999999)}";
                 var GeneratePassword = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_PASSWORD") ?? throw new CustomException("Default admin password is not configured in the system. Please contact the administrator.");
-                CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
+                var NewPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
                 NewUser.Status = AccountStatusEnums.Active.ToString();
-                NewUser.Password = HashedPassword.HashedPassword;
-                NewUser.Salt = HashedPassword.Salt;
+                NewUser.PasswordBcrypt = NewPassword;
                 listUser.Add(NewUser);
                 string FilePath = "../PTEducation.Business/TemplateEmail/ManagerInformation.html";
                 string Html = File.ReadAllText(FilePath);
@@ -517,9 +518,8 @@ namespace PTEducation.Business.Services.UserServices
             StudentClass.Student.Email = ReqModel.Email;
             StudentClass.Student.Phone = ReqModel.Phone;
             var GeneratePassword = ReqModel.DefaultPassword ?? Environment.GetEnvironmentVariable("STUDENT_DEFAULT_PASSWORD") ?? throw new CustomException("Default student password is not configured in the system. Please contact the administrator.");
-            CreateHashPasswordModel HashedPassword = Authentication.CreateHashPassword(GeneratePassword);
-            StudentClass.Student.Password = HashedPassword.HashedPassword;
-            StudentClass.Student.Salt = HashedPassword.Salt;
+            var HashedPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
+            StudentClass.Student.PasswordBcrypt = HashedPassword;
             StudentClass.Student.IsNeedResetPassword = true;
 
             await _studentClassRepositories.Update(StudentClass);
@@ -759,7 +759,7 @@ namespace PTEducation.Business.Services.UserServices
                 Message = "Ok"
             };
         }
-        
+
         public async Task<MessageResultModel> DeleteStudent(string userId)
         {
             var user = await _userRepositories.GetSingle(x => x.Id == userId && x.Role.Equals(RoleEnums.Student.ToString()));
@@ -832,7 +832,7 @@ namespace PTEducation.Business.Services.UserServices
                 await _userRepositories.Delete(user, saveChanges: false);
                 await _userRepositories.SaveChangesAsync();
                 await _userRepositories.CommitTransactionAsync();
-                
+
                 return new MessageResultModel
                 {
                     Message = "Ok"
