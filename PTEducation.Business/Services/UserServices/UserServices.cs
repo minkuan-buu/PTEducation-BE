@@ -49,19 +49,19 @@ namespace PTEducation.Business.Services.UserServices
 
         public async Task<DataResultModel<RawUserLoginResModel>> Login(string Username, string Password)
         {
-            // var CheckExist = await _userRepositories.GetSingle(x => (x.Email.Equals(Username) || x.Id.Equals(Username)) && x.Status.Equals(AccountStatusEnums.Active.ToString()));
-            // if (CheckExist == null)
-            // {
-            //     throw new CustomException("Không tìm thấy tài khoản!");
-            // }
-            // if (!string.IsNullOrWhiteSpace(CheckExist.PasswordBcrypt))
-            // {
-            //     var Auth = Authentication.VerifyPasswordBCrypt(Password, CheckExist.PasswordBcrypt);
-            //     if (!Auth)
-            //     {
-            //         throw new CustomException("Mật khẩu không chính xác!");
-            //     }
-            // }
+            var CheckExist = await _userRepositories.GetSingle(x => (x.Email.Equals(Username) || x.Id.Equals(Username)) && x.Status.Equals(AccountStatusEnums.Active.ToString()));
+            if (CheckExist == null)
+            {
+                throw new CustomException("Không tìm thấy tài khoản!");
+            }
+            if (!string.IsNullOrWhiteSpace(CheckExist.PasswordBcrypt))
+            {
+                var Auth = Authentication.VerifyPasswordBCrypt(Password, CheckExist.PasswordBcrypt);
+                if (!Auth)
+                {
+                    throw new CustomException("Mật khẩu không chính xác!");
+                }
+            }
             // else
             // {
             //     var Auth = Authentication.VerifyPasswordHashed(Password, CheckExist.Salt, CheckExist.Password);
@@ -70,15 +70,15 @@ namespace PTEducation.Business.Services.UserServices
             //         throw new CustomException("Mật khẩu không chính xác!");
             //     }
             // }
-            // var User = _mapper.Map<RawUserLoginResModel>(CheckExist);
-            // User.Token = Authentication.GenerateJWT(CheckExist);
-            // User.EncryptedToken = SelfCrypto.Encrypt(User.Token);
-            // User.IsNeedChangePassword = CheckExist.IsNeedResetPassword;
-            // return new DataResultModel<RawUserLoginResModel>()
-            // {
-            //     Data = User
-            // };
-            throw new NotImplementedException();
+            var User = _mapper.Map<RawUserLoginResModel>(CheckExist);
+            User.Token = Authentication.GenerateJWT(CheckExist);
+            User.EncryptedToken = SelfCrypto.Encrypt(User.Token);
+            User.IsNeedChangePassword = CheckExist.IsNeedResetPassword;
+            return new DataResultModel<RawUserLoginResModel>()
+            {
+                Data = User
+            };
+            // throw new NotImplementedException();
         }
 
         public async Task InitAdminIfNeeded()
