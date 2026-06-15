@@ -37,7 +37,6 @@ namespace PTEducation.API.Controllers
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> RegisterManager([FromBody] List<ManagerRegisterReqModel> ReqModel)
         {
-            string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
             var Result = await _userServices.Register(ReqModel);
             return Ok(Result);
         }
