@@ -255,6 +255,7 @@ namespace PTEducation.Business.Services.UserServices
                 nextGuardianSequence++;
                 string GuardHtml = File.ReadAllText(FileGuardianPath);
                 GuardHtml = GuardHtml.Replace("{{PASSWORD}}", NewGeneratePassword);
+                GuardHtml = GuardHtml.Replace("{{CLASSNAME}}", className);
                 GuardHtml = GuardHtml.Replace("{{STUDENTNAME}}", ReqModel.Name);
                 GuardHtml = GuardHtml.Replace("{{GUARDIANNAME}}", guardian.Name);
                 GuardHtml = GuardHtml.Replace("{{USERNAME}}", guardian.Email);
@@ -282,6 +283,7 @@ namespace PTEducation.Business.Services.UserServices
             await _studentClassRepositories.Insert(NewStudentClass);
             string FilePath = "../PTEducation.Business/TemplateEmail/FirstInformationNew.html";
             string Html = File.ReadAllText(FilePath);
+            Html = Html.Replace("{{CLASSNAME}}", className);
             Html = Html.Replace("{{PASSWORD}}", GeneratePassword);
             Html = Html.Replace("{{STUDENTNAME}}", ReqModel.Name);
             Html = Html.Replace("{{USERNAME}}", ReqModel.Email);
