@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -141,11 +141,13 @@ namespace PTEducation.API.Middleware
             {
                 var newToken = Authentication.GenerateJWT(user);
                 var encryptedToken = SelfCrypto.Encrypt(newToken);
+                var isLocalhost = Context.Request.Host.Host == "localhost";
                 Context.Response.Cookies.Append(AccessTokenCookieName, encryptedToken, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
-                    SameSite = SameSiteMode.Strict,
+                    SameSite = isLocalhost ? SameSiteMode.None : SameSiteMode.Lax,
+                    Domain = isLocalhost ? null : ".pteducation.edu.vn",
                     Expires = DateTimeOffset.UtcNow.AddDays(RefreshWindowDays)
                 });
                 Context.Response.Headers["X-Access-Token"] = newToken;
