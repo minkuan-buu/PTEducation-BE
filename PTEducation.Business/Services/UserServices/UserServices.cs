@@ -415,9 +415,9 @@ namespace PTEducation.Business.Services.UserServices
                 listUser.Add(NewUser);
                 string FilePath = "../PTEducation.Business/TemplateEmail/ManagerInformation.html";
                 string Html = File.ReadAllText(FilePath);
-                Html = Html.Replace("{{ID}}", NewUser.Id);
-                Html = Html.Replace("{{Password}}", GeneratePassword);
-                Html = Html.Replace("{{Email}}", item.Email);
+                Html = Html.Replace("{{MANAGERNAME}}", item.Name);
+                Html = Html.Replace("{{PASSWORD}}", GeneratePassword);
+                Html = Html.Replace("{{USERNAME}}", item.Email);
                 listEmail.Add(new EmailReqModel
                 {
                     Email = item.Email,
