@@ -34,12 +34,13 @@ namespace PTEducation.API.Controllers
             try
             {
                 var RawResult = await _userServices.Login(User.Username, User.Password);
+                var isLocalhost = Request.Host.Host == "localhost";
                 Response.Cookies.Append("at", RawResult.Data!.EncryptedToken, new CookieOptions
                 {
                     HttpOnly = true,
                     Secure = true,
-                    SameSite = SameSiteMode.Lax,
-                    Domain = ".pteducation.edu.vn",
+                    SameSite = isLocalhost ? SameSiteMode.None : SameSiteMode.Lax,
+                    Domain = isLocalhost ? null : ".pteducation.edu.vn",
                     Expires = DateTimeOffset.UtcNow.AddDays(7)
                 });
                 var Result = _mapper.Map<DataResultModel<UserLoginResModel>>(RawResult);
@@ -58,9 +59,12 @@ namespace PTEducation.API.Controllers
         {
             try
             {
+                var isLocalhost = Request.Host.Host == "localhost";
                 Response.Cookies.Delete("at", new CookieOptions
                 {
-                    Domain = ".pteducation.edu.vn"
+                    Domain = isLocalhost ? null : ".pteducation.edu.vn",
+                    Secure = true,
+                    SameSite = isLocalhost ? SameSiteMode.None : SameSiteMode.Lax
                 });
                 return Ok();
             }
