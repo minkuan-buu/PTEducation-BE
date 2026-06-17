@@ -566,7 +566,7 @@ namespace PTEducation.Business.Services.ClassServices
                 }
             }
 
-            var allClass = await _classRepositories.GetPagedList(filter, orderBy, includeProperties: "StudentClasses.Student,CreatedByNavigation", pageIndex ?? 1, pageSize ?? 10);
+            var allClass = await _classRepositories.GetPagedList(filter, orderBy, includeProperties: "StudentClasses.Student,CreatedByNavigation,ClassSchedules", pageIndex ?? 1, pageSize ?? 10);
 
             return allClass;
         }

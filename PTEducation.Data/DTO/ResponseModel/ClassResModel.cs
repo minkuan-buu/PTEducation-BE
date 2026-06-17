@@ -34,6 +34,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public DateTime StartAt { get; set; }
         public DateTime EndAt { get; set; }
         public ClassCreatedByModel CreatedBy { get; set; } = null!;
+        public List<ClassScheduleResModel> WeeklySchedules { get; set; } = new();
         public int TotalStudent { get; set; }
         public string Status { get; set; } = null!;
     }

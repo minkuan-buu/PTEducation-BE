@@ -408,12 +408,12 @@ namespace PTEducation.Business.Services.UserServices
                 var NewUser = _mapper.Map<User>(item);
                 Random rnd = new Random();
                 NewUser.Id = $"Manager-{rnd.Next(100000, 999999)}";
-                var GeneratePassword = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_PASSWORD") ?? throw new CustomException("Default admin password is not configured in the system. Please contact the administrator.");
+                var GeneratePassword = Environment.GetEnvironmentVariable("MANAGER_DEFAULT_PASSWORD") ?? throw new CustomException("Default manager password is not configured in the system. Please contact the administrator.");
                 var NewPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
                 NewUser.Status = AccountStatusEnums.Active.ToString();
                 NewUser.PasswordBcrypt = NewPassword;
                 listUser.Add(NewUser);
-                string FilePath = "../PTEducation.Business/TemplateEmail/ManagerInformation.html";
+                string FilePath = "../PTEducation.Business/TemplateEmail/ManagerInformationNew.html";
                 string Html = File.ReadAllText(FilePath);
                 Html = Html.Replace("{{MANAGERNAME}}", item.Name);
                 Html = Html.Replace("{{PASSWORD}}", GeneratePassword);
