@@ -434,9 +434,8 @@ namespace PTEducation.Business.Services.UserServices
             };
         }
 
-        public async Task<PagedListDataResultModel<ManagerResModel>> GetManagers(int? pageIndex, UserFilter searchModel, string token)
+        public async Task<PagedListDataResultModel<ManagerResModel>> GetManagers(int? pageIndex, UserFilter searchModel, string userId)
         {
-            var userId = Authentication.DecodeToken(token, "userid");
             var ListManager = await ViewAllManagers(pageIndex, 10, searchModel, userId);
             return new PagedListDataResultModel<ManagerResModel>()
             {
