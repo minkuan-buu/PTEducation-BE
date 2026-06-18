@@ -64,6 +64,13 @@ namespace PTEducation.Business.MapperProfiles
                     TextConvert.ConvertFromUnicodeEscape(src.Name)))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
                     src.Status))
+                .ForMember(dest => dest.WeeklySchedules, opt => opt.MapFrom(src =>
+                    src.ClassSchedules.Select(x => new ClassScheduleResModel
+                    {
+                        DayOfWeek = x.DayOfWeek,
+                        StartTime = x.StartTime,
+                        EndTime = x.EndTime
+                    }).ToList()))
                 .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src =>
                     new ClassCreatedByModel
                     {

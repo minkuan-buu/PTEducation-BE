@@ -408,16 +408,16 @@ namespace PTEducation.Business.Services.UserServices
                 var NewUser = _mapper.Map<User>(item);
                 Random rnd = new Random();
                 NewUser.Id = $"Manager-{rnd.Next(100000, 999999)}";
-                var GeneratePassword = Environment.GetEnvironmentVariable("ADMIN_DEFAULT_PASSWORD") ?? throw new CustomException("Default admin password is not configured in the system. Please contact the administrator.");
+                var GeneratePassword = Environment.GetEnvironmentVariable("MANAGER_DEFAULT_PASSWORD") ?? throw new CustomException("Default manager password is not configured in the system. Please contact the administrator.");
                 var NewPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
                 NewUser.Status = AccountStatusEnums.Active.ToString();
                 NewUser.PasswordBcrypt = NewPassword;
                 listUser.Add(NewUser);
-                string FilePath = "../PTEducation.Business/TemplateEmail/ManagerInformation.html";
+                string FilePath = "../PTEducation.Business/TemplateEmail/ManagerInformationNew.html";
                 string Html = File.ReadAllText(FilePath);
-                Html = Html.Replace("{{ID}}", NewUser.Id);
-                Html = Html.Replace("{{Password}}", GeneratePassword);
-                Html = Html.Replace("{{Email}}", item.Email);
+                Html = Html.Replace("{{MANAGERNAME}}", item.Name);
+                Html = Html.Replace("{{PASSWORD}}", GeneratePassword);
+                Html = Html.Replace("{{USERNAME}}", item.Email);
                 listEmail.Add(new EmailReqModel
                 {
                     Email = item.Email,
@@ -434,9 +434,8 @@ namespace PTEducation.Business.Services.UserServices
             };
         }
 
-        public async Task<PagedListDataResultModel<ManagerResModel>> GetManagers(int? pageIndex, UserFilter searchModel, string token)
+        public async Task<PagedListDataResultModel<ManagerResModel>> GetManagers(int? pageIndex, UserFilter searchModel, string userId)
         {
-            var userId = Authentication.DecodeToken(token, "userid");
             var ListManager = await ViewAllManagers(pageIndex, 10, searchModel, userId);
             return new PagedListDataResultModel<ManagerResModel>()
             {

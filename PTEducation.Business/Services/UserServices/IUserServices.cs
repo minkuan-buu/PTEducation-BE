@@ -17,7 +17,7 @@ namespace PTEducation.Business.Services.UserServices
         Task<DataResultModel<UserProfileResModel>> GetMyProfile(string token);
         Task<MessageResultModel> ResetPassword(UserResetPasswordReqModel ReqModel, string token);
         Task<MessageResultModel> Register(List<ManagerRegisterReqModel> ReqModel);
-        Task<PagedListDataResultModel<ManagerResModel>> GetManagers(int? pageIndex, UserFilter searchModel, string token);
+        Task<PagedListDataResultModel<ManagerResModel>> GetManagers(int? pageIndex, UserFilter searchModel, string userId);
         Task<MessageResultModel> Deactivate(string userId);
         Task<MessageResultModel> ReActivate(string userId);
         Task<MessageResultModel> UpdateStudentInfo(StudentUpdateReqModel ReqModel, Guid StudentClassId);

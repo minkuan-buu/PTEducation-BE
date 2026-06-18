@@ -27,8 +27,12 @@ namespace PTEducation.API.Controllers
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> GetManagers(int? pageIndex, [FromQuery] UserFilter searchModel)
         {
-            string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-            var Result = await _userServices.GetManagers(pageIndex, searchModel, token);
+            var userId = User.FindFirst("userid")?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Unauthorized(new { message = "User is not authenticated." });
+            }
+            var Result = await _userServices.GetManagers(pageIndex, searchModel, userId);
             return Ok(Result);
         }
 
