@@ -93,6 +93,15 @@ namespace PTEducation.API.Controllers
             return Ok(Result);
         }
 
+        [HttpGet("users/{userId}")]
+        [MapToApiVersion("2.0")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetUserDetail(string userId)
+        {
+            var Result = await _userServices.GetUserDetail(userId);
+            return Ok(Result);
+        }
+
         [HttpPatch("students/{userId}")]
         [MapToApiVersion("2.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]

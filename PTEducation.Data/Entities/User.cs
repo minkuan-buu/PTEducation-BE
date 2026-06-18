@@ -15,11 +15,13 @@ public partial class User
 
     public string Role { get; set; } = null!;
 
-    public string? PasswordBcrypt { get; set; }
-
     public string Status { get; set; } = null!;
 
     public bool IsNeedResetPassword { get; set; }
+
+    public string? PasswordBcrypt { get; set; }
+
+    public string? SchoolInfo { get; set; }
 
     public virtual ICollection<ChatDetail> ChatDetails { get; set; } = new List<ChatDetail>();
 

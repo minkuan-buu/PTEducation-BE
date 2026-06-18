@@ -7,11 +7,11 @@ public partial class Chat
 {
     public Guid Id { get; set; }
 
-    public Guid? ClassId { get; set; }
-
     public string? Title { get; set; }
 
     public long CreatedAt { get; set; }
+
+    public Guid? ClassId { get; set; }
 
     public virtual ICollection<ChatDetail> ChatDetails { get; set; } = new List<ChatDetail>();
 

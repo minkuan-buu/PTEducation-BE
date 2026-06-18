@@ -41,7 +41,7 @@ public partial class PteducationContext : DbContext
     {
         modelBuilder.Entity<Attendance>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Attendan__3214EC079404F070");
+            entity.HasKey(e => e.Id).HasName("PK__Attendan__3214EC07E72A84E8");
 
             entity.ToTable("Attendance");
 
@@ -70,7 +70,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<AttendanceDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Attendan__3214EC0758D403B0");
+            entity.HasKey(e => e.Id).HasName("PK__Attendan__3214EC079162DFE4");
 
             entity.ToTable("AttendanceDetail");
 
@@ -96,8 +96,6 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Chat>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Chat__3214EC07C10855F2");
-
             entity.ToTable("Chat");
 
             entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
@@ -105,13 +103,12 @@ public partial class PteducationContext : DbContext
 
             entity.HasOne(d => d.Class).WithMany(p => p.Chats)
                 .HasForeignKey(d => d.ClassId)
+                .OnDelete(DeleteBehavior.SetNull)
                 .HasConstraintName("FK_Chat_Class");
         });
 
         modelBuilder.Entity<ChatDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ChatDeta__3214EC07163E1C60");
-
             entity.ToTable("ChatDetail");
 
             entity.HasIndex(e => e.UserId, "IX_ChatDetail_UserId");
@@ -123,7 +120,6 @@ public partial class PteducationContext : DbContext
 
             entity.HasOne(d => d.Chat).WithMany(p => p.ChatDetails)
                 .HasForeignKey(d => d.ChatId)
-                .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ChatDetail_Chat");
 
             entity.HasOne(d => d.LastReadMessage).WithMany(p => p.ChatDetails)
@@ -138,8 +134,6 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<ChatMessage>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ChatMess__3214EC071CBEC758");
-
             entity.ToTable("ChatMessage");
 
             entity.HasIndex(e => new { e.ChatId, e.CreatedAt }, "IX_ChatMessage_ChatId_CreatedAt");
@@ -151,15 +145,15 @@ public partial class PteducationContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ChatMessage_Chat");
 
-            entity.HasOne(d => d.SenderUser).WithMany(p => p.ChatMessages)
-                .HasForeignKey(d => d.SenderUserId)
+            entity.HasOne(d => d.SenderDetail).WithMany(p => p.ChatMessages)
+                .HasForeignKey(d => d.SenderDetailId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ChatMessage_ChatDetail");
         });
 
         modelBuilder.Entity<Class>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Class__3214EC07536F82BD");
+            entity.HasKey(e => e.Id).HasName("PK__Class__3214EC0762E79B13");
 
             entity.ToTable("Class");
 
@@ -194,7 +188,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<ClassSchedule>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ClassSch__3214EC074CF68CF9");
+            entity.HasKey(e => e.Id).HasName("PK__ClassSch__3214EC077CA59604");
 
             entity.ToTable("ClassSchedule");
 
@@ -212,7 +206,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Otp>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__OTP__3214EC070232D8EF");
+            entity.HasKey(e => e.Id).HasName("PK__OTP__3214EC078544DE14");
 
             entity.ToTable("OTP");
 
@@ -242,7 +236,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Score>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Score__3214EC07D98EB69C");
+            entity.HasKey(e => e.Id).HasName("PK__Score__3214EC07B6B61F78");
 
             entity.ToTable("Score");
 
@@ -274,7 +268,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<ScoreDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ScoreDet__3214EC07DD46D2D0");
+            entity.HasKey(e => e.Id).HasName("PK__ScoreDet__3214EC07C6E12743");
 
             entity.ToTable("ScoreDetail");
 
@@ -285,7 +279,7 @@ public partial class PteducationContext : DbContext
                 .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.Score)
                 .HasDefaultValueSql("(NULL)")
-                .HasColumnType("decimal(18, 0)");
+                .HasColumnType("decimal(4, 2)");
             entity.Property(e => e.ScoreId).HasDefaultValueSql("(NULL)");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
@@ -306,7 +300,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<StudentClass>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__StudentC__3214EC0717DA0DE5");
+            entity.HasKey(e => e.Id).HasName("PK__StudentC__3214EC07119F651C");
 
             entity.ToTable("StudentClass");
 
@@ -334,7 +328,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<StudentGuardian>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__StudentG__3214EC07A79CDB91");
+            entity.HasKey(e => e.Id).HasName("PK__StudentG__3214EC07FC1CC142");
 
             entity.HasIndex(e => new { e.GuardianId, e.StudentId }, "UQ_StudentGuardians_Student_Guardian").IsUnique();
 
@@ -364,7 +358,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__User__3214EC07A941952F");
+            entity.HasKey(e => e.Id).HasName("PK__User__3214EC07FFE4B5D4");
 
             entity.ToTable("User");
 
@@ -374,10 +368,13 @@ public partial class PteducationContext : DbContext
             entity.Property(e => e.Email)
                 .HasMaxLength(200)
                 .IsUnicode(false)
-                .HasDefaultValueSql("(NULL)");
+                .HasDefaultValueSql("(NULL)")
+                .HasComment("");
+            entity.Property(e => e.IsNeedResetPassword).HasComment("");
             entity.Property(e => e.Name)
                 .HasMaxLength(300)
-                .HasDefaultValueSql("(NULL)");
+                .HasDefaultValueSql("(NULL)")
+                .HasComment("");
             entity.Property(e => e.PasswordBcrypt)
                 .HasMaxLength(200)
                 .IsUnicode(false)
@@ -386,15 +383,19 @@ public partial class PteducationContext : DbContext
             entity.Property(e => e.Phone)
                 .HasMaxLength(20)
                 .IsUnicode(false)
-                .HasDefaultValueSql("(NULL)");
+                .HasDefaultValueSql("(NULL)")
+                .HasComment("");
             entity.Property(e => e.Role)
                 .HasMaxLength(20)
                 .IsUnicode(false)
-                .HasDefaultValueSql("(NULL)");
+                .HasDefaultValueSql("(NULL)")
+                .HasComment("");
+            entity.Property(e => e.SchoolInfo).HasMaxLength(500);
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
                 .IsUnicode(false)
-                .HasDefaultValueSql("(NULL)");
+                .HasDefaultValueSql("(NULL)")
+                .HasComment("");
         });
 
         OnModelCreatingPartial(modelBuilder);
