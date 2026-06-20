@@ -472,6 +472,23 @@ namespace PTEducation.Business.Services.ClassServices
             }
         }
 
+        public async Task<DataResultModel<List<ClassPeersListResModel>>> GetClassPeersList(Guid Id)
+        {
+            var CheckExist = await _classRepositories.GetSingle(x => x.Id.Equals(Id) && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties:"Grade.Classes");
+            if (CheckExist == null)
+            {
+                throw new CustomException("Class not found!");
+            }
+            var ListClassPeers = CheckExist.Grade.Classes.Select(x => new ClassPeersListResModel{
+                Id = x.Id,
+                Name = x.Name,
+            }).ToList();
+            return new DataResultModel<List<ClassPeersListResModel>>
+            {
+                Data = ListClassPeers,
+            };
+        }
+
         public async Task<MessageResultModel> ManualAddStudent(ManualAddStudentClassModel AddStudentsReq)
         {
             var WarningMessage = "Cảnh báo: ";

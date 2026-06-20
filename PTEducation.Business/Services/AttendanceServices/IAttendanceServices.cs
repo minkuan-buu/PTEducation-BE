@@ -11,7 +11,7 @@ namespace PTEducation.Business.Services.AttendanceServices
     public interface IAttendanceServices
     {
         Task<ListDataResultModel<AttendanceSessionResModel>> GetAttendanceSessions(Guid classId, DateOnly date);
-        Task<DataResultModel<AttendanceDetailResModel>> GetAttendanceDetail(Guid Id);
+        Task<DataResultModel<AttendanceDetailResModel>> GetAttendanceDetail(Guid Id, Guid? classId);
         // Task<ListDataResultModel<AttendanceListResModel>> GetListAttendance(int? pageIndex, AttendanceFilter filter);
         Task<MessageResultModel> CheckAttendance(Guid AttendanceId, Guid StudentClassId);
         Task<AttendanceMutationResModel> CreateAttendance(AttendanceCreateReqModel attendanceReq, Guid classId);

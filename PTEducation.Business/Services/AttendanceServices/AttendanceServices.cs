@@ -108,14 +108,14 @@ namespace PTEducation.Business.Services.AttendanceServices
             };
         }
 
-        public async Task<DataResultModel<AttendanceDetailResModel>> GetAttendanceDetail(Guid Id)
+        public async Task<DataResultModel<AttendanceDetailResModel>> GetAttendanceDetail(Guid Id, Guid? classId)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetailAttendances.StudentClass.Student.StudentGuardianStudents.Guardian,Class,ClassSchedule");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id) && (classId == null || x.ClassId.Equals(classId)), includeProperties: "AttendanceDetailAttendances.StudentClass.Student.StudentGuardianStudents.Guardian,Class,ClassSchedule");
             if (CheckExist == null)
             {
                 throw new CustomException("Attendance not found");
             }
-            var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(CheckExist.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "Student.StudentGuardianStudents.Guardian");
+            var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(classId != null ? classId : CheckExist.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "Student.StudentGuardianStudents.Guardian");
             var ListStudentInClassId = StudentInClass.Select(x => x.Id).ToList();
             var ListStudentNotHaveAttend = ListStudentInClassId.Except(CheckExist.AttendanceDetailAttendances.Select(x => x.StudentClassId)).ToList();
             var Result = _mapper.Map<AttendanceDetailResModel>(CheckExist);

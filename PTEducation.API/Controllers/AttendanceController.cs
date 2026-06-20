@@ -70,11 +70,11 @@ namespace PTEducation.API.Controllers
 
         [HttpGet("{Id:guid}")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> GetAttendanceDetail(Guid Id)
+        public async Task<IActionResult> GetAttendanceDetail(Guid Id, [FromQuery] Guid? classId = null)
         {
             try
             {
-                var Result = await _attendanceServices.GetAttendanceDetail(Id);
+                var Result = await _attendanceServices.GetAttendanceDetail(Id, classId);
                 return Ok(Result);
             }
             catch (CustomException ex)
