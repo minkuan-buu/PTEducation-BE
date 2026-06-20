@@ -152,7 +152,7 @@ namespace PTEducation.Business.MapperProfiles
                         Status = src.Status
                     }))
                 .ForMember(dest => dest.AttendanceDetails, opt => opt.MapFrom(src =>
-                    src.AttendanceDetails.Select(x => new AttendanceDetailStudentResModel
+                    src.AttendanceDetailAttendances.Select(x => new AttendanceDetailStudentResModel
                     {
                         StudentClassId = x.StudentClassId,
                         StudentId = x.StudentClass.Student.Id,

@@ -110,7 +110,7 @@ namespace PTEducation.Business.Services.StudentServices
             List<AttendanceStudentDetailResModel> ListAttendanceDetails = new();
             foreach (var attendance in ListAttandance)
             {
-                var getStudentAttandance = attendance.AttendanceDetails.FirstOrDefault(x => x.StudentClass.StudentId.Equals(student.Id));
+                var getStudentAttandance = attendance.AttendanceDetailAttendances.FirstOrDefault(x => x.StudentClass.StudentId.Equals(student.Id));
                 AttendanceStudentDetailResModel AttendanceDetail = new()
                 {
                     Date = attendance.Date,

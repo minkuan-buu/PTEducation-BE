@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,9 +11,13 @@ namespace PTEducation.Data.Entities.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Attendance_ClassSchedule",
-                table: "Attendance");
+            migrationBuilder.Sql(
+                """
+                IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Attendance_ClassSchedule' AND parent_object_id = OBJECT_ID('Attendance'))
+                    ALTER TABLE [Attendance] DROP CONSTRAINT [FK_Attendance_ClassSchedule];
+                IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Att_CS' AND parent_object_id = OBJECT_ID('Attendance'))
+                    ALTER TABLE [Attendance] DROP CONSTRAINT [FK_Att_CS];
+                """);
 
             migrationBuilder.Sql(
                 """
@@ -45,7 +49,7 @@ namespace PTEducation.Data.Entities.Migrations
                 column: "Id");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_Attendance_ClassSchedule",
+                name: "FK_Att_CS",
                 table: "Attendance",
                 column: "ClassScheduleId",
                 principalTable: "ClassSchedule",
@@ -55,9 +59,13 @@ namespace PTEducation.Data.Entities.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Attendance_ClassSchedule",
-                table: "Attendance");
+            migrationBuilder.Sql(
+                """
+                IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Attendance_ClassSchedule' AND parent_object_id = OBJECT_ID('Attendance'))
+                    ALTER TABLE [Attendance] DROP CONSTRAINT [FK_Attendance_ClassSchedule];
+                IF EXISTS (SELECT * FROM sys.foreign_keys WHERE name = 'FK_Att_CS' AND parent_object_id = OBJECT_ID('Attendance'))
+                    ALTER TABLE [Attendance] DROP CONSTRAINT [FK_Att_CS];
+                """);
 
             migrationBuilder.Sql(
                 """
@@ -88,7 +96,7 @@ namespace PTEducation.Data.Entities.Migrations
                 column: "Id");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_Attendance_ClassSchedule",
+                name: "FK_Att_CS",
                 table: "Attendance",
                 column: "ClassScheduleId",
                 principalTable: "ClassSchedule",

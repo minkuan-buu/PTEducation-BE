@@ -9,6 +9,8 @@ public partial class Class
 
     public string Name { get; set; } = null!;
 
+    public int GradeId { get; set; }
+
     public DateTime StartAt { get; set; }
 
     public DateTime EndAt { get; set; }
@@ -26,6 +28,8 @@ public partial class Class
     public virtual ICollection<ClassSchedule> ClassSchedules { get; set; } = new List<ClassSchedule>();
 
     public virtual User CreatedByNavigation { get; set; } = null!;
+
+    public virtual Grade Grade { get; set; } = null!;
 
     public virtual ICollection<Score> Scores { get; set; } = new List<Score>();
 

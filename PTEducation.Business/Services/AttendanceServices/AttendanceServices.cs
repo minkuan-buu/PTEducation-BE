@@ -110,14 +110,14 @@ namespace PTEducation.Business.Services.AttendanceServices
 
         public async Task<DataResultModel<AttendanceDetailResModel>> GetAttendanceDetail(Guid Id)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails.StudentClass.Student.StudentGuardianStudents.Guardian,Class,ClassSchedule");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetailAttendances.StudentClass.Student.StudentGuardianStudents.Guardian,Class,ClassSchedule");
             if (CheckExist == null)
             {
                 throw new CustomException("Attendance not found");
             }
             var StudentInClass = await _studentClassRepositories.GetList(x => x.ClassId.Equals(CheckExist.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "Student.StudentGuardianStudents.Guardian");
             var ListStudentInClassId = StudentInClass.Select(x => x.Id).ToList();
-            var ListStudentNotHaveAttend = ListStudentInClassId.Except(CheckExist.AttendanceDetails.Select(x => x.StudentClassId)).ToList();
+            var ListStudentNotHaveAttend = ListStudentInClassId.Except(CheckExist.AttendanceDetailAttendances.Select(x => x.StudentClassId)).ToList();
             var Result = _mapper.Map<AttendanceDetailResModel>(CheckExist);
             foreach (var item in ListStudentNotHaveAttend)
             {
@@ -153,7 +153,7 @@ namespace PTEducation.Business.Services.AttendanceServices
 
         public async Task<AttendanceMutationResModel> SoftDeleteAttendance(Guid Id)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetailAttendances");
             if (CheckExist == null)
             {
                 throw new CustomException("Attendance not found");
@@ -163,7 +163,7 @@ namespace PTEducation.Business.Services.AttendanceServices
                 throw new CustomException("Attendance is inactive!");
             }
             CheckExist.Status = GeneralStatusEnums.Inactive.ToString();
-            foreach (var item in CheckExist.AttendanceDetails)
+            foreach (var item in CheckExist.AttendanceDetailAttendances)
             {
                 item.Status = GeneralStatusEnums.Inactive.ToString();
             }
@@ -203,8 +203,8 @@ namespace PTEducation.Business.Services.AttendanceServices
         //         {
         //             continue;
         //         }
-        //         var ListStudentNotHaveAttend = ListStudentInClassId.Except(AttendanceRaw.AttendanceDetails.Select(x => x.StudentClassId)).ToList();
-        //         Attendance.TotalPresent = AttendanceRaw.AttendanceDetails.Count();
+        //         var ListStudentNotHaveAttend = ListStudentInClassId.Except(AttendanceRaw.AttendanceDetailAttendances.Select(x => x.StudentClassId)).ToList();
+        //         Attendance.TotalPresent = AttendanceRaw.AttendanceDetailAttendances.Count();
         //         Attendance.TotalAbsent = ListStudentNotHaveAttend.Count;
         //     }
         //     return new ListDataResultModel<AttendanceListResModel>()
@@ -215,7 +215,7 @@ namespace PTEducation.Business.Services.AttendanceServices
 
         public async Task<MessageResultModel> CheckAttendance(Guid AttendanceId, Guid StudentClassId)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceId) && x.Status.Equals(AttendanceStatusEnums.Opening.ToString()), includeProperties: "AttendanceDetails");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceId) && x.Status.Equals(AttendanceStatusEnums.Opening.ToString()), includeProperties: "AttendanceDetailAttendances");
             if (CheckExist == null)
             {
                 return new MessageResultModel()
@@ -231,7 +231,7 @@ namespace PTEducation.Business.Services.AttendanceServices
                     Message = "StudentClass not found or not active"
                 };
             }
-            var CheckExistAttendanceDetail = CheckExist.AttendanceDetails.FirstOrDefault(x => x.StudentClassId.Equals(StudentClassId));
+            var CheckExistAttendanceDetail = CheckExist.AttendanceDetailAttendances.FirstOrDefault(x => x.StudentClassId.Equals(StudentClassId));
             if (CheckExistAttendanceDetail == null)
             {
                 AttendanceDetail newAttendanceDetail = new AttendanceDetail()
@@ -256,7 +256,7 @@ namespace PTEducation.Business.Services.AttendanceServices
         public async Task<AttendanceMutationResModel> UpdateAttendance(AttendanceUpdateReqModel attendanceReq)
         {
             var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(attendanceReq.Id) && x.Status.Equals(AttendanceStatusEnums.Pending.ToString()));
-            if(CheckExist == null)
+            if (CheckExist == null)
             {
                 throw new CustomException("Attendance not found");
             }
@@ -293,7 +293,7 @@ namespace PTEducation.Business.Services.AttendanceServices
 
         public async Task<AttendanceMutationResModel> CloseAttendance(Guid Id)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetailAttendances");
             if (CheckExist == null)
             {
                 throw new CustomException("Attendance not found");
@@ -302,7 +302,7 @@ namespace PTEducation.Business.Services.AttendanceServices
             var StudentInClass = await _studentClassRepositories.GetList(
                 x => x.ClassId.Equals(CheckExist.ClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
 
-            var ExistingStudentClassIds = CheckExist.AttendanceDetails.Select(x => x.StudentClassId).ToHashSet();
+            var ExistingStudentClassIds = CheckExist.AttendanceDetailAttendances.Select(x => x.StudentClassId).ToHashSet();
             var MissingAttendanceDetails = StudentInClass
                 .Where(x => !ExistingStudentClassIds.Contains(x.Id))
                 .Select(x => new AttendanceDetail
@@ -367,14 +367,14 @@ namespace PTEducation.Business.Services.AttendanceServices
         //         }
         //     }
 
-        //     var allAttendance = await _attendanceRepositories.GetList(filter, orderBy, includeProperties: "Class,ClassSchedule,AttendanceDetails.StudentClass.Student", pageIndex ?? 1);
+        //     var allAttendance = await _attendanceRepositories.GetList(filter, orderBy, includeProperties: "Class,ClassSchedule,AttendanceDetailAttendances.StudentClass.Student", pageIndex ?? 1);
 
         //     return allAttendance.ToList();
         // }
 
         public async Task<AttendanceMutationResModel> RestoreAttendance(Guid Id)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetails");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetailAttendances");
             if (CheckExist == null)
             {
                 throw new CustomException("Attendance not found");
@@ -384,7 +384,7 @@ namespace PTEducation.Business.Services.AttendanceServices
                 throw new CustomException("Attendance is active!");
             }
             CheckExist.Status = GeneralStatusEnums.Active.ToString();
-            foreach (var item in CheckExist.AttendanceDetails)
+            foreach (var item in CheckExist.AttendanceDetailAttendances)
             {
                 item.Status = GeneralStatusEnums.Active.ToString();
             }
@@ -403,7 +403,7 @@ namespace PTEducation.Business.Services.AttendanceServices
 
         public async Task<MessageResultModel> UpdateAttendanceV2(Guid AttendanceId, List<AttendanceDetailStudentReqModel> AttendanceReqList)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceId), includeProperties: "AttendanceDetails");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceId), includeProperties: "AttendanceDetailAttendances");
             if (CheckExist == null)
             {
                 return new MessageResultModel()
@@ -411,7 +411,7 @@ namespace PTEducation.Business.Services.AttendanceServices
                     Message = "Not Found"
                 };
             }
-            await ApplyAttendanceChanges(AttendanceId, CheckExist.AttendanceDetails.ToList(), AttendanceReqList);
+            await ApplyAttendanceChanges(AttendanceId, CheckExist.AttendanceDetailAttendances.ToList(), AttendanceReqList);
             return new MessageResultModel()
             {
                 Message = "Ok"
