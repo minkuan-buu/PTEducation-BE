@@ -83,6 +83,21 @@ namespace PTEducation.API.Controllers
             }
         }
 
+        [HttpGet("classes/{classId:guid}/students/{studentClassId}/absent-sessions")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetStudentAbsentSessions(Guid classId, Guid studentClassId)
+        {
+            try
+            {
+                var Result = await _attendanceServices.GetStudentAbsentSessions(classId, studentClassId);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPatch("{Id:guid}")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> UpdateAttendanceDetail(Guid Id, [FromBody] List<AttendanceDetailStudentReqModel> attendanceDetailReq)

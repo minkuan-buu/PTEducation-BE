@@ -472,18 +472,20 @@ namespace PTEducation.Business.Services.ClassServices
             }
         }
 
-        public async Task<DataResultModel<List<ClassPeersListResModel>>> GetClassPeersList(Guid Id)
+        public async Task<DataResultModel<List<GeneralDropdownResModel>>> GetClassPeersList(Guid Id)
         {
             var CheckExist = await _classRepositories.GetSingle(x => x.Id.Equals(Id) && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties:"Grade.Classes");
             if (CheckExist == null)
             {
                 throw new CustomException("Class not found!");
             }
-            var ListClassPeers = CheckExist.Grade.Classes.Select(x => new ClassPeersListResModel{
+            var ListClassPeers = CheckExist.Grade.Classes.Select(x => new GeneralDropdownResModel{
                 Id = x.Id,
                 Name = x.Name,
-            }).ToList();
-            return new DataResultModel<List<ClassPeersListResModel>>
+            })
+            .OrderBy(x => x.Id.Equals(Id) ? 0 : 1)
+            .ToList();
+            return new DataResultModel<List<GeneralDropdownResModel>>
             {
                 Data = ListClassPeers,
             };

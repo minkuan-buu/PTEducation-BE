@@ -12,7 +12,7 @@ namespace PTEducation.Business.Services.ClassServices
     public interface IClassServices
     {
         Task<DataResultModel<ClassDetailResModel>> GetClassDetail(Guid Id);
-        Task<DataResultModel<List<ClassPeersListResModel>>> GetClassPeersList(Guid Id);
+        Task<DataResultModel<List<GeneralDropdownResModel>>> GetClassPeersList(Guid Id);
         Task<PagedListDataResultModel<ListClassResModel>> GetClassList(int? pageIndex, ClassFilter searchModel);
         Task<DataResultModel<List<ListClassResModel>>> GetClassList();
         Task<MessageResultModel> CreateClass(ClassCreateReqModel ClassReq, string userId);

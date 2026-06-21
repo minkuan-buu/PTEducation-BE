@@ -110,7 +110,7 @@ namespace PTEducation.Business.Services.AttendanceServices
 
         public async Task<DataResultModel<AttendanceDetailResModel>> GetAttendanceDetail(Guid Id, Guid? classId)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id) && (classId == null || x.ClassId.Equals(classId)), includeProperties: "AttendanceDetailAttendances.StudentClass.Student.StudentGuardianStudents.Guardian,Class,ClassSchedule");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(Id), includeProperties: "AttendanceDetailAttendances.StudentClass.Student.StudentGuardianStudents.Guardian,Class,ClassSchedule");
             if (CheckExist == null)
             {
                 throw new CustomException("Attendance not found");
@@ -119,6 +119,17 @@ namespace PTEducation.Business.Services.AttendanceServices
             var ListStudentInClassId = StudentInClass.Select(x => x.Id).ToList();
             var ListStudentNotHaveAttend = ListStudentInClassId.Except(CheckExist.AttendanceDetailAttendances.Select(x => x.StudentClassId)).ToList();
             var Result = _mapper.Map<AttendanceDetailResModel>(CheckExist);
+            if (classId != null)
+            {
+                var allowedStudentClassIds = CheckExist.AttendanceDetailAttendances
+                    .Where(x => x.StudentClass.ClassId.Equals(classId.Value))
+                    .Select(x => x.StudentClassId)
+                    .ToHashSet();
+
+                Result.AttendanceDetails = Result.AttendanceDetails
+                    .Where(x => allowedStudentClassIds.Contains(x.StudentClassId))
+                    .ToList();
+            }
             foreach (var item in ListStudentNotHaveAttend)
             {
                 var Student = StudentInClass.FirstOrDefault(x => x.Id.Equals(item));
@@ -453,6 +464,27 @@ namespace PTEducation.Business.Services.AttendanceServices
             }
 
             await _attendanceDetailRepositories.SaveChangesAsync();
+        }
+
+        public async Task<DataResultModel<List<GeneralDropdownResModel>>> GetStudentAbsentSessions(Guid classId, Guid studentClassId)
+        {
+            var CheckExist = await _attendanceRepositories.GetList(x => x.ClassId.Equals(classId) && x.AttendanceDetailAttendances.Any(y => y.StudentClassId.Equals(studentClassId) && y.Status.Equals(AttendanceEnums.Absent.ToString())) && x.Status.Equals(AttendanceStatusEnums.Closed.ToString()));
+            if (CheckExist.ToList().Count == 0)
+            {
+                return new DataResultModel<List<GeneralDropdownResModel>>
+                {
+                    Data = new List<GeneralDropdownResModel>(),
+                };
+            }
+            var ListAbsentSessions = CheckExist.Select(x => new GeneralDropdownResModel
+            {
+                Id = x.Id,
+                Name = x.Date.ToString()
+            }).ToList();
+            return new DataResultModel<List<GeneralDropdownResModel>>
+            {
+                Data = ListAbsentSessions,
+            };
         }
     }
 }
