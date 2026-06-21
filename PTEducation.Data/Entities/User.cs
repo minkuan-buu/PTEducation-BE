@@ -21,6 +21,8 @@ public partial class User
 
     public bool IsNeedResetPassword { get; set; }
 
+    public string? SchoolInfo { get; set; }
+
     public virtual ICollection<ChatDetail> ChatDetails { get; set; } = new List<ChatDetail>();
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();

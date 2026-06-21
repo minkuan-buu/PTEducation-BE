@@ -70,11 +70,26 @@ namespace PTEducation.API.Controllers
 
         [HttpGet("{Id:guid}")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> GetAttendanceDetail(Guid Id)
+        public async Task<IActionResult> GetAttendanceDetail(Guid Id, [FromQuery] Guid? classId = null)
         {
             try
             {
-                var Result = await _attendanceServices.GetAttendanceDetail(Id);
+                var Result = await _attendanceServices.GetAttendanceDetail(Id, classId);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("classes/{classId:guid}/students/{studentClassId}/absent-sessions")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> GetStudentAbsentSessions(Guid classId, Guid studentClassId)
+        {
+            try
+            {
+                var Result = await _attendanceServices.GetStudentAbsentSessions(classId, studentClassId);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -125,7 +140,7 @@ namespace PTEducation.API.Controllers
         {
             try
             {
-                var Result = await _attendanceServices.CheckAttendance(attendanceId, checkAttendanceReq.StudentClassId);
+                var Result = await _attendanceServices.CheckAttendance(attendanceId, checkAttendanceReq);
                 return Ok(Result);
             }
             catch (CustomException ex)

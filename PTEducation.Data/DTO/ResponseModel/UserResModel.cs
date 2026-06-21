@@ -81,6 +81,15 @@ namespace PTEducation.Data.DTO.ResponseModel
         public List<UserGuardianListResModel> Guardians { get; set; } = null!;
     }
 
+    public class UserEditResModel
+    {
+        public string Name { get; set; } = null!;
+        public string Email { get; set; } = null!;
+        public string Phone { get; set; } = null!;
+        public string SchoolInfo { get; set; } = null!;
+        public List<UserGuardianListResModel> Guardians { get; set; } = null!;
+    }
+
     public class UserGuardianListResModel
     {
         public string Id { get; set; } = null!;

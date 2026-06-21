@@ -16,6 +16,7 @@ using PTEducation.Data.Repositories.ScoreDetailRepositories;
 using PTEducation.Data.Repositories.ScoreRepositories;
 using PTEducation.Data.Repositories.StudentClassRepositories;
 using PTEducation.Data.Repositories.UserRepositories;
+using PTEducation.Data.Repositories.GradeRepositories;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -36,9 +37,10 @@ namespace PTEducation.Business.Services.ClassServices
         private readonly IUserRepositories _userRepositories;
         private readonly IStudentClassRepositories _studentClassRepositories;
         private readonly IOTPRepositories _otpRepositories;
+        private readonly IGradeRepositories _gradeRepositories;
         private readonly IEmail _email;
         private readonly IMapper _mapper;
-        public ClassServices(IClassRepositories classRepositories, IMapper mapper, IUserRepositories userRepositories, IStudentClassRepositories studentClassRepositories, IEmail email, IAttendanceDetailRepositories attendanceDetailRepositories, IAttendanceRepositories attendanceRepositories, IScoreDetailRepositories scoreDetailRepositories, IScoreRepositories scoreRepositories, IOTPRepositories otpRepositories)
+        public ClassServices(IClassRepositories classRepositories, IMapper mapper, IUserRepositories userRepositories, IStudentClassRepositories studentClassRepositories, IEmail email, IAttendanceDetailRepositories attendanceDetailRepositories, IAttendanceRepositories attendanceRepositories, IScoreDetailRepositories scoreDetailRepositories, IScoreRepositories scoreRepositories, IOTPRepositories otpRepositories, IGradeRepositories gradeRepositories)
         {
             _classRepositories = classRepositories;
             _userRepositories = userRepositories;
@@ -50,6 +52,7 @@ namespace PTEducation.Business.Services.ClassServices
             _scoreDetailRepositories = scoreDetailRepositories;
             _scoreRepositories = scoreRepositories;
             _otpRepositories = otpRepositories;
+            _gradeRepositories = gradeRepositories;
         }
 
         public async Task<DataResultModel<ClassDetailResModel>> GetClassDetail(Guid Id)
@@ -201,10 +204,60 @@ namespace PTEducation.Business.Services.ClassServices
             {
                 throw new CustomException("Tên lớp đã tồn tại");
             }
+
+            string classBlock;
+            if (!string.IsNullOrWhiteSpace(ClassReq.GradeName))
+            {
+                classBlock = ClassReq.GradeName.Trim();
+            }
+            else
+            {
+                var className = TextConvert.ConvertFromUnicodeEscape(ClassReq.Name).Trim();
+                var classBlockMatch = System.Text.RegularExpressions.Regex.Match(className, @"^\d+");
+                classBlock = classBlockMatch.Success ? classBlockMatch.Value : className;
+            }
+
+            int gradeId;
+            var existingGrade = await _gradeRepositories.GetSingle(x => x.GradeName.Equals(classBlock));
+            if (existingGrade != null)
+            {
+                gradeId = existingGrade.Id;
+            }
+            else
+            {
+                if (int.TryParse(classBlock, out var classBlockNumber))
+                {
+                    var gradeById = await _gradeRepositories.GetSingle(x => x.Id == classBlockNumber);
+                    if (gradeById == null)
+                    {
+                        gradeId = classBlockNumber;
+                    }
+                    else
+                    {
+                        var allGrades = await _gradeRepositories.GetList();
+                        gradeId = allGrades.Any() ? allGrades.Max(g => g.Id) + 1 : 1;
+                    }
+                }
+                else
+                {
+                    var allGrades = await _gradeRepositories.GetList();
+                    gradeId = allGrades.Any() ? allGrades.Max(g => g.Id) + 1 : 1;
+                }
+
+                var newGrade = new Grade
+                {
+                    Id = gradeId,
+                    GradeName = classBlock
+                };
+                await _gradeRepositories.Insert(newGrade);
+            }
+
             var ClassId = Guid.NewGuid();
             var NewClass = _mapper.Map<Class>(ClassReq);
             NewClass.Id = ClassId;
             NewClass.CreatedBy = userId;
+            NewClass.GradeId = gradeId;
+
             foreach (var schedule in ClassReq.Schedules)
             {
                 ClassSchedule NewSchedule = new()
@@ -272,7 +325,7 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<MessageResultModel> SoftDeleteClass(Guid Id)
         {
-            var CheckExist = await _classRepositories.GetSingle(x => x.Id == Id, includeProperties: "StudentClasses,Scores.ScoreDetails,Attendances.AttendanceDetails");
+            var CheckExist = await _classRepositories.GetSingle(x => x.Id == Id, includeProperties: "StudentClasses,Scores.ScoreDetails,Attendances.AttendanceDetailAttendances");
             if (CheckExist == null)
             {
                 throw new CustomException("Class not found!");
@@ -296,7 +349,7 @@ namespace PTEducation.Business.Services.ClassServices
                 foreach (var attendance in CheckExist.Attendances)
                 {
                     attendance.Status = GeneralStatusEnums.Inactive.ToString();
-                    foreach (var attendanceDetail in attendance.AttendanceDetails)
+                    foreach (var attendanceDetail in attendance.AttendanceDetailAttendances)
                     {
                         attendanceDetail.Status = GeneralStatusEnums.Inactive.ToString();
                     }
@@ -311,7 +364,7 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<MessageResultModel> RestoreClass(Guid Id)
         {
-            var CheckExist = await _classRepositories.GetSingle(x => x.Id == Id, includeProperties: "StudentClasses,Scores.ScoreDetails,Attendances.AttendanceDetails");
+            var CheckExist = await _classRepositories.GetSingle(x => x.Id == Id, includeProperties: "StudentClasses,Scores.ScoreDetails,Attendances.AttendanceDetailAttendances");
             if (CheckExist == null)
             {
                 throw new CustomException("Class not found!");
@@ -335,7 +388,7 @@ namespace PTEducation.Business.Services.ClassServices
                 foreach (var attendance in CheckExist.Attendances)
                 {
                     attendance.Status = GeneralStatusEnums.Active.ToString();
-                    foreach (var attendanceDetail in attendance.AttendanceDetails)
+                    foreach (var attendanceDetail in attendance.AttendanceDetailAttendances)
                     {
                         attendanceDetail.Status = GeneralStatusEnums.Active.ToString();
                     }
@@ -352,7 +405,7 @@ namespace PTEducation.Business.Services.ClassServices
         {
             var CheckExist = await _classRepositories.GetSingle(
                 x => x.Id == Id,
-                includeProperties: "StudentClasses.Student.Otps,Scores.ScoreDetails,Attendances.AttendanceDetails"
+                includeProperties: "StudentClasses.Student.Otps,Scores.ScoreDetails,Attendances.AttendanceDetailAttendances"
             );
 
             if (CheckExist == null)
@@ -374,9 +427,9 @@ namespace PTEducation.Business.Services.ClassServices
                     .SelectMany(u => u.Otps)
                     .ToList();
 
-                // 2. Xóa AttendanceDetails
+                // 2. Xóa AttendanceDetailAttendances
                 var attendanceDetails = CheckExist.Attendances
-                    .SelectMany(a => a.AttendanceDetails)
+                    .SelectMany(a => a.AttendanceDetailAttendances)
                     .ToList();
                 await _attendanceDetailRepositories.DeleteRange(attendanceDetails);
 
@@ -417,6 +470,25 @@ namespace PTEducation.Business.Services.ClassServices
                 await _classRepositories.RollbackTransactionAsync();
                 throw new CustomException("Error occurred while deleting class!");
             }
+        }
+
+        public async Task<DataResultModel<List<GeneralDropdownResModel>>> GetClassPeersList(Guid Id)
+        {
+            var CheckExist = await _classRepositories.GetSingle(x => x.Id.Equals(Id) && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties:"Grade.Classes");
+            if (CheckExist == null)
+            {
+                throw new CustomException("Class not found!");
+            }
+            var ListClassPeers = CheckExist.Grade.Classes.Select(x => new GeneralDropdownResModel{
+                Id = x.Id,
+                Name = x.Name,
+            })
+            .OrderBy(x => x.Id.Equals(Id) ? 0 : 1)
+            .ToList();
+            return new DataResultModel<List<GeneralDropdownResModel>>
+            {
+                Data = ListClassPeers,
+            };
         }
 
         public async Task<MessageResultModel> ManualAddStudent(ManualAddStudentClassModel AddStudentsReq)
@@ -602,7 +674,7 @@ namespace PTEducation.Business.Services.ClassServices
             );
             var attendances = await _attendanceRepositories.GetList(
                 x => x.ClassId == ClassId,
-                includeProperties: "AttendanceDetails"
+                includeProperties: "AttendanceDetailAttendances"
             );
 
             Class.StudentClasses = studentClasses.ToList();
@@ -616,7 +688,7 @@ namespace PTEducation.Business.Services.ClassServices
             // Tách riêng danh sách buổi học đã hoàn tất
             var closedAttendances = Class.Attendances.Where(a => a.Status.Equals(AttendanceStatusEnums.Closed.ToString())).ToList();
             var TotalAttendance = closedAttendances.Count;
-            var TotalAttendanceDetails = closedAttendances.Sum(att => att.AttendanceDetails.Count);
+            var TotalAttendanceDetails = closedAttendances.Sum(att => att.AttendanceDetailAttendances.Count);
 
             var activeScores = Class.Scores.Where(s => s.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList();
             var averageScore = (TotalStudent > 0 && activeScores.Any())
@@ -677,7 +749,7 @@ namespace PTEducation.Business.Services.ClassServices
 
                 // FIX: Tính tỉ lệ chuyên cần chính xác
                 AttendanceRate = TotalAttendanceDetails > 0
-                    ? ((decimal)closedAttendances.Sum(att => att.AttendanceDetails.Count(ad => ad.Status == AttendanceEnums.Present.ToString())) /
+                    ? ((decimal)closedAttendances.Sum(att => att.AttendanceDetailAttendances.Count(ad => ad.Status == AttendanceEnums.Present.ToString())) /
                     TotalAttendanceDetails) * 100
                     : 0,
 

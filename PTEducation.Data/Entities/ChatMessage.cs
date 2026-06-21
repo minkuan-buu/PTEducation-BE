@@ -9,7 +9,7 @@ public partial class ChatMessage
 
     public Guid ChatId { get; set; }
 
-    public Guid SenderUserId { get; set; }
+    public Guid SenderDetailId { get; set; }
 
     public string Content { get; set; } = null!;
 
@@ -21,5 +21,5 @@ public partial class ChatMessage
 
     public virtual ICollection<ChatDetail> ChatDetails { get; set; } = new List<ChatDetail>();
 
-    public virtual ChatDetail SenderUser { get; set; } = null!;
+    public virtual ChatDetail SenderDetail { get; set; } = null!;
 }

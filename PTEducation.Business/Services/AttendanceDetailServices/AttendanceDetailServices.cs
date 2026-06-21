@@ -32,7 +32,7 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
                     Message = "Not Found"
                 };
             }
-            var AttendanceDetail = CheckExist.AttendanceDetails.ToList();
+            var AttendanceDetail = CheckExist.AttendanceDetailAttendances.ToList();
             List<AttendanceDetail> ListRemoveDetail = new();
             List<AttendanceDetail> ListAddDetail = new();
             foreach (var attendance in AttendanceReq.AttendanceReqList)
@@ -81,7 +81,7 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
                     Message = "Not Found"
                 };
             }
-            var AttendanceDetail = CheckExist.AttendanceDetails.ToList();
+            var AttendanceDetail = CheckExist.AttendanceDetailAttendances.ToList();
             List<AttendanceDetail> ListRemoveDetail = new();
             List<AttendanceDetail> ListAddDetail = new();
             foreach (var attendance in AttendanceReqList)

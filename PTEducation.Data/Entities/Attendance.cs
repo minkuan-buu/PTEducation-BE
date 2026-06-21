@@ -23,7 +23,9 @@ public partial class Attendance
 
     public DateOnly Date { get; set; }
 
-    public virtual ICollection<AttendanceDetail> AttendanceDetails { get; set; } = new List<AttendanceDetail>();
+    public virtual ICollection<AttendanceDetail> AttendanceDetailAttendances { get; set; } = new List<AttendanceDetail>();
+
+    public virtual ICollection<AttendanceDetail> AttendanceDetailMakeUpSessionNavigations { get; set; } = new List<AttendanceDetail>();
 
     public virtual Class Class { get; set; } = null!;
 

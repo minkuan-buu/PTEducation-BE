@@ -23,6 +23,7 @@ namespace PTEducation.Data.DTO.RequestModel
     public class ClassCreateReqModelV2
     {
         public string Name { get; set; } = null!;
+        public string GradeName { get; set; } = null!;
         public List<ClassScheduleReqModel> Schedules { get; set; } = null!;
         public DateTime StartAt { get; set; }
         public DateTime EndAt { get; set; }

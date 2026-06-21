@@ -100,7 +100,7 @@ namespace PTEducation.Business.Services.UserServices
             {
                 Id = adminId,
                 Name = Environment.GetEnvironmentVariable("ADMIN_NAME") ?? "Administrator",
-                Email = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "admin@pteducation.local",
+                Email = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "admin@pteducation.edu.vn",
                 Phone = Environment.GetEnvironmentVariable("ADMIN_PHONE") ?? "0000000000",
                 Role = RoleEnums.Admin.ToString(),
                 Status = AccountStatusEnums.Active.ToString(),
@@ -213,6 +213,7 @@ namespace PTEducation.Business.Services.UserServices
                 Email = ReqModel.Email,
                 Phone = ReqModel.Phone ?? "",
                 Role = RoleEnums.Student.ToString(),
+                SchoolInfo = ReqModel.School,
                 IsNeedResetPassword = true,
             };
 
@@ -844,6 +845,35 @@ namespace PTEducation.Business.Services.UserServices
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        public async Task<DataResultModel<UserEditResModel>> GetUserDetail(string userId)
+        {
+            var GetUser = await _userRepositories.GetSingle(x => x.Id == userId, includeProperties: "StudentGuardianStudents.Guardian");
+            if (GetUser == null)
+            {
+                throw new CustomException("Không tìm thấy thông tin người dùng!");
+            }
+            var result = new UserEditResModel
+            {
+                Name = TextConvert.ConvertFromUnicodeEscape(GetUser.Name),
+                Email = GetUser.Email,
+                Phone = GetUser.Phone,
+                SchoolInfo = GetUser.SchoolInfo ?? string.Empty,
+                Guardians = GetUser.StudentGuardianStudents.Select(x => new UserGuardianListResModel
+                {
+                    Id = x.GuardianId,
+                    Name = TextConvert.ConvertFromUnicodeEscape(x.Guardian.Name),
+                    Email = x.Guardian.Email,
+                    Phone = x.Guardian.Phone,
+                    IsPrimary = x.IsPrimary,
+                    Relationship = x.Relationship
+                }).ToList()
+            };
+            return new DataResultModel<UserEditResModel>
+            {
+                Data = result
+            };
         }
     }
 }

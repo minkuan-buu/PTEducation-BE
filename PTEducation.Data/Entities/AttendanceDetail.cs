@@ -15,7 +15,11 @@ public partial class AttendanceDetail
 
     public DateTime CreatedAt { get; set; }
 
+    public Guid? MakeUpSession { get; set; }
+
     public virtual Attendance Attendance { get; set; } = null!;
+
+    public virtual Attendance? MakeUpSessionNavigation { get; set; }
 
     public virtual StudentClass StudentClass { get; set; } = null!;
 }

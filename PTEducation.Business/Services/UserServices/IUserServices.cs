@@ -28,5 +28,6 @@ namespace PTEducation.Business.Services.UserServices
         Task<MessageResultModel> DeleteStudent(string userId);
         Task InitAdminIfNeeded();
         //Task<bool> SendMail();
+        Task<DataResultModel<UserEditResModel>> GetUserDetail(string userId);
     }
 }
