@@ -100,7 +100,7 @@ namespace PTEducation.Business.Services.UserServices
             {
                 Id = adminId,
                 Name = Environment.GetEnvironmentVariable("ADMIN_NAME") ?? "Administrator",
-                Email = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "admin@pteducation.local",
+                Email = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "admin@pteducation.edu.vn",
                 Phone = Environment.GetEnvironmentVariable("ADMIN_PHONE") ?? "0000000000",
                 Role = RoleEnums.Admin.ToString(),
                 Status = AccountStatusEnums.Active.ToString(),

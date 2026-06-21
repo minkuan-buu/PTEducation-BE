@@ -140,7 +140,7 @@ namespace PTEducation.API.Controllers
         {
             try
             {
-                var Result = await _attendanceServices.CheckAttendance(attendanceId, checkAttendanceReq.StudentClassId);
+                var Result = await _attendanceServices.CheckAttendance(attendanceId, checkAttendanceReq);
                 return Ok(Result);
             }
             catch (CustomException ex)

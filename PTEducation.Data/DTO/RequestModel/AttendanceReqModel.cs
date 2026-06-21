@@ -57,5 +57,6 @@ namespace PTEducation.Data.DTO.RequestModel
     public class CheckAttendanceReqModel
     {
         public Guid StudentClassId { get; set; }
+        public Guid? MakeUpSessionId { get; set; }
     }
 }

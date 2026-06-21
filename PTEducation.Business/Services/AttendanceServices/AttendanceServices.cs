@@ -224,7 +224,7 @@ namespace PTEducation.Business.Services.AttendanceServices
         //     };
         // }
 
-        public async Task<MessageResultModel> CheckAttendance(Guid AttendanceId, Guid StudentClassId)
+        public async Task<MessageResultModel> CheckAttendance(Guid AttendanceId, CheckAttendanceReqModel checkAttendanceReq)
         {
             var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceId) && x.Status.Equals(AttendanceStatusEnums.Opening.ToString()), includeProperties: "AttendanceDetailAttendances");
             if (CheckExist == null)
@@ -234,7 +234,7 @@ namespace PTEducation.Business.Services.AttendanceServices
                     Message = "Not Found or Attendance is not opening"
                 };
             }
-            var CheckExistStudentClass = await _studentClassRepositories.GetSingle(x => x.Id.Equals(StudentClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var CheckExistStudentClass = await _studentClassRepositories.GetSingle(x => x.Id.Equals(checkAttendanceReq.StudentClassId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()));
             if (CheckExistStudentClass == null)
             {
                 return new MessageResultModel()
@@ -242,16 +242,17 @@ namespace PTEducation.Business.Services.AttendanceServices
                     Message = "StudentClass not found or not active"
                 };
             }
-            var CheckExistAttendanceDetail = CheckExist.AttendanceDetailAttendances.FirstOrDefault(x => x.StudentClassId.Equals(StudentClassId));
+            var CheckExistAttendanceDetail = CheckExist.AttendanceDetailAttendances.FirstOrDefault(x => x.StudentClassId.Equals(checkAttendanceReq.StudentClassId));
             if (CheckExistAttendanceDetail == null)
             {
                 AttendanceDetail newAttendanceDetail = new AttendanceDetail()
                 {
                     Id = Guid.NewGuid(),
                     AttendanceId = AttendanceId,
-                    StudentClassId = StudentClassId,
+                    StudentClassId = checkAttendanceReq.StudentClassId,
                     Status = AttendanceEnums.Present.ToString(),
-                    CreatedAt = DateTime.Now
+                    CreatedAt = DateTime.Now,
+                    MakeUpSession = checkAttendanceReq.MakeUpSessionId
                 };
 
                 await _attendanceDetailRepositories.Insert(newAttendanceDetail);
