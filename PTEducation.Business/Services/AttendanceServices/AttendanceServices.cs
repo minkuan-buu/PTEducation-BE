@@ -477,10 +477,10 @@ namespace PTEducation.Business.Services.AttendanceServices
                     Data = new List<GeneralDropdownResModel>(),
                 };
             }
-            var ListAbsentSessions = CheckExist.Select(x => new GeneralDropdownResModel
+            var ListAbsentSessions = CheckExist.OrderByDescending(x => x.Date).ThenBy(x => x.StartTime).Select(x => new GeneralDropdownResModel
             {
                 Id = x.Id,
-                Name = x.Date.ToString()
+                Name = x.StartTime.ToString("HH:mm") + " - " + x.EndTime.ToString("HH:mm") + ", " + x.Date.ToString("dd/MM/yyyy")
             }).ToList();
             return new DataResultModel<List<GeneralDropdownResModel>>
             {
