@@ -32,9 +32,13 @@ namespace PTEducation.API.Middleware
         protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
         {
             var requestPath = Context.Request.Path;
+            var pathValue = requestPath.Value ?? string.Empty;
 
-            // Allow login and register endpoints to bypass authentication
-            if (requestPath.StartsWithSegments("/api/authentication/login") || requestPath.StartsWithSegments("/api/authentication/register"))
+            // Allow login, register, and logout endpoints to bypass authentication
+            if (pathValue.Contains("/authentication/login", StringComparison.OrdinalIgnoreCase) ||
+                pathValue.Contains("/authentication/register", StringComparison.OrdinalIgnoreCase) ||
+                pathValue.Contains("/authentication/logout", StringComparison.OrdinalIgnoreCase) ||
+                pathValue.Contains("/logout", StringComparison.OrdinalIgnoreCase))
             {
                 return AuthenticateResult.NoResult();
             }
@@ -59,7 +63,7 @@ namespace PTEducation.API.Middleware
             }
             catch (SecurityTokenExpiredException ex)
             {
-                if (requestPath.StartsWithSegments("/api/authentication/reset-password"))
+                if (pathValue.Contains("/authentication/reset-password", StringComparison.OrdinalIgnoreCase))
                 {
                     return AuthenticateResult.Fail($"Token has expired: {ex.Message}");
                 }
@@ -109,7 +113,7 @@ namespace PTEducation.API.Middleware
                 return AuthenticateResult.Fail("Unauthorized");
             }
 
-            if (requestPath.StartsWithSegments("/api/authentication/reset-password"))
+            if (pathValue.Contains("/authentication/reset-password", StringComparison.OrdinalIgnoreCase))
             {
                 var typeClaim = identity.FindFirst("type")?.Value;
                 if (typeClaim != "reset")
