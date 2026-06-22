@@ -7,6 +7,7 @@ using PTEducation.Business.Services.AuthServices;
 using Org.BouncyCastle.Ocsp;
 using PTEducation.Data.DTO.ResponseModel;
 using Asp.Versioning;
+using PTEducation.Business.Services.StorageServices;
 
 namespace PTEducation.API.Controllers
 {
@@ -17,9 +18,11 @@ namespace PTEducation.API.Controllers
     public class AdminController : ControllerBase
     {
         private readonly IUserServices _userServices;
-        public AdminController(IUserServices userServices)
+        private readonly IStorageServices _storageServices;
+        public AdminController(IUserServices userServices, IStorageServices storageServices)
         {
             _userServices = userServices;
+            _storageServices = storageServices;
         }
 
         [HttpGet("managers")]
@@ -118,6 +121,24 @@ namespace PTEducation.API.Controllers
         {
             var Result = await _userServices.DeleteStudent(userId);
             return Ok(Result);
+        }
+
+        [HttpPost("test-upload")]
+        [MapToApiVersion("2.0")]
+        public async Task<IActionResult> testUpload([FromForm] AttachmentReqModel reqModel)
+        {
+            try
+            {
+                if (reqModel.File == null || reqModel.File.Length == 0)
+                    return BadRequest("No file uploaded.");
+
+                var Result = await _storageServices.UploadFileAsync(reqModel.File.OpenReadStream(), "admin-test-upload", reqModel.File.ContentType);
+                return Ok(Result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error: {ex.Message}");
+            }
         }
     }
 }

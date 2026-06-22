@@ -25,6 +25,7 @@ using PTEducation.Business.Services.ScoreServices;
 using PTEducation.Business.Services.StudentClassServices;
 using PTEducation.Business.Services.StudentServices;
 using PTEducation.Business.Services.UserServices;
+using PTEducation.Business.Services.StorageServices;
 using PTEducation.Business.Ultilities.Email;
 using PTEducation.API.HostedServices;
 using PTEducation.Data.Entities;
@@ -180,6 +181,25 @@ builder.Services.AddScoped(typeof(IGenericRepositories<>), typeof(GenericReposit
 
 //=========================================== SERVICE =============================================
 
+// Cloudflare R2 Configurations Option binding
+builder.Services.Configure<CloudflareR2Settings>(options =>
+{
+    var section = builder.Configuration.GetSection("CloudflareR2");
+    options.AccessKeyId = Environment.GetEnvironmentVariable("R2_ACCESS_KEY_ID") ?? section["AccessKeyId"] ?? string.Empty;
+    options.SecretAccessKey = Environment.GetEnvironmentVariable("R2_SECRET_ACCESS_KEY") ?? section["SecretAccessKey"] ?? string.Empty;
+    options.ServiceUrl = Environment.GetEnvironmentVariable("R2_SERVICE_URL") ?? section["ServiceUrl"] ?? string.Empty;
+    options.BucketName = Environment.GetEnvironmentVariable("R2_BUCKET_NAME") ?? section["BucketName"] ?? string.Empty;
+    options.PublicUrl = Environment.GetEnvironmentVariable("R2_PUBLIC_URL") ?? section["PublicUrl"] ?? string.Empty;
+
+    // Bỏ qua giá trị nếu nó là chuỗi placeholder dạng ${VAR_NAME}
+    if (options.AccessKeyId.StartsWith("${")) options.AccessKeyId = string.Empty;
+    if (options.SecretAccessKey.StartsWith("${")) options.SecretAccessKey = string.Empty;
+    if (options.ServiceUrl.StartsWith("${")) options.ServiceUrl = string.Empty;
+    if (options.BucketName.StartsWith("${")) options.BucketName = string.Empty;
+    if (options.PublicUrl.StartsWith("${")) options.PublicUrl = string.Empty;
+});
+
+builder.Services.AddScoped<IStorageServices, StorageServices>();
 builder.Services.AddScoped<IUserServices, UserServices>();
 builder.Services.AddScoped<IClassServices, ClassServices>();
 builder.Services.AddScoped<IScoreServices, ScoreServices>();
