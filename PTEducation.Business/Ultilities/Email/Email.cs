@@ -18,15 +18,17 @@ namespace PTEducation.Business.Ultilities.Email
         {
             try
             {
-                string from = "minhquandoanngoc@gmail.com";
-                string pass = "amua xwrw epnv imuj";
+                //string from = "minhquandoanngoc@gmail.com";
+                //string pass = "amua xwrw epnv imuj";
+                string from = "admin@pteducation.edu.vn";
+                string pass = "AdminPTEdu@123";
                 using MailKit.Net.Smtp.SmtpClient smtp = new();
-                await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
+                await smtp.ConnectAsync("mail49.vietnix.vn", 465, SecureSocketOptions.SslOnConnect);
                 await smtp.AuthenticateAsync(from, pass);
                 foreach (var item in emailReqModels)
                 {
                     MimeMessage message = new();
-                    message.From.Add(MailboxAddress.Parse("admin@buubuu.id.vn"));
+                    message.From.Add(MailboxAddress.Parse(from));
                     message.To.Add(MailboxAddress.Parse(item.Email));
                     message.Subject = Subject;
                     message.Body = new TextPart(MimeKit.Text.TextFormat.Html)
