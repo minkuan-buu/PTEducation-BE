@@ -30,5 +30,6 @@ namespace PTEducation.Business.Services.UserServices
         //Task<bool> SendMail();
         Task<DataResultModel<UserEditResModel>> GetUserDetail(string userId);
         Task<MessageResultModel> UploadAvatar(string userId, AttachmentReqModel reqModel);
+        Task<MessageResultModel> ResetPassword(string userId);
     }
 }

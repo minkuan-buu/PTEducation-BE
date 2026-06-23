@@ -36,6 +36,7 @@ namespace PTEducation.Business.Services.UserServices
         private readonly IStorageServices _storageServices;
         private readonly IEmail _email;
         private readonly IMapper _mapper;
+        private readonly string _domainFE = Environment.GetEnvironmentVariable("DOMAIN_FE") ?? throw new InvalidOperationException("DOMAIN_FE environment variable is not set.");
         public UserServices(IUserRepositories userRepositories, IMapper mapper, IEmail email, IStudentClassRepositories studentClassRepositories, IAttendanceDetailRepositories attendanceDetailRepositories, IScoreDetailRepositories scoreDetailRepositories, IOTPRepositories otpRepositories, IClassRepositories classRepositories, IStudentGuardianRepositories studentGuardianRepositories, IStorageServices storageServices)
         {
             _studentClassRepositories = studentClassRepositories;
@@ -263,6 +264,7 @@ namespace PTEducation.Business.Services.UserServices
                 GuardHtml = GuardHtml.Replace("{{STUDENTNAME}}", ReqModel.Name);
                 GuardHtml = GuardHtml.Replace("{{GUARDIANNAME}}", guardian.Name);
                 GuardHtml = GuardHtml.Replace("{{USERNAME}}", guardian.Email);
+                GuardHtml = GuardHtml.Replace("{{DOMAIN_FE}}", _domainFE);
                 listEmail.Add(
                     new EmailReqModel
                     {
@@ -291,6 +293,7 @@ namespace PTEducation.Business.Services.UserServices
             Html = Html.Replace("{{PASSWORD}}", GeneratePassword);
             Html = Html.Replace("{{STUDENTNAME}}", ReqModel.Name);
             Html = Html.Replace("{{USERNAME}}", ReqModel.Email);
+            Html = Html.Replace("{{DOMAIN_FE}}", _domainFE);
             listEmail.Add(
                 new EmailReqModel
                 {
@@ -422,6 +425,7 @@ namespace PTEducation.Business.Services.UserServices
                 Html = Html.Replace("{{MANAGERNAME}}", item.Name);
                 Html = Html.Replace("{{PASSWORD}}", GeneratePassword);
                 Html = Html.Replace("{{USERNAME}}", item.Email);
+                Html = Html.Replace("{{DOMAIN_FE}}", _domainFE);
                 listEmail.Add(new EmailReqModel
                 {
                     Email = item.Email,
@@ -897,6 +901,33 @@ namespace PTEducation.Business.Services.UserServices
                 return new MessageResultModel
                 {
                     Message = "Ok"
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new CustomException(ex.Message);
+            }
+        }
+
+        public async Task<MessageResultModel> ResetPassword(string userId)
+        {
+            try
+            {
+                var user = await _userRepositories.GetSingle(x => x.Id == userId);
+                if (user == null)
+                {
+                    throw new CustomException("Không tìm thấy thông tin người dùng!");
+                }
+                var GeneratePassword = Authentication.GenerateRandomPassword();
+                string HashedPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
+                user.PasswordBcrypt = HashedPassword;
+                user.IsNeedResetPassword = true;
+                await _userRepositories.Update(user, saveChanges: false);
+                await _userRepositories.SaveChangesAsync();
+                
+                return new MessageResultModel
+                {
+                    Message = "Đặt lại mật khẩu thành công"
                 };
             }
             catch (Exception ex)
