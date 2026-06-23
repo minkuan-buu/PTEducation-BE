@@ -4,5 +4,5 @@ namespace PTEducation.Data.DTO.RequestModel;
 
 public class AttachmentReqModel
 {
-    public IFormFile File { get; set; }
+    public required IFormFile File { get; set; }
 }

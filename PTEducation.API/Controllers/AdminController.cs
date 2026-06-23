@@ -123,21 +123,21 @@ namespace PTEducation.API.Controllers
             return Ok(Result);
         }
 
-        [HttpPost("test-upload")]
+        [HttpPost("users/{userId}/avatar")]
         [MapToApiVersion("2.0")]
-        public async Task<IActionResult> testUpload([FromForm] AttachmentReqModel reqModel)
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> UploadAvatar(string userId, [FromForm] AttachmentReqModel reqModel)
         {
             try
             {
                 if (reqModel.File == null || reqModel.File.Length == 0)
                     return BadRequest("No file uploaded.");
-
-                var Result = await _storageServices.UploadFileAsync(reqModel.File.OpenReadStream(), "admin-test-upload", reqModel.File.ContentType);
+                var Result = await _userServices.UploadAvatar(userId, reqModel);
                 return Ok(Result);
             }
-            catch (Exception ex)
+            catch (CustomException ex)
             {
-                return StatusCode(500, $"Error: {ex.Message}");
+                return BadRequest(new { message = ex.Message });
             }
         }
     }

@@ -20,19 +20,25 @@ namespace PTEducation.Business.Services.StorageServices
             var config = new AmazonS3Config
             {
                 ServiceURL = _settings.ServiceUrl,
-                ForcePathStyle = true // Cloudflare R2 requires Path Style URLs
+                ForcePathStyle = true, // Cloudflare R2 requires Path Style URLs
+                AuthenticationRegion = "auto"
             };
 
             _s3Client = new AmazonS3Client(_settings.AccessKeyId, _settings.SecretAccessKey, config);
         }
 
-        public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType)
+        public async Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType, string? folderPath = null)
         {
             var fileTransferUtility = new TransferUtility(_s3Client);
+            
+            var key = string.IsNullOrEmpty(folderPath) 
+                ? fileName 
+                : $"{folderPath.Trim('/')}/{fileName.TrimStart('/')}";
+
             var uploadRequest = new TransferUtilityUploadRequest
             {
                 InputStream = fileStream,
-                Key = fileName,
+                Key = key,
                 BucketName = _settings.BucketName,
                 ContentType = contentType,
                 DisablePayloadSigning = true // R2 does not support payload signing for some regions/calls
@@ -42,9 +48,9 @@ namespace PTEducation.Business.Services.StorageServices
 
             if (!string.IsNullOrEmpty(_settings.PublicUrl))
             {
-                return $"{_settings.PublicUrl.TrimEnd('/')}/{fileName.TrimStart('/')}";
+                return $"{_settings.PublicUrl.TrimEnd('/')}/{key.TrimStart('/')}";
             }
-            return fileName;
+            return key;
         }
 
         public async Task<Stream> DownloadFileAsync(string fileName)

@@ -172,7 +172,8 @@ public partial class PteducationContext : DbContext
             entity.Property(e => e.EndAt).HasColumnType("datetime");
             entity.Property(e => e.Name)
                 .HasMaxLength(100)
-                .IsUnicode(false);
+                .IsUnicode(false)
+                .HasDefaultValueSql("(NULL)");
             entity.Property(e => e.StartAt).HasColumnType("datetime");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
@@ -191,7 +192,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<ClassSchedule>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ClassSch__3214EC071624C88E");
+            entity.HasKey(e => e.Id).HasName("PK__ClassSch__3214EC077CA59604");
 
             entity.ToTable("ClassSchedule");
 
@@ -352,6 +353,9 @@ public partial class PteducationContext : DbContext
 
             entity.Property(e => e.Id)
                 .HasMaxLength(30)
+                .IsUnicode(false);
+            entity.Property(e => e.AvatarUrl)
+                .HasMaxLength(500)
                 .IsUnicode(false);
             entity.Property(e => e.Email)
                 .HasMaxLength(200)

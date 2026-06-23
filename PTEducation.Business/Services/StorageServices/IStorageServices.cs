@@ -12,7 +12,7 @@ namespace PTEducation.Business.Services.StorageServices
         /// <param name="fileName">Target file name/path in the bucket</param>
         /// <param name="contentType">MIME content type of the file (e.g. image/jpeg, application/pdf)</param>
         /// <returns>Public access URL or file path in bucket</returns>
-        Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType);
+        Task<string> UploadFileAsync(Stream fileStream, string fileName, string contentType, string? folderPath = null);
 
         /// <summary>
         /// Downloads a file from Cloudflare R2 storage.

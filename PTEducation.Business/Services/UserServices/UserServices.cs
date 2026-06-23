@@ -20,6 +20,7 @@ using PTEducation.Data.Repositories.ScoreDetailRepositories;
 using PTEducation.Data.Repositories.OTPRepositories;
 using PTEducation.Data.Repositories.ClassRepositories;
 using PTEducation.Data.Repositories.StudentGuardianRepositories;
+using PTEducation.Business.Services.StorageServices;
 
 namespace PTEducation.Business.Services.UserServices
 {
@@ -32,9 +33,10 @@ namespace PTEducation.Business.Services.UserServices
         private readonly IOTPRepositories _otpRepositories;
         private readonly IAttendanceDetailRepositories _attendanceDetailRepositories;
         private readonly IScoreDetailRepositories _scoreDetailRepositories;
+        private readonly IStorageServices _storageServices;
         private readonly IEmail _email;
         private readonly IMapper _mapper;
-        public UserServices(IUserRepositories userRepositories, IMapper mapper, IEmail email, IStudentClassRepositories studentClassRepositories, IAttendanceDetailRepositories attendanceDetailRepositories, IScoreDetailRepositories scoreDetailRepositories, IOTPRepositories otpRepositories, IClassRepositories classRepositories, IStudentGuardianRepositories studentGuardianRepositories)
+        public UserServices(IUserRepositories userRepositories, IMapper mapper, IEmail email, IStudentClassRepositories studentClassRepositories, IAttendanceDetailRepositories attendanceDetailRepositories, IScoreDetailRepositories scoreDetailRepositories, IOTPRepositories otpRepositories, IClassRepositories classRepositories, IStudentGuardianRepositories studentGuardianRepositories, IStorageServices storageServices)
         {
             _studentClassRepositories = studentClassRepositories;
             _studentGuardianRepositories = studentGuardianRepositories;
@@ -45,6 +47,7 @@ namespace PTEducation.Business.Services.UserServices
             _attendanceDetailRepositories = attendanceDetailRepositories;
             _scoreDetailRepositories = scoreDetailRepositories;
             _otpRepositories = otpRepositories;
+            _storageServices = storageServices;
         }
 
         public async Task<DataResultModel<RawUserLoginResModel>> Login(string Username, string Password)
@@ -874,6 +877,32 @@ namespace PTEducation.Business.Services.UserServices
             {
                 Data = result
             };
+        }
+
+        public async Task<MessageResultModel> UploadAvatar(string userId, AttachmentReqModel reqModel)
+        {
+            try
+            {
+                if (reqModel.File == null || reqModel.File.Length == 0)
+                    throw new CustomException("Không có file đính kèm!");
+                var user = await _userRepositories.GetSingle(x => x.Id == userId);
+                if (user == null)
+                {
+                    throw new CustomException("Không tìm thấy thông tin người dùng!");
+                }
+                var Url = await _storageServices.UploadFileAsync(reqModel.File.OpenReadStream(), Guid.NewGuid().ToString(), reqModel.File.ContentType, "users/avatars");
+                user.AvatarUrl = Url;
+                await _userRepositories.Update(user, saveChanges: false);
+                await _userRepositories.SaveChangesAsync();
+                return new MessageResultModel
+                {
+                    Message = "Ok"
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new CustomException(ex.Message);
+            }
         }
     }
 }
