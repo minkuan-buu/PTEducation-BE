@@ -17,6 +17,26 @@ namespace PTEducation.API.Controllers
             _userServices = userServices;
         }
 
+        [HttpPost("upload-avatar")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
+        public async Task<IActionResult> UploadAvatar([FromForm] AttachmentReqModel reqModel)
+        {
+            try
+            {
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+                var Result = await _userServices.UploadAvatar(userId, reqModel);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpGet("me")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
         public async Task<IActionResult> GetMyProfile()

@@ -7,6 +7,7 @@ using PTEducation.Business.Services.AuthServices;
 using Org.BouncyCastle.Ocsp;
 using PTEducation.Data.DTO.ResponseModel;
 using Asp.Versioning;
+using PTEducation.Business.Services.StorageServices;
 
 namespace PTEducation.API.Controllers
 {
@@ -17,9 +18,11 @@ namespace PTEducation.API.Controllers
     public class AdminController : ControllerBase
     {
         private readonly IUserServices _userServices;
-        public AdminController(IUserServices userServices)
+        private readonly IStorageServices _storageServices;
+        public AdminController(IUserServices userServices, IStorageServices storageServices)
         {
             _userServices = userServices;
+            _storageServices = storageServices;
         }
 
         [HttpGet("managers")]
@@ -118,6 +121,56 @@ namespace PTEducation.API.Controllers
         {
             var Result = await _userServices.DeleteStudent(userId);
             return Ok(Result);
+        }
+
+        [HttpPost("users/{userId}/avatar")]
+        [MapToApiVersion("2.0")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> UploadAvatar(string userId, [FromForm] AttachmentReqModel reqModel)
+        {
+            try
+            {
+                if (reqModel.File == null || reqModel.File.Length == 0)
+                    return BadRequest("No file uploaded.");
+                var Result = await _userServices.UploadAvatar(userId, reqModel);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("users/{userId}/reset-password")]
+        [MapToApiVersion("2.0")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> ResetPassword(string userId, [FromBody] UserResetPassword reqModel)
+        {
+            try
+            {
+                var Result = await _userServices.ResetPassword(userId, reqModel);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("users/{userId}")]
+        [MapToApiVersion("2.0")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> UpdateUserDetail(string userId, [FromBody] UserEditResModel payload)
+        {
+            try
+            {
+                var Result = await _userServices.UpdateUserDetail(userId, payload);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

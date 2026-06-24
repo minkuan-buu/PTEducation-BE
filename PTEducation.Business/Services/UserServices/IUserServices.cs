@@ -29,5 +29,8 @@ namespace PTEducation.Business.Services.UserServices
         Task InitAdminIfNeeded();
         //Task<bool> SendMail();
         Task<DataResultModel<UserEditResModel>> GetUserDetail(string userId);
+        Task<MessageResultModel> UpdateUserDetail(string userId, UserEditResModel payload);
+        Task<MessageResultModel> UploadAvatar(string userId, AttachmentReqModel reqModel);
+        Task<MessageResultModel> ResetPassword(string userId, UserResetPassword reqModel);
     }
 }

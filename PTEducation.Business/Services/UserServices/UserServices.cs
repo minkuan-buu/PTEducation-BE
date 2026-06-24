@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using PTEducation.Business.ApplicationMiddleware;
 using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
@@ -20,6 +20,7 @@ using PTEducation.Data.Repositories.ScoreDetailRepositories;
 using PTEducation.Data.Repositories.OTPRepositories;
 using PTEducation.Data.Repositories.ClassRepositories;
 using PTEducation.Data.Repositories.StudentGuardianRepositories;
+using PTEducation.Business.Services.StorageServices;
 
 namespace PTEducation.Business.Services.UserServices
 {
@@ -32,9 +33,11 @@ namespace PTEducation.Business.Services.UserServices
         private readonly IOTPRepositories _otpRepositories;
         private readonly IAttendanceDetailRepositories _attendanceDetailRepositories;
         private readonly IScoreDetailRepositories _scoreDetailRepositories;
+        private readonly IStorageServices _storageServices;
         private readonly IEmail _email;
         private readonly IMapper _mapper;
-        public UserServices(IUserRepositories userRepositories, IMapper mapper, IEmail email, IStudentClassRepositories studentClassRepositories, IAttendanceDetailRepositories attendanceDetailRepositories, IScoreDetailRepositories scoreDetailRepositories, IOTPRepositories otpRepositories, IClassRepositories classRepositories, IStudentGuardianRepositories studentGuardianRepositories)
+        private readonly string _domainFE = Environment.GetEnvironmentVariable("DOMAIN_FE") ?? throw new InvalidOperationException("DOMAIN_FE environment variable is not set.");
+        public UserServices(IUserRepositories userRepositories, IMapper mapper, IEmail email, IStudentClassRepositories studentClassRepositories, IAttendanceDetailRepositories attendanceDetailRepositories, IScoreDetailRepositories scoreDetailRepositories, IOTPRepositories otpRepositories, IClassRepositories classRepositories, IStudentGuardianRepositories studentGuardianRepositories, IStorageServices storageServices)
         {
             _studentClassRepositories = studentClassRepositories;
             _studentGuardianRepositories = studentGuardianRepositories;
@@ -45,6 +48,7 @@ namespace PTEducation.Business.Services.UserServices
             _attendanceDetailRepositories = attendanceDetailRepositories;
             _scoreDetailRepositories = scoreDetailRepositories;
             _otpRepositories = otpRepositories;
+            _storageServices = storageServices;
         }
 
         public async Task<DataResultModel<RawUserLoginResModel>> Login(string Username, string Password)
@@ -260,6 +264,7 @@ namespace PTEducation.Business.Services.UserServices
                 GuardHtml = GuardHtml.Replace("{{STUDENTNAME}}", ReqModel.Name);
                 GuardHtml = GuardHtml.Replace("{{GUARDIANNAME}}", guardian.Name);
                 GuardHtml = GuardHtml.Replace("{{USERNAME}}", guardian.Email);
+                GuardHtml = GuardHtml.Replace("{{DOMAIN_FE}}", _domainFE);
                 listEmail.Add(
                     new EmailReqModel
                     {
@@ -288,6 +293,7 @@ namespace PTEducation.Business.Services.UserServices
             Html = Html.Replace("{{PASSWORD}}", GeneratePassword);
             Html = Html.Replace("{{STUDENTNAME}}", ReqModel.Name);
             Html = Html.Replace("{{USERNAME}}", ReqModel.Email);
+            Html = Html.Replace("{{DOMAIN_FE}}", _domainFE);
             listEmail.Add(
                 new EmailReqModel
                 {
@@ -419,6 +425,7 @@ namespace PTEducation.Business.Services.UserServices
                 Html = Html.Replace("{{MANAGERNAME}}", item.Name);
                 Html = Html.Replace("{{PASSWORD}}", GeneratePassword);
                 Html = Html.Replace("{{USERNAME}}", item.Email);
+                Html = Html.Replace("{{DOMAIN_FE}}", _domainFE);
                 listEmail.Add(new EmailReqModel
                 {
                     Email = item.Email,
@@ -860,6 +867,7 @@ namespace PTEducation.Business.Services.UserServices
                 Email = GetUser.Email,
                 Phone = GetUser.Phone,
                 SchoolInfo = GetUser.SchoolInfo ?? string.Empty,
+                AvatarUrl = GetUser.AvatarUrl,
                 Guardians = GetUser.StudentGuardianStudents.Select(x => new UserGuardianListResModel
                 {
                     Id = x.GuardianId,
@@ -873,6 +881,366 @@ namespace PTEducation.Business.Services.UserServices
             return new DataResultModel<UserEditResModel>
             {
                 Data = result
+            };
+        }
+
+        public async Task<MessageResultModel> UploadAvatar(string userId, AttachmentReqModel reqModel)
+        {
+            try
+            {
+                if (reqModel.File == null || reqModel.File.Length == 0)
+                    throw new CustomException("Không có file đính kèm!");
+                var user = await _userRepositories.GetSingle(x => x.Id == userId);
+                if (user == null)
+                {
+                    throw new CustomException("Không tìm thấy thông tin người dùng!");
+                }
+                var Url = await _storageServices.UploadFileAsync(reqModel.File.OpenReadStream(), Guid.NewGuid().ToString(), reqModel.File.ContentType, "users/avatars");
+                
+                if (!string.IsNullOrWhiteSpace(user.AvatarUrl))
+                {
+                    try
+                    {
+                        string oldKey = user.AvatarUrl;
+                        if (oldKey.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+                            oldKey.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var uri = new Uri(oldKey);
+                            oldKey = uri.AbsolutePath.TrimStart('/');
+                        }
+                        await _storageServices.DeleteFileAsync(oldKey);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Don't block upload if old file deletion fails
+                        Console.WriteLine($"Error deleting old avatar file: {ex.Message}");
+                    }
+                }
+
+                user.AvatarUrl = Url;
+                await _userRepositories.Update(user, saveChanges: false);
+                await _userRepositories.SaveChangesAsync();
+                return new MessageResultModel
+                {
+                    Message = "Ok"
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new CustomException(ex.Message);
+            }
+        }
+
+        public async Task<MessageResultModel> ResetPassword(string userId, UserResetPassword reqModel)
+        {
+            try
+            {
+                var user = await _userRepositories.GetSingle(x => x.Id == userId);
+                if (user == null)
+                {
+                    throw new CustomException("Không tìm thấy thông tin người dùng!");
+                }
+                var GeneratePassword = reqModel.Password ?? Authentication.GenerateRandomPassword();
+                string HashedPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
+                user.PasswordBcrypt = HashedPassword;
+                user.IsNeedResetPassword = true;
+                await _userRepositories.Update(user, saveChanges: false);
+                await _userRepositories.SaveChangesAsync();
+
+                string fileResetPath = "../PTEducation.Business/TemplateEmail/PasswordResetAdminNotification.html";
+                if (File.Exists(fileResetPath))
+                {
+                    string htmlReset = File.ReadAllText(fileResetPath);
+                    htmlReset = htmlReset.Replace("{{NAME}}", user.Name);
+                    htmlReset = htmlReset.Replace("{{USERNAME}}", user.Email);
+                    htmlReset = htmlReset.Replace("{{PASSWORD}}", GeneratePassword);
+                    htmlReset = htmlReset.Replace("{{DOMAIN_FE}}", _domainFE);
+
+                    var listEmail = new List<EmailReqModel>
+                    {
+                        new EmailReqModel { Email = user.Email, HtmlContent = htmlReset }
+                    };
+                    await _email.SendEmail("Mật khẩu của bạn đã được đặt lại", listEmail);
+                }
+                
+                return new MessageResultModel
+                {
+                    Message = "Đặt lại mật khẩu thành công"
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new CustomException(ex.Message);
+            }
+        }
+
+        public async Task<MessageResultModel> UpdateUserDetail(string userId, UserEditResModel payload)
+        {
+            var student = await _userRepositories.GetSingle(
+                x => x.Id == userId && x.Role.Equals(RoleEnums.Student.ToString())
+            );
+
+            if (student == null)
+            {
+                throw new CustomException("Không tìm thấy học sinh!");
+            }
+
+            var studentClass = await _studentClassRepositories.GetSingle(x => x.StudentId == userId, includeProperties: "Class");
+            if (studentClass == null || studentClass.Class == null)
+            {
+                throw new CustomException("Học sinh chưa được gán vào lớp học!");
+            }
+
+            var className = TextConvert.ConvertFromUnicodeEscape(studentClass.Class.Name).Trim();
+            var classBlockMatch = System.Text.RegularExpressions.Regex.Match(className, @"^\d+");
+            var classBlock = classBlockMatch.Success ? classBlockMatch.Value : className;
+            if (!int.TryParse(classBlock, out var classBlockNumber))
+            {
+                throw new CustomException("Không thể tạo mã định danh phụ huynh vì tên lớp không hợp lệ.");
+            }
+            var classBlockCode = classBlockNumber.ToString("D2");
+
+            var listEmailToSend = new List<EmailReqModel>();
+
+            using var transaction = await _userRepositories.BeginTransactionAsync();
+            try
+            {
+                // Check if student email is changing
+                var oldStudentEmail = student.Email;
+                var newStudentEmail = payload.Email.Trim();
+                bool isStudentEmailChanged = !string.Equals(oldStudentEmail, newStudentEmail, StringComparison.OrdinalIgnoreCase);
+
+                if (isStudentEmailChanged)
+                {
+                    var existingUser = await _userRepositories.GetOtherUserByEmail(newStudentEmail, userId);
+                    if (existingUser != null)
+                    {
+                        throw new CustomException("Email của học sinh đã tồn tại!");
+                    }
+
+                    student.Email = newStudentEmail;
+
+                    // Send notification to old email
+                    string fileOldPath = "../PTEducation.Business/TemplateEmail/EmailChangedOld.html";
+                    if (File.Exists(fileOldPath))
+                    {
+                        string htmlOld = File.ReadAllText(fileOldPath);
+                        htmlOld = htmlOld.Replace("{{NAME}}", student.Name);
+                        htmlOld = htmlOld.Replace("{{OLD_EMAIL}}", oldStudentEmail);
+                        htmlOld = htmlOld.Replace("{{NEW_EMAIL}}", newStudentEmail);
+                        listEmailToSend.Add(new EmailReqModel
+                        {
+                            Email = oldStudentEmail,
+                            HtmlContent = htmlOld
+                        });
+                    }
+
+                    // Send notification to new email
+                    string fileNewPath = "../PTEducation.Business/TemplateEmail/EmailChangedNew.html";
+                    if (File.Exists(fileNewPath))
+                    {
+                        string htmlNew = File.ReadAllText(fileNewPath);
+                        htmlNew = htmlNew.Replace("{{NAME}}", student.Name);
+                        htmlNew = htmlNew.Replace("{{NEW_EMAIL}}", newStudentEmail);
+                        htmlNew = htmlNew.Replace("{{DOMAIN_FE}}", _domainFE);
+                        listEmailToSend.Add(new EmailReqModel
+                        {
+                            Email = newStudentEmail,
+                            HtmlContent = htmlNew
+                        });
+                    }
+                }
+
+                student.Name = payload.Name;
+                student.Phone = payload.Phone ?? "";
+                student.SchoolInfo = payload.SchoolInfo;
+                student.AvatarUrl = payload.AvatarUrl ?? "";
+
+                await _userRepositories.Update(student, saveChanges: false);
+
+                // Process Guardians
+                var existingStudentGuardians = (await _studentGuardianRepositories.GetList(
+                    x => x.StudentId == userId,
+                    includeProperties: "Guardian"
+                )).ToList();
+
+                var payloadGuardians = payload.Guardians ?? new List<UserGuardianListResModel>();
+
+                // Detect deletions
+                var payloadGuardianIds = payloadGuardians
+                    .Select(g => g.Id)
+                    .Where(id => !string.IsNullOrEmpty(id) && !id.StartsWith("g-"))
+                    .ToList();
+
+                var guardiansToDelete = existingStudentGuardians
+                    .Where(sg => !payloadGuardianIds.Contains(sg.GuardianId))
+                    .ToList();
+
+                if (guardiansToDelete.Count > 0)
+                {
+                    await _studentGuardianRepositories.DeleteRange(guardiansToDelete, saveChanges: false);
+                }
+
+                // Detect updates & additions
+                int? nextGuardianSeq = null;
+
+                foreach (var payloadG in payloadGuardians)
+                {
+                    var cleanEmail = payloadG.Email.Trim();
+
+                    if (string.IsNullOrEmpty(payloadG.Id) || payloadG.Id.StartsWith("g-"))
+                    {
+                        // Add new guardian
+                        var existingUser = await _userRepositories.GetOtherUserByEmail(cleanEmail, "");
+                        if (existingUser != null)
+                        {
+                            throw new CustomException($"Email phụ huynh {payloadG.Name} ({cleanEmail}) đã tồn tại!");
+                        }
+
+                        if (nextGuardianSeq == null)
+                        {
+                            var usersInClassBlock = await _userRepositories.GetList(x =>
+                                x.Id.StartsWith($"1{classBlockCode}") || x.Id.StartsWith($"2{classBlockCode}"));
+
+                            var maxGuardianSequence = usersInClassBlock
+                                .Where(x => x.Id.StartsWith($"2{classBlockCode}") && x.Id.Length == 7)
+                                .Select(x => int.TryParse(x.Id.Substring(3, 4), out var seq) ? seq : 0)
+                                .DefaultIfEmpty(0)
+                                .Max();
+                            nextGuardianSeq = maxGuardianSequence + 1;
+                        }
+
+                        if (nextGuardianSeq > 9999)
+                        {
+                            throw new CustomException("Đã vượt quá giới hạn mã giám hộ cho khối.");
+                        }
+
+                        var newGuardianId = $"2{classBlockCode}{nextGuardianSeq:0000}";
+                        nextGuardianSeq++;
+
+                        var newPassword = Authentication.GenerateRandomPassword();
+
+                        var newGuardian = new User
+                        {
+                            Id = newGuardianId,
+                            Name = payloadG.Name,
+                            Email = cleanEmail,
+                            Phone = payloadG.Phone ?? "",
+                            Role = RoleEnums.Guardian.ToString(),
+                            Status = student.Status, // Inherit status from student
+                            IsNeedResetPassword = true,
+                            PasswordBcrypt = Authentication.CreateHashPasswordBCrypt(newPassword)
+                        };
+
+                        await _userRepositories.Insert(newGuardian, saveChanges: false);
+
+                        var newStudentGuardian = new StudentGuardian
+                        {
+                            Id = Guid.NewGuid(),
+                            StudentId = userId,
+                            GuardianId = newGuardianId,
+                            IsPrimary = payloadG.IsPrimary,
+                            Relationship = payloadG.Relationship
+                        };
+
+                        await _studentGuardianRepositories.Insert(newStudentGuardian, saveChanges: false);
+
+                        string fileGuardianPath = "../PTEducation.Business/TemplateEmail/FirstInformationNewGuardian.html";
+                        if (File.Exists(fileGuardianPath))
+                        {
+                            string guardHtml = File.ReadAllText(fileGuardianPath);
+                            guardHtml = guardHtml.Replace("{{PASSWORD}}", newPassword);
+                            guardHtml = guardHtml.Replace("{{CLASSNAME}}", className);
+                            guardHtml = guardHtml.Replace("{{STUDENTNAME}}", payload.Name);
+                            guardHtml = guardHtml.Replace("{{GUARDIANNAME}}", payloadG.Name);
+                            guardHtml = guardHtml.Replace("{{USERNAME}}", cleanEmail);
+                            guardHtml = guardHtml.Replace("{{DOMAIN_FE}}", _domainFE);
+                            listEmailToSend.Add(new EmailReqModel
+                            {
+                                Email = cleanEmail,
+                                HtmlContent = guardHtml
+                            });
+                        }
+                    }
+                    else
+                    {
+                        // Update existing guardian
+                        var existingSG = existingStudentGuardians.FirstOrDefault(sg => sg.GuardianId == payloadG.Id);
+                        if (existingSG != null && existingSG.Guardian != null)
+                        {
+                            var guardian = existingSG.Guardian;
+                            var oldGuardianEmail = guardian.Email;
+                            bool isGuardianEmailChanged = !string.Equals(oldGuardianEmail, cleanEmail, StringComparison.OrdinalIgnoreCase);
+
+                            if (isGuardianEmailChanged)
+                            {
+                                var existingUser = await _userRepositories.GetOtherUserByEmail(cleanEmail, guardian.Id);
+                                if (existingUser != null)
+                                {
+                                    throw new CustomException($"Email phụ huynh {payloadG.Name} ({cleanEmail}) đã tồn tại!");
+                                }
+
+                                guardian.Email = cleanEmail;
+
+                                // Send notification to old email
+                                string fileOldPath = "../PTEducation.Business/TemplateEmail/EmailChangedOld.html";
+                                if (File.Exists(fileOldPath))
+                                {
+                                    string htmlOld = File.ReadAllText(fileOldPath);
+                                    htmlOld = htmlOld.Replace("{{NAME}}", guardian.Name);
+                                    htmlOld = htmlOld.Replace("{{OLD_EMAIL}}", oldGuardianEmail);
+                                    htmlOld = htmlOld.Replace("{{NEW_EMAIL}}", cleanEmail);
+                                    listEmailToSend.Add(new EmailReqModel
+                                    {
+                                        Email = oldGuardianEmail,
+                                        HtmlContent = htmlOld
+                                    });
+                                }
+
+                                // Send notification to new email
+                                string fileNewPath = "../PTEducation.Business/TemplateEmail/EmailChangedNew.html";
+                                if (File.Exists(fileNewPath))
+                                {
+                                    string htmlNew = File.ReadAllText(fileNewPath);
+                                    htmlNew = htmlNew.Replace("{{NAME}}", guardian.Name);
+                                    htmlNew = htmlNew.Replace("{{NEW_EMAIL}}", cleanEmail);
+                                    htmlNew = htmlNew.Replace("{{DOMAIN_FE}}", _domainFE);
+                                    listEmailToSend.Add(new EmailReqModel
+                                    {
+                                        Email = cleanEmail,
+                                        HtmlContent = htmlNew
+                                    });
+                                }
+                            }
+
+                            guardian.Name = payloadG.Name;
+                            guardian.Phone = payloadG.Phone ?? "";
+                            await _userRepositories.Update(guardian, saveChanges: false);
+
+                            existingSG.IsPrimary = payloadG.IsPrimary;
+                            existingSG.Relationship = payloadG.Relationship;
+                            await _studentGuardianRepositories.Update(existingSG, saveChanges: false);
+                        }
+                    }
+                }
+
+                await _userRepositories.SaveChangesAsync();
+                await _userRepositories.CommitTransactionAsync();
+
+                if (listEmailToSend.Count > 0)
+                {
+                    await _email.SendEmail("[Thông tin đăng nhập]", listEmailToSend);
+                }
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+
+            return new MessageResultModel
+            {
+                Message = "Ok"
             };
         }
     }

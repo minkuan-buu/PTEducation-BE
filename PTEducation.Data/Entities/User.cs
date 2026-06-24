@@ -23,6 +23,8 @@ public partial class User
 
     public string? SchoolInfo { get; set; }
 
+    public string? AvatarUrl { get; set; }
+
     public virtual ICollection<ChatDetail> ChatDetails { get; set; } = new List<ChatDetail>();
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();

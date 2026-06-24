@@ -10,6 +10,10 @@ namespace PTEducation.Business.Ultilities.Email
 {
     public class Email : IEmail
     {
+        private readonly string _smtpHost = Environment.GetEnvironmentVariable("SMTP_HOST") ?? throw new InvalidOperationException("SMTP_HOST environment variable is not set.");
+        private readonly string _emailAddress = Environment.GetEnvironmentVariable("EMAIL_ADDRESS") ?? throw new InvalidOperationException("EMAIL_ADDRESS environment variable is not set.");
+        private readonly string _password = Environment.GetEnvironmentVariable("EMAIL_PASSWORD") ?? throw new InvalidOperationException("EMAIL_PASSWORD environment variable is not set.");
+
         public Email()
         {
         }
@@ -18,15 +22,17 @@ namespace PTEducation.Business.Ultilities.Email
         {
             try
             {
-                string from = "minhquandoanngoc@gmail.com";
-                string pass = "amua xwrw epnv imuj";
+                //string from = "minhquandoanngoc@gmail.com";
+                //string pass = "amua xwrw epnv imuj";
+                string from = _emailAddress;
+                string pass = _password;
                 using MailKit.Net.Smtp.SmtpClient smtp = new();
-                await smtp.ConnectAsync("smtp.gmail.com", 587, SecureSocketOptions.StartTls);
+                await smtp.ConnectAsync(_smtpHost, 465, SecureSocketOptions.SslOnConnect);
                 await smtp.AuthenticateAsync(from, pass);
                 foreach (var item in emailReqModels)
                 {
                     MimeMessage message = new();
-                    message.From.Add(MailboxAddress.Parse("admin@buubuu.id.vn"));
+                    message.From.Add(new MailboxAddress("PTEducation", from));
                     message.To.Add(MailboxAddress.Parse(item.Email));
                     message.Subject = Subject;
                     message.Body = new TextPart(MimeKit.Text.TextFormat.Html)
@@ -39,6 +45,7 @@ namespace PTEducation.Business.Ultilities.Email
             }
             catch (Exception e)
             {
+                Console.WriteLine(e.Message);
             }
         }
 
