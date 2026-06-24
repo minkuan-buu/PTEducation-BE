@@ -144,11 +144,27 @@ namespace PTEducation.API.Controllers
         [HttpPost("users/{userId}/reset-password")]
         [MapToApiVersion("2.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
-        public async Task<IActionResult> ResetPassword(string userId)
+        public async Task<IActionResult> ResetPassword(string userId, [FromBody] UserResetPassword reqModel)
         {
             try
             {
-                var Result = await _userServices.ResetPassword(userId);
+                var Result = await _userServices.ResetPassword(userId, reqModel);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("users/{userId}")]
+        [MapToApiVersion("2.0")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> UpdateUserDetail(string userId, [FromBody] UserEditResModel payload)
+        {
+            try
+            {
+                var Result = await _userServices.UpdateUserDetail(userId, payload);
                 return Ok(Result);
             }
             catch (CustomException ex)
