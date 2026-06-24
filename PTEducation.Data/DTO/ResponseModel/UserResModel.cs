@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -87,6 +87,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Email { get; set; } = null!;
         public string Phone { get; set; } = null!;
         public string SchoolInfo { get; set; } = null!;
+        public string? AvatarUrl { get; set; }
         public List<UserGuardianListResModel> Guardians { get; set; } = null!;
     }
 

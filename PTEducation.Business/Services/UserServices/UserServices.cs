@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using PTEducation.Business.ApplicationMiddleware;
 using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
@@ -867,6 +867,7 @@ namespace PTEducation.Business.Services.UserServices
                 Email = GetUser.Email,
                 Phone = GetUser.Phone,
                 SchoolInfo = GetUser.SchoolInfo ?? string.Empty,
+                AvatarUrl = GetUser.AvatarUrl,
                 Guardians = GetUser.StudentGuardianStudents.Select(x => new UserGuardianListResModel
                 {
                     Id = x.GuardianId,
@@ -895,6 +896,27 @@ namespace PTEducation.Business.Services.UserServices
                     throw new CustomException("Không tìm thấy thông tin người dùng!");
                 }
                 var Url = await _storageServices.UploadFileAsync(reqModel.File.OpenReadStream(), Guid.NewGuid().ToString(), reqModel.File.ContentType, "users/avatars");
+                
+                if (!string.IsNullOrWhiteSpace(user.AvatarUrl))
+                {
+                    try
+                    {
+                        string oldKey = user.AvatarUrl;
+                        if (oldKey.StartsWith("http://", StringComparison.OrdinalIgnoreCase) || 
+                            oldKey.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var uri = new Uri(oldKey);
+                            oldKey = uri.AbsolutePath.TrimStart('/');
+                        }
+                        await _storageServices.DeleteFileAsync(oldKey);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Don't block upload if old file deletion fails
+                        Console.WriteLine($"Error deleting old avatar file: {ex.Message}");
+                    }
+                }
+
                 user.AvatarUrl = Url;
                 await _userRepositories.Update(user, saveChanges: false);
                 await _userRepositories.SaveChangesAsync();
