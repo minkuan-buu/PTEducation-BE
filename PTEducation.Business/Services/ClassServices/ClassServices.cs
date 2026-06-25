@@ -92,7 +92,7 @@ namespace PTEducation.Business.Services.ClassServices
 
         public async Task<ListDataResultModel<ClassListSelectResModel>> GetClassSelectList()
         {
-            var ListClass = await _classRepositories.GetList(x => x.Status.Equals(GeneralStatusEnums.Active.ToString()));
+            var ListClass = await _classRepositories.GetList(x => x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "ClassSchedules");
             return new ListDataResultModel<ClassListSelectResModel>()
             {
                 Data = _mapper.Map<List<ClassListSelectResModel>>(ListClass)

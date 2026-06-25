@@ -95,8 +95,13 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.IsNeedResetPassword, opt => opt.MapFrom(src =>
                     true));
             CreateMap<Class, ClassListSelectResModel>()
-                .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
-                    TextConvert.ConvertFromUnicodeEscape(src.Name)));
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>src.Name))
+                .ForMember(dest => dest.WeeklySchedules, opt => opt.MapFrom(src => src.ClassSchedules.Select(x => new ClassScheduleResModel
+                {
+                    DayOfWeek = x.DayOfWeek,
+                    StartTime = x.StartTime,
+                    EndTime = x.EndTime
+                }).ToList()));
             CreateMap<ClassSchedule, ClassScheduleResModel>()
                 .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => src.StartTime))
                 .ForMember(dest => dest.EndTime, opt => opt.MapFrom(src => src.EndTime));
