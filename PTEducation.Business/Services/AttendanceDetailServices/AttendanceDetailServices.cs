@@ -1,4 +1,4 @@
-﻿using PTEducation.Data.DTO.RequestModel;
+using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Data.DTO.ResponseModel;
 using PTEducation.Data.Enums;
 using PTEducation.Data.Entities;
@@ -24,7 +24,7 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
 
         public async Task<MessageResultModel> UpdateAttendance(AttendanceDetailUpdateReqModel AttendanceReq)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceReq.Id), includeProperties: "AttendanceDetails");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceReq.Id), includeProperties: "AttendanceDetailAttendances");
             if (CheckExist == null)
             {
                 return new MessageResultModel()
@@ -73,7 +73,7 @@ namespace PTEducation.Business.Services.AttendanceDetailServices
 
         public async Task<MessageResultModel> UpdateAttendanceV2(Guid AttendanceId, List<AttendanceDetailStudentReqModel> AttendanceReqList)
         {
-            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceId), includeProperties: "AttendanceDetails");
+            var CheckExist = await _attendanceRepositories.GetSingle(x => x.Id.Equals(AttendanceId), includeProperties: "AttendanceDetailAttendances");
             if (CheckExist == null)
             {
                 return new MessageResultModel()

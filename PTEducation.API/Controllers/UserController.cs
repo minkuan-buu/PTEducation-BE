@@ -43,8 +43,12 @@ namespace PTEducation.API.Controllers
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _userServices.GetMyProfile(token);
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+                var Result = await _userServices.GetMyProfile(userId);
                 return Ok(Result);
             }
             catch (CustomException ex)

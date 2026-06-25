@@ -347,9 +347,8 @@ namespace PTEducation.Business.Services.UserServices
             };
         }
 
-        public async Task<DataResultModel<UserProfileResModel>> GetMyProfile(string token)
+        public async Task<DataResultModel<UserProfileResModel>> GetMyProfile(string userId)
         {
-            var userId = Authentication.DecodeToken(token, "userid");
             var user = await _userRepositories.GetSingle(x => x.Id == userId && x.Status.Equals(GeneralStatusEnums.Active.ToString()), includeProperties: "StudentClasses.Class");
             if (user == null)
             {

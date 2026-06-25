@@ -105,7 +105,13 @@ namespace PTEducation.Business.Services.StudentServices
         public async Task<DataResultModel<AttendanceStudentResModel>> GetAttendanceByMonth(int Month, int Year, string userId)
         {
             var (student, userClass) = await ResolveStudentAndClass(userId);
-            var Attandance = await _attendanceRepositories.GetList(x => x.ClassId == userClass.ClassId && x.Date.Month == Month && x.Date.Year == Year && x.Status.Equals(AttendanceStatusEnums.Closed.ToString()), includeProperties: "AttendanceDetails.StudentClass");
+            var Attandance = await _attendanceRepositories.GetList(
+                x => (x.ClassId == userClass.ClassId || x.AttendanceDetailAttendances.Any(y => y.StudentClass.StudentId == student.Id)) && 
+                     x.Date.Month == Month && 
+                     x.Date.Year == Year && 
+                     x.Status.Equals(AttendanceStatusEnums.Closed.ToString()), 
+                includeProperties: "AttendanceDetailAttendances.StudentClass"
+            );
             var ListAttandance = Attandance.ToList();
             List<AttendanceStudentDetailResModel> ListAttendanceDetails = new();
             foreach (var attendance in ListAttandance)
@@ -160,7 +166,11 @@ namespace PTEducation.Business.Services.StudentServices
         public async Task<ListDataResultModel<AttendanceMonthResModel>> GetAttendanceMonth(string userId)
         {
             var (student, userClass) = await ResolveStudentAndClass(userId);
-            var Score = await _attendanceRepositories.GetList(x => x.ClassId.Equals(userClass.ClassId) && !x.Status.Equals(GeneralStatusEnums.Inactive.ToString()));
+            var Score = await _attendanceRepositories.GetList(
+                x => (x.ClassId == userClass.ClassId || x.AttendanceDetailAttendances.Any(y => y.StudentClass.StudentId == student.Id)) && 
+                     !x.Status.Equals(GeneralStatusEnums.Inactive.ToString()),
+                includeProperties: "AttendanceDetailAttendances.StudentClass"
+            );
             var distinctMonths = Score
                 .Select(attendance => new { attendance.Date.Year, attendance.Date.Month })  // Lấy ra năm và tháng của từng bài kiểm tra
                 .Distinct()  // Lấy ra các tháng khác nhau

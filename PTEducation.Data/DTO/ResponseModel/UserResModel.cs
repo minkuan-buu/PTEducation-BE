@@ -22,6 +22,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Name { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string PhoneNumber { get; set; } = null!;
+        public string? AvatarUrl { get; set; }
         public string Role { get; set; } = null!;
         public bool IsResetPassword = false;
         // public string Token { get; set; } = null!;
@@ -34,6 +35,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Name { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string PhoneNumber { get; set; } = null!;
+        public string? AvatarUrl { get; set; }
         public string Role { get; set; } = null!;
         public bool IsResetPassword = false;
         public string Token { get; set; } = null!;
