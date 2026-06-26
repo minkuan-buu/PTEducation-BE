@@ -114,11 +114,40 @@ namespace PTEducation.Business.Services.OverviewServices
                 ad => ad.StudentClassId == studentClassId && ad.Attendance.Status == AttendanceStatusEnums.Closed.ToString(),
                 includeProperties: "Attendance"
             );
-            var totalClosedSessions = closedAttendanceDetails.Count();
-            var presentOrLateSessions = closedAttendanceDetails.Count(ad =>
-                ad.Status == AttendanceEnums.Present.ToString() ||
-                ad.Status == AttendanceEnums.Late.ToString()
-            );
+
+            var ownClassDetails = closedAttendanceDetails
+                .Where(ad => ad.Attendance.ClassId == classId)
+                .ToList();
+
+            var makeUpDetails = closedAttendanceDetails
+                .Where(ad => ad.MakeUpSession != null)
+                .ToList();
+
+            var totalClosedSessions = ownClassDetails.Count;
+            var presentOrLateSessions = 0;
+
+            foreach (var ownAd in ownClassDetails)
+            {
+                if (ownAd.Status == AttendanceEnums.Present.ToString() ||
+                    ownAd.Status == AttendanceEnums.Late.ToString())
+                {
+                    presentOrLateSessions++;
+                }
+                else
+                {
+                    var hasSuccessfulMakeup = makeUpDetails.Any(mu =>
+                        mu.MakeUpSession == ownAd.AttendanceId &&
+                        (mu.Status == AttendanceEnums.Present.ToString() ||
+                         mu.Status == AttendanceEnums.Late.ToString())
+                    );
+
+                    if (hasSuccessfulMakeup)
+                    {
+                        presentOrLateSessions++;
+                    }
+                }
+            }
+
             decimal attendanceRate = totalClosedSessions > 0
                 ? ((decimal)presentOrLateSessions / totalClosedSessions) * 100
                 : 0;
@@ -226,20 +255,54 @@ namespace PTEducation.Business.Services.OverviewServices
                 ad => ad.StudentClassId == studentClassId && ad.Attendance.Status == AttendanceStatusEnums.Closed.ToString(),
                 includeProperties: "Attendance"
             );
-            var totalClosedSessions = closedAttendanceDetails.Count();
-            var presentOrLateSessions = closedAttendanceDetails.Count(ad =>
-                ad.Status == AttendanceEnums.Present.ToString() ||
-                ad.Status == AttendanceEnums.Late.ToString()
-            );
-            var absentSessions = closedAttendanceDetails.Count(ad =>
-                ad.Status == AttendanceEnums.Absent.ToString()
-            );
+
+            var ownClassDetails = closedAttendanceDetails
+                .Where(ad => ad.Attendance.ClassId == classId)
+                .ToList();
+
+            var makeUpDetails = closedAttendanceDetails
+                .Where(ad => ad.MakeUpSession != null)
+                .ToList();
+
+            var totalClosedSessions = ownClassDetails.Count;
+            var presentOrLateSessions = 0;
+            var absentSessions = 0;
+
+            foreach (var ownAd in ownClassDetails)
+            {
+                if (ownAd.Status == AttendanceEnums.Present.ToString() ||
+                    ownAd.Status == AttendanceEnums.Late.ToString())
+                {
+                    presentOrLateSessions++;
+                }
+                else
+                {
+                    var hasSuccessfulMakeup = makeUpDetails.Any(mu =>
+                        mu.MakeUpSession == ownAd.AttendanceId &&
+                        (mu.Status == AttendanceEnums.Present.ToString() ||
+                         mu.Status == AttendanceEnums.Late.ToString())
+                    );
+
+                    if (hasSuccessfulMakeup)
+                    {
+                        presentOrLateSessions++;
+                    }
+                    else if (ownAd.Status == AttendanceEnums.Absent.ToString())
+                    {
+                        absentSessions++;
+                    }
+                }
+            }
 
             decimal attendanceRate = totalClosedSessions > 0
                 ? ((decimal)presentOrLateSessions / totalClosedSessions) * 100
                 : 0;
 
-            var Attendances = await _attendanceRepositories.GetList(x => x.ClassId.Equals(classId) && !x.Status.Equals(GeneralStatusEnums.Inactive.ToString()));
+            var Attendances = await _attendanceRepositories.GetList(
+                x => (x.ClassId == classId || x.AttendanceDetailAttendances.Any(y => y.StudentClassId == studentClassId)) && 
+                     !x.Status.Equals(GeneralStatusEnums.Inactive.ToString()),
+                includeProperties: "AttendanceDetailAttendances"
+            );
             var distinctMonths = Attendances
                 .Select(attendance => new { attendance.Date.Year, attendance.Date.Month })
                 .Distinct()
@@ -266,7 +329,7 @@ namespace PTEducation.Business.Services.OverviewServices
             DateTime endOfWeek = startOfWeek.AddDays(7).AddSeconds(-1);
 
             var extraAttendancesThisWeek = Attendances.Where(a =>
-                a.ClassScheduleId == null &&
+                (a.ClassScheduleId == null || a.ClassId != classId) &&
                 a.Date.ToDateTime(TimeOnly.MinValue) >= startOfWeek &&
                 a.Date.ToDateTime(TimeOnly.MinValue) <= endOfWeek
             ).ToList();

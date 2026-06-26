@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using PTEducation.Business.ApplicationMiddleware;
 using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
@@ -469,7 +469,18 @@ namespace PTEducation.Business.Services.AttendanceServices
 
         public async Task<DataResultModel<List<GeneralDropdownResModel>>> GetStudentAbsentSessions(Guid classId, Guid studentClassId)
         {
-            var CheckExist = await _attendanceRepositories.GetList(x => x.ClassId.Equals(classId) && x.AttendanceDetailAttendances.Any(y => y.StudentClassId.Equals(studentClassId) && y.Status.Equals(AttendanceEnums.Absent.ToString())) && x.Status.Equals(AttendanceStatusEnums.Closed.ToString()));
+            var CheckExist = await _attendanceRepositories.GetList(x => 
+                x.ClassId.Equals(classId) && 
+                x.Status.Equals(AttendanceStatusEnums.Closed.ToString()) && 
+                x.AttendanceDetailAttendances.Any(y => 
+                    y.StudentClassId.Equals(studentClassId) && 
+                    y.Status.Equals(AttendanceEnums.Absent.ToString()) &&
+                    !y.StudentClass.AttendanceDetails.Any(m => 
+                        m.MakeUpSession == x.Id && 
+                        (m.Status.Equals(AttendanceEnums.Present.ToString()) || m.Status.Equals(AttendanceEnums.Late.ToString()))
+                    )
+                )
+            );
             if (CheckExist.ToList().Count == 0)
             {
                 return new DataResultModel<List<GeneralDropdownResModel>>
