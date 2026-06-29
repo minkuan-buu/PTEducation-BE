@@ -204,6 +204,13 @@ namespace PTEducation.Business.MapperProfiles
                     }).ToList()));
 
             CreateMap<Attendance, AttendanceSessionResModel>();
+            CreateMap<TuitionCreateReqModel, TuitionPeriod>()
+                .ForMember(dest => dest.FromDate, opt => opt.MapFrom(src => src.FromDate))
+                .ForMember(dest => dest.ToDate, opt => opt.MapFrom(src => src.ToDate))
+                .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount))
+                .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title))
+                .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate ?? null))
+                .ForMember(dest => dest.GradeId, opt => opt.MapFrom(src => src.GradeId));
         }
     }
 }

@@ -8,6 +8,7 @@ using Org.BouncyCastle.Ocsp;
 using PTEducation.Data.DTO.ResponseModel;
 using Asp.Versioning;
 using PTEducation.Business.Services.StorageServices;
+using PTEducation.Business.Services.TuitionServices;
 
 namespace PTEducation.API.Controllers
 {
@@ -19,10 +20,12 @@ namespace PTEducation.API.Controllers
     {
         private readonly IUserServices _userServices;
         private readonly IStorageServices _storageServices;
-        public AdminController(IUserServices userServices, IStorageServices storageServices)
+        private readonly ITuitionServices _tuitionServices;
+        public AdminController(IUserServices userServices, IStorageServices storageServices, ITuitionServices tuitionServices)
         {
             _userServices = userServices;
             _storageServices = storageServices;
+            _tuitionServices = tuitionServices;
         }
 
         [HttpGet("managers")]
@@ -165,6 +168,27 @@ namespace PTEducation.API.Controllers
             try
             {
                 var Result = await _userServices.UpdateUserDetail(userId, payload);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("tuition")]
+        [MapToApiVersion("1.0")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
+        public async Task<IActionResult> AddTuition([FromBody] TuitionCreateReqModel tuitionCreateReqModel)
+        {
+            try
+            {
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+                var Result = await _tuitionServices.AddTuition(tuitionCreateReqModel, userId);
                 return Ok(Result);
             }
             catch (CustomException ex)
