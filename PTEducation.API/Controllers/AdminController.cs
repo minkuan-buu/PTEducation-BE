@@ -177,7 +177,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpPost("tuition")]
-        [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> AddTuition([FromBody] TuitionCreateReqModel tuitionCreateReqModel)
         {

@@ -37,7 +37,7 @@ namespace PTEducation.Business.Services.TuitionServices
                     Message = "Không tìm thấy khối lớp học!",
                 };
             }
-            var CheckExist = await _tuitionPeriodRepositories.GetSingle(x => x.Title == tuitionCreateReqModel.Title && x.GradeId == tuitionCreateReqModel.GradeId && x.FromDate == tuitionCreateReqModel.FromDate && x.ToDate == tuitionCreateReqModel.ToDate);
+            var CheckExist = await _tuitionPeriodRepositories.GetSingle(x => x.Title == tuitionCreateReqModel.Title && x.GradeId == tuitionCreateReqModel.GradeId && x.FromDate == DateOnly.FromDateTime(tuitionCreateReqModel.FromDate) && x.ToDate == DateOnly.FromDateTime(tuitionCreateReqModel.ToDate));
             if (CheckExist != null)
             {
                 return new MessageResultModel
