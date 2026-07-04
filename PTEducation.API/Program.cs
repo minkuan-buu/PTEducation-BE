@@ -26,6 +26,7 @@ using PTEducation.Business.Services.StudentClassServices;
 using PTEducation.Business.Services.StudentServices;
 using PTEducation.Business.Services.UserServices;
 using PTEducation.Business.Services.StorageServices;
+using PTEducation.Business.Services.TuitionServices;
 using PTEducation.Business.Ultilities.Email;
 using PTEducation.API.HostedServices;
 using PTEducation.Data.Entities;
@@ -44,6 +45,7 @@ using System.Text.Json.Serialization;
 using PTEducation.Data.Repositories.StudentGuardianRepositories;
 using PTEducation.Data.Repositories.ChatRepositories;
 using PTEducation.Data.Repositories.GradeRepositories;
+using PTEducation.Data.Repositories.TuitionRepositories;
 
 DotNetEnv.Env.Load();
 
@@ -177,6 +179,8 @@ builder.Services.AddTransient<IChatRepositories, ChatRepositories>();
 builder.Services.AddTransient<IChatDetailRepositories, ChatDetailRepositories>();
 builder.Services.AddTransient<IChatMessageRepositories, ChatMessageRepositories>();
 builder.Services.AddTransient<IGradeRepositories, GradeRepositories>();
+builder.Services.AddTransient<ITuitionPeriodRepositories, TuitionPeriodRepositories>();
+builder.Services.AddTransient<IStudentTuitionRepositories, StudentTuitionRepositories>();
 builder.Services.AddScoped(typeof(IGenericRepositories<>), typeof(GenericRepositories<>));
 
 //=========================================== SERVICE =============================================
@@ -213,6 +217,7 @@ builder.Services.AddScoped<IAttendanceDetailServices, AttendanceDetailServices>(
 builder.Services.AddScoped<IOTPServices, OTPServices>();
 builder.Services.AddScoped<IOverviewServices, OverviewServices>();
 builder.Services.AddScoped<IAttendanceRealtimeNotifier, AttendanceRealtimeNotifier>();
+builder.Services.AddScoped<ITuitionServices, TuitionServices>();
 builder.Services.AddScoped<PTEducation.Business.Services.AttendanceServices.IAttendanceScheduler, PTEducation.API.Scheduling.AttendanceScheduler>();
 
 // Quartz scheduler

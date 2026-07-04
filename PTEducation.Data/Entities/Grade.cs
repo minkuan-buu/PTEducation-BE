@@ -10,4 +10,6 @@ public partial class Grade
     public string GradeName { get; set; } = null!;
 
     public virtual ICollection<Class> Classes { get; set; } = new List<Class>();
+
+    public virtual ICollection<TuitionPeriod> TuitionPeriods { get; set; } = new List<TuitionPeriod>();
 }

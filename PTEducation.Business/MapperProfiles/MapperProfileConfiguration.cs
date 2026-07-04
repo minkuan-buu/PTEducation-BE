@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Org.BouncyCastle.Tls;
 using PTEducation.Business.ApplicationMiddleware;
 using PTEducation.Data.DTO.RequestModel;
@@ -95,8 +95,13 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.IsNeedResetPassword, opt => opt.MapFrom(src =>
                     true));
             CreateMap<Class, ClassListSelectResModel>()
-                .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
-                    TextConvert.ConvertFromUnicodeEscape(src.Name)));
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>src.Name))
+                .ForMember(dest => dest.WeeklySchedules, opt => opt.MapFrom(src => src.ClassSchedules.Select(x => new ClassScheduleResModel
+                {
+                    DayOfWeek = x.DayOfWeek,
+                    StartTime = x.StartTime,
+                    EndTime = x.EndTime
+                }).ToList()));
             CreateMap<ClassSchedule, ClassScheduleResModel>()
                 .ForMember(dest => dest.StartTime, opt => opt.MapFrom(src => src.StartTime))
                 .ForMember(dest => dest.EndTime, opt => opt.MapFrom(src => src.EndTime));
@@ -133,7 +138,10 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
                     TextConvert.ConvertFromUnicodeEscape(src.Name)))
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
-                    src.StudentClasses.Count == 0 ? null : TextConvert.ConvertFromUnicodeEscape(src.StudentClasses.First().Class.Name)));
+                    src.StudentClasses.Count == 0 ? null : TextConvert.ConvertFromUnicodeEscape(src.StudentClasses.First().Class.Name)))
+                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role))
+                .ForMember(dest => dest.SchoolInfo, opt => opt.MapFrom(src => src.SchoolInfo))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
             CreateMap<AttendanceCreateReqModel, Attendance>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => AttendanceStatusEnums.Pending.ToString()))
                 .ForMember(dest => dest.Date, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.Date)));
@@ -199,6 +207,13 @@ namespace PTEducation.Business.MapperProfiles
                     }).ToList()));
 
             CreateMap<Attendance, AttendanceSessionResModel>();
+            CreateMap<TuitionCreateReqModel, TuitionPeriod>()
+                .ForMember(dest => dest.FromDate, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.FromDate)))
+                .ForMember(dest => dest.ToDate, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.ToDate)))
+                .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount))
+                .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title))
+                .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate ?? null))
+                .ForMember(dest => dest.GradeId, opt => opt.MapFrom(src => src.GradeId));
         }
     }
 }

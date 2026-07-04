@@ -37,13 +37,17 @@ public partial class PteducationContext : DbContext
 
     public virtual DbSet<StudentGuardian> StudentGuardians { get; set; }
 
+    public virtual DbSet<StudentTuition> StudentTuitions { get; set; }
+
+    public virtual DbSet<TuitionPeriod> TuitionPeriods { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Attendance>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Attendan__3214EC077BCDDDFE");
+            entity.HasKey(e => e.Id).HasName("PK__Attendan__3214EC07F481AFC8");
 
             entity.ToTable("Attendance");
 
@@ -70,7 +74,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<AttendanceDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Attendan__3214EC0714AC6566");
+            entity.HasKey(e => e.Id).HasName("PK__Attendan__3214EC070A4C753B");
 
             entity.ToTable("AttendanceDetail");
 
@@ -97,7 +101,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Chat>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Chat__3214EC07136B0C4B");
+            entity.HasKey(e => e.Id).HasName("PK__Chat__3214EC07665A0511");
 
             entity.ToTable("Chat");
 
@@ -111,7 +115,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<ChatDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ChatDeta__3214EC07E61ED646");
+            entity.HasKey(e => e.Id).HasName("PK__ChatDeta__3214EC07BDD868E3");
 
             entity.ToTable("ChatDetail");
 
@@ -139,7 +143,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<ChatMessage>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ChatMess__3214EC073743C5D4");
+            entity.HasKey(e => e.Id).HasName("PK__ChatMess__3214EC07E092441E");
 
             entity.ToTable("ChatMessage");
 
@@ -160,7 +164,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Class>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Class__3214EC0799961C02");
+            entity.HasKey(e => e.Id).HasName("PK__Class__3214EC078308503B");
 
             entity.ToTable("Class");
 
@@ -210,7 +214,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Grade>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Grade__3214EC07D11A7F3A");
+            entity.HasKey(e => e.Id).HasName("PK__Grade__3214EC07BC8F26CF");
 
             entity.ToTable("Grade");
 
@@ -222,7 +226,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Otp>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__OTP__3214EC070973F5D5");
+            entity.HasKey(e => e.Id).HasName("PK__OTP__3214EC07C63E98B9");
 
             entity.ToTable("OTP");
 
@@ -247,7 +251,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<Score>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__Score__3214EC07AC38C175");
+            entity.HasKey(e => e.Id).HasName("PK__Score__3214EC07ACF5C81E");
 
             entity.ToTable("Score");
 
@@ -270,7 +274,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<ScoreDetail>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__ScoreDet__3214EC078E891003");
+            entity.HasKey(e => e.Id).HasName("PK__ScoreDet__3214EC07E01EB94E");
 
             entity.ToTable("ScoreDetail");
 
@@ -296,7 +300,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<StudentClass>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__StudentC__3214EC0702AF9104");
+            entity.HasKey(e => e.Id).HasName("PK__StudentC__3214EC078425ABAC");
 
             entity.ToTable("StudentClass");
 
@@ -321,7 +325,7 @@ public partial class PteducationContext : DbContext
 
         modelBuilder.Entity<StudentGuardian>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__StudentG__3214EC07CDFE8C75");
+            entity.HasKey(e => e.Id).HasName("PK__StudentG__3214EC0713CAFB4B");
 
             entity.HasIndex(e => new { e.GuardianId, e.StudentId }, "UQ_StudentGuardians_Student_Guardian").IsUnique();
 
@@ -345,9 +349,66 @@ public partial class PteducationContext : DbContext
                 .HasConstraintName("FK_SG_Student");
         });
 
+        modelBuilder.Entity<StudentTuition>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__StudentT__3214EC079B29F240");
+
+            entity.ToTable("StudentTuition");
+
+            entity.HasIndex(e => e.PaymentStatus, "IX_StudentTuition_Status");
+
+            entity.HasIndex(e => new { e.TuitionPeriodId, e.StudentClassId }, "UQ_StudentTuition_Period_Student").IsUnique();
+
+            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Note).HasMaxLength(500);
+            entity.Property(e => e.PaidAt).HasColumnType("datetime");
+            entity.Property(e => e.PaymentStatus)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasDefaultValue("Unpaid");
+
+            entity.HasOne(d => d.StudentClass).WithMany(p => p.StudentTuitions)
+                .HasForeignKey(d => d.StudentClassId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ST_StudentClass");
+
+            entity.HasOne(d => d.TuitionPeriod).WithMany(p => p.StudentTuitions)
+                .HasForeignKey(d => d.TuitionPeriodId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_ST_Period");
+        });
+
+        modelBuilder.Entity<TuitionPeriod>(entity =>
+        {
+            entity.HasKey(e => e.Id).HasName("PK__TuitionP__3214EC078178108C");
+
+            entity.ToTable("TuitionPeriod");
+
+            entity.Property(e => e.Id).HasDefaultValueSql("(newid())");
+            entity.Property(e => e.Amount).HasColumnType("decimal(18, 0)");
+            entity.Property(e => e.CreatedAt)
+                .HasDefaultValueSql("(getdate())")
+                .HasColumnType("datetime");
+            entity.Property(e => e.CreatedBy)
+                .HasMaxLength(30)
+                .IsUnicode(false);
+            entity.Property(e => e.DueDate).HasColumnType("datetime");
+            entity.Property(e => e.Title).HasMaxLength(255);
+
+            entity.HasOne(d => d.CreatedByNavigation).WithMany(p => p.TuitionPeriods)
+                .HasForeignKey(d => d.CreatedBy)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Period_User");
+
+            entity.HasOne(d => d.Grade).WithMany(p => p.TuitionPeriods)
+                .HasForeignKey(d => d.GradeId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK_Period_Grade");
+        });
+
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.Id).HasName("PK__User__3214EC07EF807E74");
+            entity.HasKey(e => e.Id).HasName("PK__User__3214EC073E0D4F3B");
 
             entity.ToTable("User");
 

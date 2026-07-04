@@ -20,4 +20,6 @@ public partial class StudentClass
     public virtual ICollection<ScoreDetail> ScoreDetails { get; set; } = new List<ScoreDetail>();
 
     public virtual User Student { get; set; } = null!;
+
+    public virtual ICollection<StudentTuition> StudentTuitions { get; set; } = new List<StudentTuition>();
 }
