@@ -308,9 +308,8 @@ namespace PTEducation.Business.Services.UserServices
             };
         }
 
-        public async Task<MessageResultModel> ChangePassword(UserChangePasswordReqModel ReqModel, string token)
+        public async Task<MessageResultModel> ChangePassword(UserChangePasswordReqModel ReqModel, string userId)
         {
-            var userId = Authentication.DecodeToken(token, "userid");
             var user = await _userRepositories.GetSingle(x => x.Id == userId);
             if (user == null)
             {
@@ -354,12 +353,76 @@ namespace PTEducation.Business.Services.UserServices
             {
                 throw new CustomException("Không tìm thấy người dùng!");
             }
+            
             var Result = _mapper.Map<UserProfileResModel>(user);
+            Result.Role = user.Role;
+            Result.SchoolInfo = user.SchoolInfo;
+            Result.Status = user.Status;
+
+            if (user.Role.Equals(RoleEnums.Student.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                var studentGuardians = await _studentGuardianRepositories.GetList(
+                    x => x.StudentId == userId,
+                    includeProperties: "Guardian"
+                );
+                Result.Guardians = studentGuardians.Select(sg => new UserGuardianListResModel
+                {
+                    Id = sg.Guardian.Id,
+                    Name = TextConvert.ConvertFromUnicodeEscape(sg.Guardian.Name),
+                    Email = sg.Guardian.Email,
+                    Phone = sg.Guardian.Phone,
+                    Relationship = TextConvert.ConvertFromUnicodeEscape(sg.Relationship),
+                    IsPrimary = sg.IsPrimary
+                }).ToList();
+            }
+            else if (user.Role.Equals(RoleEnums.Guardian.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                var relationships = await _studentGuardianRepositories.GetList(
+                    x => x.GuardianId == userId,
+                    includeProperties: "Student"
+                );
+
+                Result.GuardianProfile = new GuardianProfileDto();
+                foreach (var rel in relationships)
+                {
+                    Result.GuardianProfile.ManagedStudents.Add(new GuardianStudentDto
+                    {
+                        Id = rel.Student.Id,
+                        Name = TextConvert.ConvertFromUnicodeEscape(rel.Student.Name),
+                        Email = rel.Student.Email,
+                        Phone = rel.Student.Phone,
+                        AvatarUrl = rel.Student.AvatarUrl,
+                        SchoolInfo = rel.Student.SchoolInfo,
+                        Relationship = TextConvert.ConvertFromUnicodeEscape(rel.Relationship),
+                        IsPrimary = rel.IsPrimary
+                    });
+                }
+            }
+            else if (user.Role.Equals(RoleEnums.Admin.ToString(), StringComparison.OrdinalIgnoreCase) || 
+                     user.Role.Equals(RoleEnums.Manager.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                var students = await _userRepositories.GetList(x => x.Role == RoleEnums.Student.ToString() && x.Status == AccountStatusEnums.Active.ToString());
+                var guardians = await _userRepositories.GetList(x => x.Role == RoleEnums.Guardian.ToString() && x.Status == AccountStatusEnums.Active.ToString());
+                var managers = await _userRepositories.GetList(x => (x.Role == RoleEnums.Manager.ToString() || x.Role == RoleEnums.Admin.ToString()) && x.Status == AccountStatusEnums.Active.ToString());
+                var classes = await _classRepositories.GetList(x => x.Status == GeneralStatusEnums.Active.ToString());
+
+                Result.AdminProfile = new AdminProfileDto
+                {
+                    TotalStudentsCount = students.Count(),
+                    TotalGuardiansCount = guardians.Count(),
+                    TotalManagersCount = managers.Count(),
+                    TotalClassesCount = classes.Count(),
+                    ActiveClassesCount = classes.Count()
+                };
+            }
+
             return new DataResultModel<UserProfileResModel>
             {
                 Data = Result
             };
         }
+
+
 
         public async Task<MessageResultModel> ResetPassword(UserResetPasswordReqModel ReqModel, string token)
         {

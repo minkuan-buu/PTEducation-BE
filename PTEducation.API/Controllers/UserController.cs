@@ -1,9 +1,10 @@
-﻿using PTEducation.Data.DTO.Custom;
+using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Business.Services.UserServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PTEducation.Business.Services.AuthServices;
+using PTEducation.Data.DTO.ResponseModel;
 
 namespace PTEducation.API.Controllers
 {
@@ -62,6 +63,26 @@ namespace PTEducation.API.Controllers
         {
             var Result = await _userServices.ConvertNameFromUnicodeEscapeToUnicode();
             return Ok(Result);
+        }
+
+        [HttpPut("detail")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
+        public async Task<IActionResult> UpdateMyUserDetail([FromBody] UserEditResModel payload)
+        {
+            try
+            {
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+                var Result = await _userServices.UpdateUserDetail(userId, payload);
+                return Ok(Result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
         }
     }
 }

@@ -13,7 +13,7 @@ namespace PTEducation.Business.Services.UserServices
         Task<DataResultModel<RawUserLoginResModel>> Login(string Username, string Password);
         Task<MessageResultModel> Register(UserRegisterReqModel ReqModel);
         Task<MessageResultModel> Register(UserRegisterWithGuardianInfo ReqModel);
-        Task<MessageResultModel> ChangePassword(UserChangePasswordReqModel ReqModel, string token);
+        Task<MessageResultModel> ChangePassword(UserChangePasswordReqModel ReqModel, string userId);
         Task<DataResultModel<UserProfileResModel>> GetMyProfile(string userid);
         Task<MessageResultModel> ResetPassword(UserResetPasswordReqModel ReqModel, string token);
         Task<MessageResultModel> Register(List<ManagerRegisterReqModel> ReqModel);

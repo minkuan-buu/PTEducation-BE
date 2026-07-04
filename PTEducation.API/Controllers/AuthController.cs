@@ -104,15 +104,19 @@ namespace PTEducation.API.Controllers
             }
         }
 
-        [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [HttpPost("change-password")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication")]
-        public async Task<IActionResult> ChangePassword([FromBody] UserChangePasswordReqModel User)
+        public async Task<IActionResult> ChangePassword([FromBody] UserChangePasswordReqModel request)
         {
             try
             {
-                string token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-                var Result = await _userServices.ChangePassword(User, token);
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+                var Result = await _userServices.ChangePassword(request, userId);
                 return Ok(Result);
             }
             catch (CustomException ex)

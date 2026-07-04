@@ -138,7 +138,10 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
                     TextConvert.ConvertFromUnicodeEscape(src.Name)))
                 .ForMember(dest => dest.ClassName, opt => opt.MapFrom(src =>
-                    src.StudentClasses.Count == 0 ? null : TextConvert.ConvertFromUnicodeEscape(src.StudentClasses.First().Class.Name)));
+                    src.StudentClasses.Count == 0 ? null : TextConvert.ConvertFromUnicodeEscape(src.StudentClasses.First().Class.Name)))
+                .ForMember(dest => dest.Role, opt => opt.MapFrom(src => src.Role))
+                .ForMember(dest => dest.SchoolInfo, opt => opt.MapFrom(src => src.SchoolInfo))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status));
             CreateMap<AttendanceCreateReqModel, Attendance>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => AttendanceStatusEnums.Pending.ToString()))
                 .ForMember(dest => dest.Date, opt => opt.MapFrom(src => DateOnly.FromDateTime(src.Date)));
