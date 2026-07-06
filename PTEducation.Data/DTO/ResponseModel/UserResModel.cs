@@ -128,6 +128,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Phone { get; set; } = null!;
         public string SchoolInfo { get; set; } = null!;
         public string? AvatarUrl { get; set; }
+        public string Role { get; set; } = null!;
         public List<UserGuardianListResModel> Guardians { get; set; } = null!;
     }
 

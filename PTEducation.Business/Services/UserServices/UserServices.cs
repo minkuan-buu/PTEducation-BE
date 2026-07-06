@@ -930,6 +930,7 @@ namespace PTEducation.Business.Services.UserServices
                 Phone = GetUser.Phone,
                 SchoolInfo = GetUser.SchoolInfo ?? string.Empty,
                 AvatarUrl = GetUser.AvatarUrl,
+                Role = GetUser.Role,
                 Guardians = GetUser.StudentGuardianStudents.Select(x => new UserGuardianListResModel
                 {
                     Id = x.GuardianId,
@@ -1038,14 +1039,51 @@ namespace PTEducation.Business.Services.UserServices
 
         public async Task<MessageResultModel> UpdateUserDetail(string userId, UserEditResModel payload)
         {
-            var student = await _userRepositories.GetSingle(
-                x => x.Id == userId && x.Role.Equals(RoleEnums.Student.ToString())
-            );
-
-            if (student == null)
+            var user = await _userRepositories.GetSingle(x => x.Id == userId);
+            if (user == null)
             {
-                throw new CustomException("Không tìm thấy học sinh!");
+                throw new CustomException("Không tìm thấy người dùng!");
             }
+
+            if (!user.Role.Equals(RoleEnums.Student.ToString(), StringComparison.OrdinalIgnoreCase))
+            {
+                using var tx = await _userRepositories.BeginTransactionAsync();
+                try
+                {
+                    var oldEmail = user.Email;
+                    var newEmail = payload.Email.Trim();
+                    if (!string.Equals(oldEmail, newEmail, StringComparison.OrdinalIgnoreCase))
+                    {
+                        var existingUser = await _userRepositories.GetOtherUserByEmail(newEmail, userId);
+                        if (existingUser != null)
+                        {
+                            throw new CustomException("Email đã tồn tại!");
+                        }
+                        user.Email = newEmail;
+                    }
+
+                    user.Name = payload.Name;
+                    user.Phone = payload.Phone ?? "";
+                    user.SchoolInfo = payload.SchoolInfo;
+                    user.AvatarUrl = payload.AvatarUrl ?? "";
+
+                    await _userRepositories.Update(user, saveChanges: false);
+                    await _userRepositories.SaveChangesAsync();
+                    await _userRepositories.CommitTransactionAsync();
+                }
+                catch
+                {
+                    await tx.RollbackAsync();
+                    throw;
+                }
+
+                return new MessageResultModel
+                {
+                    Message = "Ok"
+                };
+            }
+
+            var student = user;
 
             var studentClass = await _studentClassRepositories.GetSingle(x => x.StudentId == userId, includeProperties: "Class");
             if (studentClass == null || studentClass.Class == null)

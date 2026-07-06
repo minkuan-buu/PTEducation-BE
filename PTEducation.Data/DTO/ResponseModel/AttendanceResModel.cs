@@ -86,6 +86,14 @@ namespace PTEducation.Data.DTO.ResponseModel
         public TimeOnly? StartTime { get; set; }
         public TimeOnly? EndTime { get; set; }
         public string AttendanceStatus { get; set; } = null!;
+        public MakeUpAttendanceDetail? MakeUpAttendance { get; set; } = null!;
+    }
+
+    public class MakeUpAttendanceDetail
+    {
+        public DateOnly Date { get; set; }
+        public TimeOnly StartTime { get; set; }
+        public TimeOnly EndTime { get; set; }
     }
 
     public class AttendanceStudentGuardianOverviewResModel

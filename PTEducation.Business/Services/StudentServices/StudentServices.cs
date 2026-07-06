@@ -110,7 +110,7 @@ namespace PTEducation.Business.Services.StudentServices
                      x.Date.Month == Month && 
                      x.Date.Year == Year && 
                      x.Status.Equals(AttendanceStatusEnums.Closed.ToString()), 
-                includeProperties: "AttendanceDetailAttendances.StudentClass"
+                includeProperties: "AttendanceDetailAttendances.StudentClass, AttendanceDetailAttendances.MakeUpSessionNavigation"
             );
             var ListAttandance = Attandance.ToList();
             List<AttendanceStudentDetailResModel> ListAttendanceDetails = new();
@@ -122,7 +122,13 @@ namespace PTEducation.Business.Services.StudentServices
                     Date = attendance.Date,
                     StartTime = attendance.StartTime,
                     EndTime = attendance.EndTime,
-                    AttendanceStatus = getStudentAttandance != null ? getStudentAttandance.Status : "Pending"
+                    AttendanceStatus = getStudentAttandance != null ? getStudentAttandance.Status : "Pending",
+                    MakeUpAttendance = getStudentAttandance != null && getStudentAttandance.MakeUpSessionNavigation != null ? new MakeUpAttendanceDetail
+                    {
+                        Date = getStudentAttandance.MakeUpSessionNavigation.Date,
+                        StartTime = getStudentAttandance.MakeUpSessionNavigation.StartTime,
+                        EndTime = getStudentAttandance.MakeUpSessionNavigation.EndTime
+                    } : null
                 };
                 ListAttendanceDetails.Add(AttendanceDetail);
             }
