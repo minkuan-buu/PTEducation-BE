@@ -173,7 +173,18 @@ namespace PTEducation.API.Middleware
                 }
             }
 
-            return TryGetBearerToken(out token);
+            if (TryGetBearerToken(out token))
+            {
+                return true;
+            }
+
+            if (Request.Query.TryGetValue("access_token", out var queryToken))
+            {
+                token = queryToken.ToString();
+                return !string.IsNullOrWhiteSpace(token);
+            }
+
+            return false;
         }
 
         private bool TryGetBearerToken(out string token)

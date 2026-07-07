@@ -76,6 +76,7 @@ namespace PTEducation.Data.DTO.ResponseModel
     {
         public string Id { get; set; } = null!;
         public string Name { get; set; } = null!;
+        public string ClassName { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string Phone { get; set; } = null!;
         public string? AvatarUrl { get; set; }
