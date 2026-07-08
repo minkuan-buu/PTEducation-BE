@@ -11,5 +11,7 @@ namespace PTEducation.Business.Services.ChatServices
         Task<ListDataResultModel<ChatMessageResModel>> GetChatMessages(Guid chatId, string userId, int? limit);
         Task<DataResultModel<ChatMessageResModel>> SendMessage(Guid chatId, string userId, string content, int messageType = 0);
         Task<MessageResultModel> MarkAsRead(Guid chatId, string userId);
+        Task<ListDataResultModel<ChatContactResModel>> GetSupportContacts(string userId);
+        Task<DataResultModel<Guid>> GetOrCreatePrivateChat(string userId, string targetUserId);
     }
 }

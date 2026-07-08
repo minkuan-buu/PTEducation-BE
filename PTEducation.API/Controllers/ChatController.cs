@@ -116,11 +116,56 @@ namespace PTEducation.API.Controllers
                 return BadRequest(new { message = ex.Message });
             }
         }
+
+        [HttpGet("contacts")]
+        public async Task<IActionResult> GetSupportContacts()
+        {
+            try
+            {
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+
+                var result = await _chatServices.GetSupportContacts(userId);
+                return Ok(result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("private")]
+        public async Task<IActionResult> GetOrCreatePrivateChat([FromBody] CreatePrivateChatReqModel req)
+        {
+            try
+            {
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    return Unauthorized(new { message = "User is not authenticated." });
+                }
+
+                var result = await _chatServices.GetOrCreatePrivateChat(userId, req.TargetUserId);
+                return Ok(result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 
     public class SendMessageReqModel
     {
         public string Content { get; set; } = null!;
         public int MessageType { get; set; } = 0;
+    }
+
+    public class CreatePrivateChatReqModel
+    {
+        public string TargetUserId { get; set; } = null!;
     }
 }

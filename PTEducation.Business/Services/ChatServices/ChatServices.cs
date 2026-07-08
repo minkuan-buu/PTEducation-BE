@@ -1,6 +1,7 @@
 using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.ResponseModel;
 using PTEducation.Data.Entities;
+using PTEducation.Data.Enums;
 using PTEducation.Data.Repositories.ChatRepositories;
 using PTEducation.Data.Repositories.ClassRepositories;
 using PTEducation.Data.Repositories.StudentClassRepositories;
@@ -59,18 +60,6 @@ namespace PTEducation.Business.Services.ChatServices
                     includeProperties: "Class");
                 activeClasses = studentClasses.Select(sc => sc.Class).Where(c => c != null && c.Status == "Active").ToList();
             }
-            else if (userRole == "guardian")
-            {
-                var guardianships = await _studentGuardianRepositories.GetList(sg => sg.GuardianId == userId);
-                var studentIds = guardianships.Select(sg => sg.StudentId).ToList();
-                if (studentIds.Any())
-                {
-                    var studentClasses = await _studentClassRepositories.GetList(
-                        sc => studentIds.Contains(sc.StudentId) && sc.Status == "Active",
-                        includeProperties: "Class");
-                    activeClasses = studentClasses.Select(sc => sc.Class).Where(c => c != null && c.Status == "Active").ToList();
-                }
-            }
 
             var classIds = activeClasses.Select(c => c.Id).Distinct().ToList();
 
@@ -120,7 +109,15 @@ namespace PTEducation.Business.Services.ChatServices
             await _chatDetailRepositories.SaveChangesAsync();
 
             // 5. Build final list of chat rooms for this user
-            var userChatDetails = await _chatDetailRepositories.GetList(cd => cd.UserId == userId, includeProperties: "Chat");
+            var userChatDetails = await _chatDetailRepositories.GetList(
+                cd => cd.UserId == userId, 
+                includeProperties: "Chat,Chat.ChatDetails,Chat.ChatDetails.User");
+
+            if (userRole == "guardian")
+            {
+                userChatDetails = userChatDetails.Where(cd => !cd.Chat.ClassId.HasValue).ToList();
+            }
+
             var result = new List<ChatRoomResModel>();
 
             foreach (var detail in userChatDetails)
@@ -128,10 +125,21 @@ namespace PTEducation.Business.Services.ChatServices
                 var lastMsg = await _chatMessageRepositories.GetLastMessage(detail.ChatId);
                 var unreadCount = await _chatMessageRepositories.GetUnreadCount(detail.ChatId, detail.LastReadMessageId);
 
+                string title = "Lớp học";
+                if (detail.Chat.ClassId.HasValue)
+                {
+                    title = detail.Chat.Title ?? "Lớp học";
+                }
+                else
+                {
+                    var otherDetail = detail.Chat.ChatDetails.FirstOrDefault(cd => cd.UserId != userId);
+                    title = otherDetail?.User?.Name ?? "Người dùng hệ thống";
+                }
+
                 result.Add(new ChatRoomResModel
                 {
                     ChatId = detail.ChatId,
-                    Title = detail.Chat.Title ?? "Lớp học",
+                    Title = title,
                     ClassId = detail.Chat.ClassId,
                     LastMessage = lastMsg?.Content,
                     LastMessageTime = lastMsg?.CreatedAt,
@@ -307,18 +315,93 @@ namespace PTEducation.Business.Services.ChatServices
                 return sc != null;
             }
 
-            if (userRole == "guardian")
+
+
+            return false;
+        }
+
+        public async Task<ListDataResultModel<ChatContactResModel>> GetSupportContacts(string userId)
+        {
+            var supportUsers = await _userRepositories.GetList(u =>
+                (u.Role == RoleEnums.Admin.ToString() || u.Role == RoleEnums.Manager.ToString()) &&
+                u.Status == AccountStatusEnums.Active.ToString());
+
+            var myPrivateChatDetails = await _chatDetailRepositories.GetList(
+                cd => cd.UserId == userId && !cd.Chat.ClassId.HasValue,
+                includeProperties: "Chat,Chat.ChatDetails");
+
+            var privateChatMap = new Dictionary<string, Guid>();
+            foreach (var detail in myPrivateChatDetails)
             {
-                var guardianships = await _studentGuardianRepositories.GetList(sg => sg.GuardianId == userId);
-                var studentIds = guardianships.Select(sg => sg.StudentId).ToList();
-                if (studentIds.Any())
+                var otherDetail = detail.Chat.ChatDetails.FirstOrDefault(cd => cd.UserId != userId);
+                if (otherDetail != null)
                 {
-                    var sc = await _studentClassRepositories.GetSingle(sc => studentIds.Contains(sc.StudentId) && sc.ClassId == chat.ClassId.Value && sc.Status == "Active");
-                    return sc != null;
+                    privateChatMap[otherDetail.UserId] = detail.ChatId;
                 }
             }
 
-            return false;
+            var contacts = supportUsers.Select(u => new ChatContactResModel
+            {
+                UserId = u.Id,
+                Name = u.Name,
+                AvatarUrl = u.AvatarUrl,
+                Role = u.Role,
+                ChatId = privateChatMap.TryGetValue(u.Id, out var chatId) ? chatId : null
+            }).ToList();
+
+            return new ListDataResultModel<ChatContactResModel> { Data = contacts };
+        }
+
+        public async Task<DataResultModel<Guid>> GetOrCreatePrivateChat(string userId, string targetUserId)
+        {
+            var targetUser = await _userRepositories.GetSingle(u => u.Id == targetUserId);
+            if (targetUser == null)
+            {
+                throw new CustomException("Người nhận không tồn tại.");
+            }
+
+            var existingChatDetail = await _chatDetailRepositories.GetSingle(
+                cd => cd.UserId == userId && !cd.Chat.ClassId.HasValue &&
+                      cd.Chat.ChatDetails.Any(other => other.UserId == targetUserId),
+                includeProperties: "Chat,Chat.ChatDetails"
+            );
+
+            if (existingChatDetail != null)
+            {
+                return new DataResultModel<Guid> { Data = existingChatDetail.ChatId };
+            }
+
+            var unixNow = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            var newChat = new Chat
+            {
+                Id = Guid.NewGuid(),
+                ClassId = null,
+                Title = null,
+                CreatedAt = unixNow
+            };
+            await _chatRepositories.Insert(newChat, saveChanges: false);
+
+            var detailSelf = new ChatDetail
+            {
+                Id = Guid.NewGuid(),
+                ChatId = newChat.Id,
+                UserId = userId,
+                JoinedAt = unixNow
+            };
+            await _chatDetailRepositories.Insert(detailSelf, saveChanges: false);
+
+            var detailTarget = new ChatDetail
+            {
+                Id = Guid.NewGuid(),
+                ChatId = newChat.Id,
+                UserId = targetUserId,
+                JoinedAt = unixNow
+            };
+            await _chatDetailRepositories.Insert(detailTarget, saveChanges: false);
+
+            await _chatRepositories.SaveChangesAsync();
+
+            return new DataResultModel<Guid> { Data = newChat.Id };
         }
     }
 }
