@@ -379,7 +379,7 @@ namespace PTEducation.Business.Services.UserServices
             {
                 var relationships = await _studentGuardianRepositories.GetList(
                     x => x.GuardianId == userId,
-                    includeProperties: "Student"
+                    includeProperties: "Student.StudentClasses.Class"
                 );
 
                 Result.GuardianProfile = new GuardianProfileDto();
@@ -388,12 +388,13 @@ namespace PTEducation.Business.Services.UserServices
                     Result.GuardianProfile.ManagedStudents.Add(new GuardianStudentDto
                     {
                         Id = rel.Student.Id,
-                        Name = TextConvert.ConvertFromUnicodeEscape(rel.Student.Name),
+                        Name = rel.Student.Name,
+                        ClassName = rel.Student.StudentClasses.FirstOrDefault()?.Class.Name ?? "",
                         Email = rel.Student.Email,
                         Phone = rel.Student.Phone,
                         AvatarUrl = rel.Student.AvatarUrl,
                         SchoolInfo = rel.Student.SchoolInfo,
-                        Relationship = TextConvert.ConvertFromUnicodeEscape(rel.Relationship),
+                        Relationship = rel.Relationship,
                         IsPrimary = rel.IsPrimary
                     });
                 }

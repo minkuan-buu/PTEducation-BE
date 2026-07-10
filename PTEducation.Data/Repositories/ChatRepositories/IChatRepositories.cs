@@ -18,5 +18,7 @@ namespace PTEducation.Data.Repositories.ChatRepositories
 
     public interface IChatMessageRepositories : IGenericRepositories<ChatMessage>
     {
+        Task<int> GetUnreadCount(Guid chatId, Guid? lastReadMessageId);
+        Task<ChatMessage?> GetLastMessage(Guid chatId);
     }
 }
