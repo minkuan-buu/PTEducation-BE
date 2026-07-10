@@ -136,6 +136,13 @@ namespace PTEducation.Business.Services.ChatServices
                     title = otherDetail?.User?.Name ?? "Người dùng hệ thống";
                 }
 
+                int participantCount = detail.Chat.ChatDetails.Count();
+                if (detail.Chat.ClassId.HasValue)
+                {
+                    var studentClasses = await _studentClassRepositories.GetList(sc => sc.ClassId == detail.Chat.ClassId.Value && sc.Status == "Active");
+                    participantCount = studentClasses.Count();
+                }
+
                 result.Add(new ChatRoomResModel
                 {
                     ChatId = detail.ChatId,
@@ -143,7 +150,8 @@ namespace PTEducation.Business.Services.ChatServices
                     ClassId = detail.Chat.ClassId,
                     LastMessage = lastMsg?.Content,
                     LastMessageTime = lastMsg?.CreatedAt,
-                    UnreadCount = unreadCount
+                    UnreadCount = unreadCount,
+                    NumberOfParticipant = participantCount
                 });
             }
 
@@ -155,7 +163,7 @@ namespace PTEducation.Business.Services.ChatServices
             return new ListDataResultModel<ChatRoomResModel> { Data = sortedResult };
         }
 
-        public async Task<ListDataResultModel<ChatMessageResModel>> GetChatMessages(Guid chatId, string userId, int? limit)
+        public async Task<PagedListDataResultModel<ChatMessageResModel>> GetChatMessages(Guid chatId, string userId, int pageIndex = 1, int? limit = null)
         {
             // Verify if user is part of the chat room
             var detail = await _chatDetailRepositories.GetSingle(cd => cd.ChatId == chatId && cd.UserId == userId);
@@ -187,16 +195,16 @@ namespace PTEducation.Business.Services.ChatServices
 
             int pageSize = limit ?? 50;
             // Get messages in descending order (newest first)
-            var messages = await _chatMessageRepositories.GetList(
+            var pagedMessages = await _chatMessageRepositories.GetPagedList(
                 filter: m => m.ChatId == chatId,
                 orderBy: q => q.OrderByDescending(m => m.CreatedAt),
                 includeProperties: "SenderDetail,SenderDetail.User",
-                pageIndex: 1,
+                pageIndex: pageIndex,
                 pageSize: pageSize
             );
 
             // Map messages and reverse them to ascending order for display
-            var result = messages.Select(m => new ChatMessageResModel
+            var result = pagedMessages.Data?.Select(m => new ChatMessageResModel
             {
                 Id = m.Id,
                 ChatId = m.ChatId,
@@ -209,9 +217,14 @@ namespace PTEducation.Business.Services.ChatServices
                 CreatedAt = m.CreatedAt
             })
             .OrderBy(m => m.CreatedAt)
-            .ToList();
+            .ToList() ?? new List<ChatMessageResModel>();
 
-            return new ListDataResultModel<ChatMessageResModel> { Data = result };
+            return new PagedListDataResultModel<ChatMessageResModel> { 
+                Data = result,
+                PageNumber = pagedMessages.PageNumber,
+                PageSize = pagedMessages.PageSize,
+                TotalPages = pagedMessages.TotalPages
+            };
         }
 
         public async Task<DataResultModel<ChatMessageResModel>> SendMessage(Guid chatId, string userId, string content, int messageType = 0)

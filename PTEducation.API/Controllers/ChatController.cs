@@ -50,7 +50,7 @@ namespace PTEducation.API.Controllers
         }
 
         [HttpGet("{chatId}/messages")]
-        public async Task<IActionResult> GetChatMessages(Guid chatId, [FromQuery] int? limit)
+        public async Task<IActionResult> GetChatMessages(Guid chatId, [FromQuery] int pageIndex = 1, [FromQuery] int? limit = null)
         {
             try
             {
@@ -60,7 +60,7 @@ namespace PTEducation.API.Controllers
                     return Unauthorized(new { message = "User is not authenticated." });
                 }
 
-                var result = await _chatServices.GetChatMessages(chatId, userId, limit);
+                var result = await _chatServices.GetChatMessages(chatId, userId, pageIndex, limit);
                 return Ok(result);
             }
             catch (CustomException ex)

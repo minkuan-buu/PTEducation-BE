@@ -29,5 +29,22 @@ namespace PTEducation.API.Hubs
 
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, GetChatGroupName(parsedChatId));
         }
+
+        public async Task SendTypingIndicator(string chatId, string userName, string? avatarUrl, bool isTyping)
+        {
+            if (!Guid.TryParse(chatId, out var parsedChatId))
+            {
+                return;
+            }
+
+            // Get userId from claims to broadcast with the event
+            var userId = Context.User?.Claims.FirstOrDefault(c => c.Type == "userid")?.Value;
+
+            if (userId != null && !string.IsNullOrEmpty(userName))
+            {
+                await Clients.GroupExcept(GetChatGroupName(parsedChatId), Context.ConnectionId)
+                    .SendAsync("ReceiveTypingIndicator", chatId, userId, userName, avatarUrl, isTyping);
+            }
+        }
     }
 }

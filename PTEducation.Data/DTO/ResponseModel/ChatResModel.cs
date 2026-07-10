@@ -8,6 +8,7 @@ namespace PTEducation.Data.DTO.ResponseModel
         public string Title { get; set; } = null!;
         public Guid? ClassId { get; set; }
         public string? LastMessage { get; set; }
+        public int? NumberOfParticipant { get; set; }
         public long? LastMessageTime { get; set; }
         public int UnreadCount { get; set; }
     }
