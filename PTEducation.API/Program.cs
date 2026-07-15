@@ -235,6 +235,7 @@ builder.Services.AddScoped<PTEducation.API.Jobs.AttendanceWindowJob>();
 builder.Services.AddHostedService<AdminInitializerHostedService>();
 builder.Services.AddHostedService<DatabaseMigrationHostedService>();
 builder.Services.AddHostedService<AttendanceWindowReconciliationHostedService>();
+builder.Services.AddHostedService<WeeklyAttendanceGenerationHostedService>();
 
 //=========================================== CORS ================================================
 
