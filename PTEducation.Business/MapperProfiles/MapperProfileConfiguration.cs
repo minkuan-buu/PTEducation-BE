@@ -86,12 +86,12 @@ namespace PTEducation.Business.MapperProfiles
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
                     TextConvert.ConvertFromUnicodeEscape(src.Name)));
             CreateMap<ManagerRegisterReqModel, User>()
-                .ForMember(dest => dest.Name, opt => opt.MapFrom(src =>
-                    TextConvert.ConvertToUnicodeEscape(src.Name)))
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src =>
                     GeneralStatusEnums.Active.ToString()))
                 .ForMember(dest => dest.Role, opt => opt.MapFrom(src =>
                     RoleEnums.Manager.ToString()))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.Phone ?? ""))
                 .ForMember(dest => dest.IsNeedResetPassword, opt => opt.MapFrom(src =>
                     true));
             CreateMap<Class, ClassListSelectResModel>()
