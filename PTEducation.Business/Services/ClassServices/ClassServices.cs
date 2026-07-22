@@ -338,21 +338,21 @@ namespace PTEducation.Business.Services.ClassServices
             foreach (var item in CheckExist.StudentClasses)
             {
                 item.Status = GeneralStatusEnums.Inactive.ToString();
-                foreach (var score in CheckExist.Scores)
+            }
+            foreach (var score in CheckExist.Scores)
+            {
+                score.Status = GeneralStatusEnums.Inactive.ToString();
+                foreach (var scoreDetail in score.ScoreDetails)
                 {
-                    score.Status = GeneralStatusEnums.Inactive.ToString();
-                    foreach (var scoreDetail in score.ScoreDetails)
-                    {
-                        scoreDetail.Status = GeneralStatusEnums.Inactive.ToString();
-                    }
+                    scoreDetail.Status = GeneralStatusEnums.Inactive.ToString();
                 }
-                foreach (var attendance in CheckExist.Attendances)
+            }
+            foreach (var attendance in CheckExist.Attendances)
+            {
+                attendance.Status = GeneralStatusEnums.Inactive.ToString();
+                foreach (var attendanceDetail in attendance.AttendanceDetailAttendances)
                 {
-                    attendance.Status = GeneralStatusEnums.Inactive.ToString();
-                    foreach (var attendanceDetail in attendance.AttendanceDetailAttendances)
-                    {
-                        attendanceDetail.Status = GeneralStatusEnums.Inactive.ToString();
-                    }
+                    attendanceDetail.Status = GeneralStatusEnums.Inactive.ToString();
                 }
             }
             await _classRepositories.Update(CheckExist);
@@ -377,21 +377,21 @@ namespace PTEducation.Business.Services.ClassServices
             foreach (var item in CheckExist.StudentClasses)
             {
                 item.Status = GeneralStatusEnums.Active.ToString();
-                foreach (var score in CheckExist.Scores)
+            }
+            foreach (var score in CheckExist.Scores)
+            {
+                score.Status = GeneralStatusEnums.Active.ToString();
+                foreach (var scoreDetail in score.ScoreDetails)
                 {
-                    score.Status = GeneralStatusEnums.Active.ToString();
-                    foreach (var scoreDetail in score.ScoreDetails)
-                    {
-                        scoreDetail.Status = GeneralStatusEnums.Active.ToString();
-                    }
+                    scoreDetail.Status = GeneralStatusEnums.Active.ToString();
                 }
-                foreach (var attendance in CheckExist.Attendances)
+            }
+            foreach (var attendance in CheckExist.Attendances)
+            {
+                attendance.Status = GeneralStatusEnums.Active.ToString();
+                foreach (var attendanceDetail in attendance.AttendanceDetailAttendances)
                 {
-                    attendance.Status = GeneralStatusEnums.Active.ToString();
-                    foreach (var attendanceDetail in attendance.AttendanceDetailAttendances)
-                    {
-                        attendanceDetail.Status = GeneralStatusEnums.Active.ToString();
-                    }
+                    attendanceDetail.Status = GeneralStatusEnums.Active.ToString();
                 }
             }
             await _classRepositories.Update(CheckExist);
