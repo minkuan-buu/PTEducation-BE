@@ -111,7 +111,13 @@ namespace PTEducation.Business.Services.ChatServices
             // 5. Build final list of chat rooms for this user
             var userChatDetails = await _chatDetailRepositories.GetList(
                 cd => cd.UserId == userId, 
-                includeProperties: "Chat,Chat.ChatDetails,Chat.ChatDetails.User");
+                includeProperties: "Chat,Chat.Class,Chat.ChatDetails,Chat.ChatDetails.User");
+
+            // Filter out chats for classes that are inactive
+            userChatDetails = userChatDetails.Where(cd => 
+                !cd.Chat.ClassId.HasValue || 
+                (cd.Chat.Class != null && cd.Chat.Class.Status == "Active")
+            ).ToList();
 
             if (userRole == "guardian")
             {
