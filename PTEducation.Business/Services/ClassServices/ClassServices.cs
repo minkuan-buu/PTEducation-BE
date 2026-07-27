@@ -212,7 +212,7 @@ namespace PTEducation.Business.Services.ClassServices
             }
             else
             {
-                var className = TextConvert.ConvertFromUnicodeEscape(ClassReq.Name).Trim();
+                var className = ClassReq.Name;
                 var classBlockMatch = System.Text.RegularExpressions.Regex.Match(className, @"^\d+");
                 classBlock = classBlockMatch.Success ? classBlockMatch.Value : className;
             }

@@ -174,10 +174,7 @@ public partial class PteducationContext : DbContext
                 .HasMaxLength(30)
                 .IsUnicode(false);
             entity.Property(e => e.EndAt).HasColumnType("datetime");
-            entity.Property(e => e.Name)
-                .HasMaxLength(100)
-                .IsUnicode(false)
-                .HasDefaultValueSql("(NULL)");
+            entity.Property(e => e.Name).HasMaxLength(255);
             entity.Property(e => e.StartAt).HasColumnType("datetime");
             entity.Property(e => e.Status)
                 .HasMaxLength(50)
