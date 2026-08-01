@@ -169,7 +169,12 @@ namespace PTEducation.Business.Services.UserServices
         public async Task<MessageResultModel> Register(UserRegisterWithGuardianInfo ReqModel)
         {
             var CheckExist = await _userRepositories.GetSingle(x => x.Email == ReqModel.Email);
-            var GetClass = await _classRepositories.GetSingle(x => x.Id == ReqModel.ClassId);
+            if (ReqModel.ClassIds == null || !ReqModel.ClassIds.Any())
+            {
+                throw new CustomException("Vui lòng chọn ít nhất 1 lớp học!");
+            }
+            var firstClassId = ReqModel.ClassIds.First();
+            var GetClass = await _classRepositories.GetSingle(x => x.Id == firstClassId);
             if (CheckExist != null)
             {
                 throw new CustomException("Tài khoản với Email này đã tồn tại!");
@@ -221,13 +226,17 @@ namespace PTEducation.Business.Services.UserServices
                 IsNeedResetPassword = true,
             };
 
-            StudentClass NewStudentClass = new()
+            List<StudentClass> ListNewStudentClass = new();
+            foreach (var classId in ReqModel.ClassIds)
             {
-                Id = Guid.NewGuid(),
-                ClassId = ReqModel.ClassId,
-                StudentId = NewStudent.Id,
-                Status = AccountStatusEnums.PendingApproved.ToString(),
-            };
+                ListNewStudentClass.Add(new StudentClass
+                {
+                    Id = Guid.NewGuid(),
+                    ClassId = classId,
+                    StudentId = NewStudent.Id,
+                    Status = AccountStatusEnums.PendingApproved.ToString(),
+                });
+            }
 
             var GeneratePassword = Authentication.GenerateRandomPassword();
             string HashedPassword = Authentication.CreateHashPasswordBCrypt(GeneratePassword);
@@ -286,7 +295,7 @@ namespace PTEducation.Business.Services.UserServices
             }
             await _userRepositories.InsertRange(ListAddUser);
             await _studentGuardianRepositories.InsertRange(ListStudentGuardian);
-            await _studentClassRepositories.Insert(NewStudentClass);
+            await _studentClassRepositories.InsertRange(ListNewStudentClass);
             string FilePath = "../PTEducation.Business/TemplateEmail/FirstInformationNew.html";
             string Html = File.ReadAllText(FilePath);
             Html = Html.Replace("{{CLASSNAME}}", className);

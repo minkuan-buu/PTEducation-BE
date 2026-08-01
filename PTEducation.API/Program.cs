@@ -28,6 +28,7 @@ using PTEducation.Business.Services.UserServices;
 using PTEducation.Business.Services.StorageServices;
 using PTEducation.Business.Services.TuitionServices;
 using PTEducation.Business.Services.ChatServices;
+using PTEducation.Business.Services.GradeServices;
 using PTEducation.Business.Ultilities.Email;
 using PTEducation.API.HostedServices;
 using PTEducation.Data.Entities;
@@ -220,6 +221,7 @@ builder.Services.AddScoped<IOverviewServices, OverviewServices>();
 builder.Services.AddScoped<IAttendanceRealtimeNotifier, AttendanceRealtimeNotifier>();
 builder.Services.AddScoped<ITuitionServices, TuitionServices>();
 builder.Services.AddScoped<IChatServices, ChatServices>();
+builder.Services.AddScoped<IGradeServices, GradeServices>();
 builder.Services.AddScoped<PTEducation.Business.Services.AttendanceServices.IAttendanceScheduler, PTEducation.API.Scheduling.AttendanceScheduler>();
 
 // Quartz scheduler

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -29,7 +29,7 @@ namespace PTEducation.Data.DTO.RequestModel
     public class UserRegisterWithGuardianInfo
     {
         public string Name { get; set; } = null!;
-        public Guid ClassId { get; set; }
+        public List<Guid> ClassIds { get; set; } = new List<Guid>();
         public string Email { get; set; } = null!;
         public string? Phone { get; set; }
         public string School { get; set; } = null!;

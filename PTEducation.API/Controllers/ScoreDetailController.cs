@@ -1,4 +1,4 @@
-﻿using PTEducation.Data.DTO.Custom;
+using PTEducation.Data.DTO.Custom;
 using PTEducation.Data.DTO.RequestModel;
 using PTEducation.Business.Services.UserServices;
 using Microsoft.AspNetCore.Authorization;
@@ -25,16 +25,16 @@ namespace PTEducation.API.Controllers
 
         [HttpGet]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
-        public async Task<IActionResult> GetScoreStudentByMonth([FromQuery] ScoreStudentReqModel ScoreReq)
+        public async Task<IActionResult> GetScoreByMonth([FromQuery] int Month, [FromQuery] int Year, [FromQuery] string? classId)
         {
             try
             {
                 var userId = User.FindFirst("userid")?.Value;
-                if (string.IsNullOrWhiteSpace(userId))
+                if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { message = "User is not authenticated." });
+                    return Unauthorized(new { message = "Unauthorized access." });
                 }
-                var Result = await _studentServices.GetScoreByMonth(ScoreReq.Month, ScoreReq.Year, userId);
+                var Result = await _studentServices.GetScoreByMonth(Month, Year, userId, classId);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -45,16 +45,16 @@ namespace PTEducation.API.Controllers
 
         [HttpGet("month")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
-        public async Task<IActionResult> GetMonthTest()
+        public async Task<IActionResult> GetScoreMonth([FromQuery] string? classId)
         {
             try
             {
                 var userId = User.FindFirst("userid")?.Value;
-                if (string.IsNullOrWhiteSpace(userId))
+                if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { message = "User is not authenticated." });
+                    return Unauthorized(new { message = "Unauthorized access." });
                 }
-                var Result = await _studentServices.GetScoreMonth(userId);
+                var Result = await _studentServices.GetScoreMonth(userId, classId);
                 return Ok(Result);
             }
             catch (CustomException ex)
