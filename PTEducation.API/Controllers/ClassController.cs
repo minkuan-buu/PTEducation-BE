@@ -236,6 +236,7 @@ namespace PTEducation.API.Controllers
 
         [HttpDelete("{id:guid}")]
         [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> SoftDeleteClass(Guid id)
         {
@@ -252,6 +253,7 @@ namespace PTEducation.API.Controllers
 
         [HttpDelete("{id:guid}/hard")]
         [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> HardDeleteClass(Guid id)
         {
@@ -268,6 +270,7 @@ namespace PTEducation.API.Controllers
 
         [HttpPatch("{id:guid}/restore")]
         [MapToApiVersion("1.0")]
+        [MapToApiVersion("2.0")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Admin,Manager")]
         public async Task<IActionResult> RestoreClass(Guid id)
         {
