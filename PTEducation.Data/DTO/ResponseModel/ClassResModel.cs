@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -25,6 +25,8 @@ namespace PTEducation.Data.DTO.ResponseModel
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = null!;
+        public int GradeId { get; set; }
+        public int? GroupId { get; set; }
         public List<ClassScheduleResModel> WeeklySchedules { get; set; } = new();
     }
 
@@ -86,5 +88,11 @@ namespace PTEducation.Data.DTO.ResponseModel
         public byte DayOfWeek { get; set; }
         public TimeOnly StartTime { get; set; }
         public TimeOnly EndTime { get; set; }
+    }
+
+    public class ClassOptionResModel
+    {
+        public Guid Id { get; set; }
+        public string Name { get; set; } = null!;
     }
 }

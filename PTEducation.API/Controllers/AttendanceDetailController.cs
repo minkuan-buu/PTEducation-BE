@@ -26,16 +26,16 @@ namespace PTEducation.API.Controllers
 
         [HttpGet]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
-        public async Task<IActionResult> GetAttendanceStudentByMonth([FromQuery] AttendanceStudentReqModel AttendanceReq)
+        public async Task<IActionResult> GetAttendanceByMonth([FromQuery] int Month, [FromQuery] int Year, [FromQuery] string? classId)
         {
             try
             {
                 var userId = User.FindFirst("userid")?.Value;
-                if (string.IsNullOrWhiteSpace(userId))
+                if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { message = "User is not authenticated." });
+                    return Unauthorized(new { message = "Unauthorized access." });
                 }
-                var Result = await _studentServices.GetAttendanceByMonth(AttendanceReq.Month, AttendanceReq.Year, userId);
+                var Result = await _studentServices.GetAttendanceByMonth(Month, Year, userId, classId);
                 return Ok(Result);
             }
             catch (CustomException ex)
@@ -46,16 +46,16 @@ namespace PTEducation.API.Controllers
 
         [HttpGet("month")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
-        public async Task<IActionResult> GetMonthAttendance()
+        public async Task<IActionResult> GetAttendanceMonth([FromQuery] string? classId)
         {
             try
             {
                 var userId = User.FindFirst("userid")?.Value;
-                if (string.IsNullOrWhiteSpace(userId))
+                if (string.IsNullOrEmpty(userId))
                 {
-                    return Unauthorized(new { message = "User is not authenticated." });
+                    return Unauthorized(new { message = "Unauthorized access." });
                 }
-                var Result = await _studentServices.GetAttendanceMonth(userId);
+                var Result = await _studentServices.GetAttendanceMonth(userId, classId);
                 return Ok(Result);
             }
             catch (CustomException ex)

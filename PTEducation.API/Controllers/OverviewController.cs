@@ -19,9 +19,9 @@ namespace PTEducation.API.Controllers
             _overviewServices = overviewServices;
         }
 
-        [HttpGet("student")]
+        [HttpGet("classes")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
-        public async Task<IActionResult> GetOverviewForStudentOrGuardian()
+        public async Task<IActionResult> GetStudentClasses()
         {
             try
             {
@@ -31,7 +31,28 @@ namespace PTEducation.API.Controllers
                     return Unauthorized(new { message = "Unauthorized access." });
                 }
 
-                var result = await _overviewServices.GetOverviewForStudentOrGuardian(userId);
+                var result = await _overviewServices.GetStudentClasses(userId);
+                return Ok(result);
+            }
+            catch (CustomException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("student")]
+        [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
+        public async Task<IActionResult> GetOverviewForStudentOrGuardian([FromQuery] string? classId)
+        {
+            try
+            {
+                var userId = User.FindFirst("userid")?.Value;
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "Unauthorized access." });
+                }
+
+                var result = await _overviewServices.GetOverviewForStudentOrGuardian(userId, classId);
                 return Ok(result);
             }
             catch (CustomException ex)
@@ -42,7 +63,7 @@ namespace PTEducation.API.Controllers
 
         [HttpGet("attendance")]
         [Authorize(AuthenticationSchemes = "PTEducationAuthentication", Roles = "Student,Guardian")]
-        public async Task<IActionResult> GetAttendanceOverviewForStudentOrGuardian()
+        public async Task<IActionResult> GetAttendanceOverviewForStudentOrGuardian([FromQuery] string? classId)
         {
             try
             {
@@ -52,7 +73,7 @@ namespace PTEducation.API.Controllers
                     return Unauthorized(new { message = "Unauthorized access." });
                 }
 
-                var result = await _overviewServices.GetAttendanceOverviewForStudentOrGuardian(userId);
+                var result = await _overviewServices.GetAttendanceOverviewForStudentOrGuardian(userId, classId);
                 return Ok(result);
             }
             catch (CustomException ex)

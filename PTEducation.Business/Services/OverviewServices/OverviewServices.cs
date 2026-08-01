@@ -45,7 +45,7 @@ namespace PTEducation.Business.Services.OverviewServices
             _mapper = mapper;
         }
 
-        private async Task<(User Student, StudentClass ActiveClass)> ResolveStudentAndClass(string userId)
+        private async Task<(User Student, StudentClass ActiveClass)> ResolveStudentAndClass(string userId, string? classId = null)
         {
             var user = await _userRepositories.GetSingle(
                 x => x.Id.Equals(userId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()),
@@ -68,7 +68,7 @@ namespace PTEducation.Business.Services.OverviewServices
                 
                 student = await _userRepositories.GetSingle(
                     x => x.Id.Equals(relationship.StudentId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()),
-                    includeProperties: "StudentClasses"
+                    includeProperties: "StudentClasses.Class"
                 );
                 
                 if (student == null)
@@ -76,26 +76,82 @@ namespace PTEducation.Business.Services.OverviewServices
                     throw new CustomException("Associated student not found.");
                 }
             }
+            else
+            {
+                student = await _userRepositories.GetSingle(
+                    x => x.Id.Equals(userId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()),
+                    includeProperties: "StudentClasses.Class"
+                );
+            }
 
-            var activeClass = student.StudentClasses.FirstOrDefault(x => x.Status.Equals(GeneralStatusEnums.Active.ToString()));
-            if (activeClass == null)
+            var activeClasses = student.StudentClasses.Where(x => x.Status.Equals(GeneralStatusEnums.Active.ToString())).ToList();
+            if (!activeClasses.Any())
             {
                 throw new CustomException("Student is not assigned to any active class.");
             }
 
-            return (student, activeClass);
+            StudentClass? activeClass = null;
+            if (!string.IsNullOrEmpty(classId) && Guid.TryParse(classId, out var parsedClassId))
+            {
+                activeClass = activeClasses.FirstOrDefault(x => x.ClassId == parsedClassId);
+                if (activeClass == null) throw new CustomException("Student is not assigned to this class.");
+            }
+            else
+            {
+                activeClass = activeClasses.FirstOrDefault();
+            }
+
+            return (student, activeClass!);
         }
 
 
-        public async Task<DataResultModel<StudentGuardianOverviewResModel>> GetOverviewForStudentOrGuardian(string userId)
+        public async Task<ListDataResultModel<ClassOptionResModel>> GetStudentClasses(string userId)
         {
-            var (student, activeStudentClass) = await ResolveStudentAndClass(userId);
-            var classId = activeStudentClass.ClassId;
+            var user = await _userRepositories.GetSingle(
+                x => x.Id.Equals(userId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()),
+                includeProperties: "StudentClasses.Class,StudentGuardianGuardians"
+            );
+
+            if (user == null)
+            {
+                throw new CustomException("User not found!");
+            }
+
+            User student = user;
+            if (user.Role.Equals(RoleEnums.Guardian.ToString()))
+            {
+                var relationship = user.StudentGuardianGuardians.FirstOrDefault();
+                if (relationship == null)
+                {
+                    throw new CustomException("No students associated with this guardian.");
+                }
+                
+                student = await _userRepositories.GetSingle(
+                    x => x.Id.Equals(relationship.StudentId) && x.Status.Equals(GeneralStatusEnums.Active.ToString()),
+                    includeProperties: "StudentClasses.Class"
+                );
+            }
+
+            var activeClasses = student.StudentClasses
+                .Where(x => x.Status.Equals(GeneralStatusEnums.Active.ToString()))
+                .Select(x => new ClassOptionResModel
+                {
+                    Id = x.Class.Id,
+                    Name = TextConvert.ConvertFromUnicodeEscape(x.Class.Name)
+                }).ToList();
+
+            return new ListDataResultModel<ClassOptionResModel> { Data = activeClasses };
+        }
+
+        public async Task<DataResultModel<StudentGuardianOverviewResModel>> GetOverviewForStudentOrGuardian(string userId, string? classId = null)
+        {
+            var (student, activeStudentClass) = await ResolveStudentAndClass(userId, classId);
+            var resolvedClassId = activeStudentClass.ClassId;
             var studentClassId = activeStudentClass.Id;
 
             // Fetch target class with schedules & attendances for NextSession logic
             var targetClass = await _classRepositories.GetSingle(
-                c => c.Id == classId,
+                c => c.Id == resolvedClassId,
                 includeProperties: "ClassSchedules,Attendances"
             );
 
@@ -116,7 +172,7 @@ namespace PTEducation.Business.Services.OverviewServices
             );
 
             var ownClassDetails = closedAttendanceDetails
-                .Where(ad => ad.Attendance.ClassId == classId)
+                .Where(ad => ad.Attendance.ClassId == resolvedClassId)
                 .ToList();
 
             var makeUpDetails = closedAttendanceDetails
@@ -190,7 +246,7 @@ namespace PTEducation.Business.Services.OverviewServices
 
             // 5. Recent Attendances
             var studentAttendances = await _attendanceDetailRepositories.GetList(
-                ad => ad.StudentClassId == studentClassId && ad.Attendance.ClassId == classId,
+                ad => ad.StudentClassId == studentClassId && ad.Attendance.ClassId == resolvedClassId,
                 includeProperties: "Attendance"
             );
             var recentAttendances = studentAttendances
@@ -239,15 +295,15 @@ namespace PTEducation.Business.Services.OverviewServices
             };
         }
 
-        public async Task<DataResultModel<AttendanceStudentGuardianOverviewResModel>>GetAttendanceOverviewForStudentOrGuardian(string userId)
+        public async Task<DataResultModel<AttendanceStudentGuardianOverviewResModel>> GetAttendanceOverviewForStudentOrGuardian(string userId, string? classId = null)
         {
-            var (student, activeStudentClass) = await ResolveStudentAndClass(userId);
-            var classId = activeStudentClass.ClassId;
+            var (student, activeStudentClass) = await ResolveStudentAndClass(userId, classId);
+            var resolvedClassId = activeStudentClass.ClassId;
             var studentClassId = activeStudentClass.Id;
 
             // Fetch target class with schedules & attendances for NextSession logic
             var targetClass = await _classRepositories.GetSingle(
-                c => c.Id == classId,
+                c => c.Id == resolvedClassId,
                 includeProperties: "ClassSchedules,Attendances"
             );
 
@@ -257,7 +313,7 @@ namespace PTEducation.Business.Services.OverviewServices
             );
 
             var ownClassDetails = closedAttendanceDetails
-                .Where(ad => ad.Attendance.ClassId == classId)
+                .Where(ad => ad.Attendance.ClassId == resolvedClassId)
                 .ToList();
 
             var makeUpDetails = closedAttendanceDetails
@@ -299,7 +355,7 @@ namespace PTEducation.Business.Services.OverviewServices
                 : 0;
 
             var Attendances = await _attendanceRepositories.GetList(
-                x => (x.ClassId == classId || x.AttendanceDetailAttendances.Any(y => y.StudentClassId == studentClassId)) && 
+                x => (x.ClassId == resolvedClassId || x.AttendanceDetailAttendances.Any(y => y.StudentClassId == studentClassId)) && 
                      !x.Status.Equals(GeneralStatusEnums.Inactive.ToString()),
                 includeProperties: "AttendanceDetailAttendances"
             );
@@ -329,7 +385,7 @@ namespace PTEducation.Business.Services.OverviewServices
             DateTime endOfWeek = startOfWeek.AddDays(7).AddSeconds(-1);
 
             var extraAttendancesThisWeek = Attendances.Where(a =>
-                (a.ClassScheduleId == null || a.ClassId != classId) &&
+                (a.ClassScheduleId == null || a.ClassId != resolvedClassId) &&
                 a.Date.ToDateTime(TimeOnly.MinValue) >= startOfWeek &&
                 a.Date.ToDateTime(TimeOnly.MinValue) <= endOfWeek
             ).ToList();
