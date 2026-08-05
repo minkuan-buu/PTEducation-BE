@@ -33,8 +33,12 @@ namespace PTEducation.Business.Services.GradeServices
 
         public async Task<GradeResModel> Create(GradeCreateReqModel req)
         {
+            var allGrades = await _gradeRepositories.GetList();
+            var gradeId = allGrades.Any() ? allGrades.Max(g => g.Id) + 1 : 1;
+
             var grade = new Grade
             {
+                Id = gradeId,
                 GradeName = req.GradeName,
                 GroupId = req.GroupId
             };
