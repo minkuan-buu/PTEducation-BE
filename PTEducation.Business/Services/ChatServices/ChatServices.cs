@@ -137,6 +137,56 @@ namespace PTEducation.Business.Services.ChatServices
                 var lastMsg = await _chatMessageRepositories.GetLastMessage(detail.ChatId);
                 var unreadCount = await _chatMessageRepositories.GetUnreadCount(detail.ChatId, detail.LastReadMessageId);
 
+                var cachedHistory = await _redisService.GetListAsync($"ChatHistory_{detail.ChatId}", 0, 0);
+                ChatMessageResModel? latestRedisMsg = null;
+                if (cachedHistory != null && cachedHistory.Count > 0)
+                {
+                    latestRedisMsg = JsonSerializer.Deserialize<ChatMessageResModel>(cachedHistory[0]);
+                }
+
+                string? lastMessageContent = lastMsg?.Content;
+                long? lastMessageTime = lastMsg?.CreatedAt;
+
+                if (latestRedisMsg != null)
+                {
+                    bool useRedisMsg = false;
+                    bool isNewUnread = false;
+
+                    if (lastMsg == null)
+                    {
+                        useRedisMsg = true;
+                        isNewUnread = true;
+                    }
+                    else if (latestRedisMsg.CreatedAt > lastMsg.CreatedAt)
+                    {
+                        useRedisMsg = true;
+                        isNewUnread = true;
+                    }
+                    else if (latestRedisMsg.CreatedAt == lastMsg.CreatedAt && latestRedisMsg.Id != lastMsg.Id)
+                    {
+                        // Same second, but different message. Since latestRedisMsg is at index 0 in Redis, it was pushed more recently.
+                        useRedisMsg = true;
+                        isNewUnread = true;
+                    }
+                    else if (latestRedisMsg.Id == lastMsg.Id)
+                    {
+                        // Same message. We can use either.
+                        useRedisMsg = true;
+                        isNewUnread = false;
+                    }
+
+                    if (useRedisMsg)
+                    {
+                        lastMessageContent = latestRedisMsg.Content;
+                        lastMessageTime = latestRedisMsg.CreatedAt;
+                        
+                        if (isNewUnread && latestRedisMsg.SenderId != userId)
+                        {
+                            unreadCount += 1; 
+                        }
+                    }
+                }
+
                 string title = "Lớp học";
                 if (detail.Chat.ClassId.HasValue)
                 {
@@ -160,8 +210,8 @@ namespace PTEducation.Business.Services.ChatServices
                     ChatId = detail.ChatId,
                     Title = title,
                     ClassId = detail.Chat.ClassId,
-                    LastMessage = lastMsg?.Content,
-                    LastMessageTime = lastMsg?.CreatedAt,
+                    LastMessage = lastMessageContent,
+                    LastMessageTime = lastMessageTime,
                     UnreadCount = unreadCount,
                     NumberOfParticipant = participantCount
                 });
