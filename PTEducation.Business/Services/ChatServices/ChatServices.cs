@@ -12,6 +12,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+using System.Text.Json;
+using PTEducation.Business.Services.RedisServices;
+
 namespace PTEducation.Business.Services.ChatServices
 {
     public class ChatServices : IChatServices
@@ -23,6 +26,7 @@ namespace PTEducation.Business.Services.ChatServices
         private readonly IStudentClassRepositories _studentClassRepositories;
         private readonly IStudentGuardianRepositories _studentGuardianRepositories;
         private readonly IUserRepositories _userRepositories;
+        private readonly IRedisService _redisService;
 
         public ChatServices(
             IChatRepositories chatRepositories,
@@ -31,7 +35,8 @@ namespace PTEducation.Business.Services.ChatServices
             IClassRepositories classRepositories,
             IStudentClassRepositories studentClassRepositories,
             IStudentGuardianRepositories studentGuardianRepositories,
-            IUserRepositories userRepositories)
+            IUserRepositories userRepositories,
+            IRedisService redisService)
         {
             _chatRepositories = chatRepositories;
             _chatDetailRepositories = chatDetailRepositories;
@@ -40,6 +45,7 @@ namespace PTEducation.Business.Services.ChatServices
             _studentClassRepositories = studentClassRepositories;
             _studentGuardianRepositories = studentGuardianRepositories;
             _userRepositories = userRepositories;
+            _redisService = redisService;
         }
 
         public async Task<ListDataResultModel<ChatRoomResModel>> GetMyChats(string userId, string role)
@@ -200,6 +206,8 @@ namespace PTEducation.Business.Services.ChatServices
             }
 
             int pageSize = limit ?? 50;
+            string cacheKey = $"ChatHistory_{chatId}";
+
             // Get messages in descending order (newest first)
             var pagedMessages = await _chatMessageRepositories.GetPagedList(
                 filter: m => m.ChatId == chatId,
@@ -209,7 +217,6 @@ namespace PTEducation.Business.Services.ChatServices
                 pageSize: pageSize
             );
 
-            // Map messages and reverse them to ascending order for display
             var result = pagedMessages.Data?.Select(m => new ChatMessageResModel
             {
                 Id = m.Id,
@@ -221,9 +228,31 @@ namespace PTEducation.Business.Services.ChatServices
                 Content = m.Content,
                 MessageType = m.MessageType,
                 CreatedAt = m.CreatedAt
-            })
-            .OrderBy(m => m.CreatedAt)
-            .ToList() ?? new List<ChatMessageResModel>();
+            }).ToList() ?? new List<ChatMessageResModel>();
+
+            if (pageIndex == 1)
+            {
+                var cachedHistory = await _redisService.GetListAsync(cacheKey, 0, pageSize - 1);
+                if (cachedHistory != null && cachedHistory.Count > 0)
+                {
+                    var cachedMessages = new List<ChatMessageResModel>();
+                    foreach (var raw in cachedHistory)
+                    {
+                        var m = JsonSerializer.Deserialize<ChatMessageResModel>(raw);
+                        if (m != null) cachedMessages.Add(m);
+                    }
+                    
+                    // Merge cached (newest) with db (oldest), deduplicate by Id, and take pageSize
+                    result = cachedMessages.Concat(result)
+                                           .GroupBy(m => m.Id)
+                                           .Select(g => g.First())
+                                           .OrderByDescending(m => m.CreatedAt)
+                                           .Take(pageSize)
+                                           .ToList();
+                }
+            }
+
+            result = result.OrderBy(m => m.CreatedAt).ToList();
 
             return new PagedListDataResultModel<ChatMessageResModel> { 
                 Data = result,
@@ -278,12 +307,6 @@ namespace PTEducation.Business.Services.ChatServices
                 CreatedAt = unixNow
             };
 
-            await _chatMessageRepositories.Insert(message);
-
-            // Update sender's LastReadMessageId
-            detail.LastReadMessageId = message.Id;
-            await _chatDetailRepositories.Update(detail);
-
             var res = new ChatMessageResModel
             {
                 Id = message.Id,
@@ -296,6 +319,17 @@ namespace PTEducation.Business.Services.ChatServices
                 MessageType = message.MessageType,
                 CreatedAt = message.CreatedAt
             };
+
+            // Write-Behind: Push to Redis DB Queue
+            string serializedMessage = JsonSerializer.Serialize(message);
+            await _redisService.PushToQueueAsync("Chat_PendingMessages", serializedMessage);
+
+            // Update sender's LastReadMessageId will be handled by the Background Worker
+            // to avoid Foreign Key constraints since the message is not in DB yet.
+
+            // Cache History: Update Chat History Cache instantly
+            await _redisService.ListLeftPushAsync($"ChatHistory_{chatId}", JsonSerializer.Serialize(res));
+            await _redisService.ListTrimAsync($"ChatHistory_{chatId}", 0, 100);
 
             return new DataResultModel<ChatMessageResModel> { Data = res };
         }
