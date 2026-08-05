@@ -30,6 +30,8 @@ using PTEducation.Business.Services.TuitionServices;
 using PTEducation.Business.Services.ChatServices;
 using PTEducation.Business.Services.GradeServices;
 using PTEducation.Business.Ultilities.Email;
+using PTEducation.Business.Services.RedisServices;
+using StackExchange.Redis;
 using PTEducation.API.HostedServices;
 using PTEducation.Data.Entities;
 using Quartz;
@@ -222,6 +224,20 @@ builder.Services.AddScoped<IAttendanceRealtimeNotifier, AttendanceRealtimeNotifi
 builder.Services.AddScoped<ITuitionServices, TuitionServices>();
 builder.Services.AddScoped<IChatServices, ChatServices>();
 builder.Services.AddScoped<IGradeServices, GradeServices>();
+// ==================== REDIS CONFIGURATION ====================
+var redisHost = Environment.GetEnvironmentVariable("REDIS_HOST") ?? "localhost";
+var redisPort = Environment.GetEnvironmentVariable("REDIS_PORT") ?? "6379";
+var redisPassword = Environment.GetEnvironmentVariable("REDIS_PASSWORD") ?? "";
+var redisDb = Environment.GetEnvironmentVariable("REDIS_DB") ?? "1";
+
+var redisConnectionString = $"{redisHost}:{redisPort},password={redisPassword},defaultDatabase={redisDb}";
+
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp => 
+    ConnectionMultiplexer.Connect(redisConnectionString));
+    
+builder.Services.AddScoped<IRedisService, RedisService>();
+// =============================================================
+
 builder.Services.AddScoped<PTEducation.Business.Services.AttendanceServices.IAttendanceScheduler, PTEducation.API.Scheduling.AttendanceScheduler>();
 
 // Quartz scheduler
@@ -236,6 +252,7 @@ builder.Services.AddScoped<PTEducation.API.Jobs.AttendanceWindowJob>();
 
 builder.Services.AddHostedService<AdminInitializerHostedService>();
 builder.Services.AddHostedService<DatabaseMigrationHostedService>();
+builder.Services.AddHostedService<ChatWriteBehindHostedService>();
 builder.Services.AddHostedService<AttendanceWindowReconciliationHostedService>();
 builder.Services.AddHostedService<WeeklyAttendanceGenerationHostedService>();
 
